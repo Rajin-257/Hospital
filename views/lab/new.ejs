@@ -1,0 +1,149 @@
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Request New Lab Test</h2>
+                
+                <% if (typeof patient === 'undefined' || patient === null) { %>
+                    <!-- Select Patient First -->
+                    <form action="/lab/new" method="GET" class="mb-5">
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="patientId" class="form-label">Select Patient</label>
+                                <select class="form-select" id="patientId" name="patientId" required>
+                                    <option value="">Select a patient</option>
+                                    <% patients.forEach(patient => { %>
+                                        <option value="<%= patient.id %>"><%= patient.firstName %> <%= patient.lastName %> (<%= patient.patientId %>)</option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">Continue</button>
+                            </div>
+                        </div>
+                    </form>
+                <% } else { %>
+                    <!-- Create Lab Test Form -->
+                    <form action="/lab" method="POST">
+                        <input type="hidden" name="patientId" value="<%= patient.id %>">
+                        
+                        <!-- Patient Information -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Patient Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Name:</strong> <%= patient.firstName %> <%= patient.lastName %></p>
+                                        <p><strong>Patient ID:</strong> <%= patient.patientId %></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Contact:</strong> <%= patient.contactNumber %></p>
+                                        <p><strong>Email:</strong> <%= patient.email || 'N/A' %></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Test Information -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">Test Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <label for="testTypeId" class="form-label">Select Test Type</label>
+                                        <select class="form-select" id="testTypeId" name="testTypeId">
+                                            <option value="">-- Select a test type or create custom --</option>
+                                            <% labTestTypes.forEach(type => { %>
+                                                <option value="<%= type.id %>" data-price="<%= type.price %>" data-code="<%= type.code %>" data-name="<%= type.name %>"><%= type.name %> - $<%= parseFloat(type.price).toFixed(2) %> (Doctor Commission: $<%= parseFloat(type.doctorCommission).toFixed(2) %>)</option>
+                                            <% }); %>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="testName" class="form-label">Test Name</label>
+                                        <input type="text" class="form-control" id="testName" name="testName" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="testCode" class="form-label">Test Code</label>
+                                        <input type="text" class="form-control" id="testCode" name="testCode" required>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="doctorId" class="form-label">Requesting Doctor</label>
+                                        <select class="form-select" id="doctorId" name="doctorId" required>
+                                            <option value="">Select a doctor</option>
+                                            <% doctors.forEach(doctor => { %>
+                                                <option value="<%= doctor.id %>">Dr. <%= doctor.firstName %> <%= doctor.lastName %> (<%= doctor.specialization %>)</option>
+                                            <% }); %>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="scheduledDate" class="form-label">Scheduled Date (Optional)</label>
+                                        <input type="date" class="form-control" id="scheduledDate" name="scheduledDate">
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="price" class="form-label">Price</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" step="0.01" class="form-control" id="price" name="price" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="technicianId" class="form-label">Assign Technician (Optional)</label>
+                                        <select class="form-select" id="technicianId" name="technicianId">
+                                            <option value="">Select a technician</option>
+                                            <% technicians.forEach(tech => { %>
+                                                <option value="<%= tech.id %>"><%= tech.firstName %> <%= tech.lastName %></option>
+                                            <% }); %>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notes Section -->
+                        <div class="mb-4">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/lab" class="btn btn-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Request Lab Test</button>
+                        </div>
+                    </form>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const testTypeSelect = document.getElementById('testTypeId');
+    const testNameInput = document.getElementById('testName');
+    const testCodeInput = document.getElementById('testCode');
+    const priceInput = document.getElementById('price');
+    
+    testTypeSelect.addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      if (selectedOption.value) {
+        testNameInput.value = selectedOption.getAttribute('data-name');
+        testCodeInput.value = selectedOption.getAttribute('data-code');
+        priceInput.value = selectedOption.getAttribute('data-price');
+      } else {
+        testNameInput.value = '';
+        testCodeInput.value = '';
+        priceInput.value = '';
+      }
+    });
+  });
+</script>

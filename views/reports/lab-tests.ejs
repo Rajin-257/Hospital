@@ -1,0 +1,130 @@
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Lab Test Report: <%= new Date(startDate).toLocaleDateString() %> to <%= new Date(endDate).toLocaleDateString() %></h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">Total Tests</h6>
+                                    <h3 class="card-title text-primary"><%= summary.totalTests %></h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">Total Revenue</h6>
+                                    <h3 class="card-title text-success">$<%= summary.totalRevenue.toFixed(2) %></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Tests by Type</h6>
+                </div>
+                <div class="card-body">
+                    <% if (labTests && labTests.length > 0) { %>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Test Name</th>
+                                        <th>Count</th>
+                                        <th>Revenue</th>
+                                        <th>% of Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% labTests.forEach(test => { %>
+                                        <tr>
+                                            <td><%= test.dataValues.testName %></td>
+                                            <td><%= test.dataValues.count %></td>
+                                            <td>$<%= parseFloat(test.dataValues.revenue).toFixed(2) %></td>
+                                            <td>
+                                                <% const percentage = (parseInt(test.dataValues.count) / summary.totalTests * 100).toFixed(1) %>
+                                                <%= percentage %>%
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-info">No lab test data available for the selected period.</div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Test Status Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <% if (testStatus && testStatus.length > 0) { %>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% testStatus.forEach(status => { %>
+                                        <tr>
+                                            <td>
+                                                <span class="badge <%= 
+                                                    status.dataValues.status === 'completed' ? 'bg-success' : 
+                                                    status.dataValues.status === 'scheduled' ? 'bg-warning' : 
+                                                    status.dataValues.status === 'requested' ? 'bg-info' : 
+                                                    status.dataValues.status === 'cancelled' ? 'bg-danger' : 
+                                                    'bg-secondary' %>">
+                                                    <%= status.dataValues.status %>
+                                                </span>
+                                            </td>
+                                            <td><%= status.dataValues.count %></td>
+                                            <td>
+                                                <% const percentage = (parseInt(status.dataValues.count) / summary.totalTests * 100).toFixed(1) %>
+                                                <%= percentage %>%
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-info">No status data available.</div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card-footer bg-light d-flex justify-content-between">
+                <a href="/reports/lab-tests" class="btn btn-outline-secondary">New Report</a>
+                <div>
+                    <a href="/reports/export?reportType=lab-tests&format=csv&startDate=<%= startDate %>&endDate=<%= endDate %>" class="btn btn-outline-primary">Export as CSV</a>
+                    <a href="/reports/export?reportType=lab-tests&format=pdf&startDate=<%= startDate %>&endDate=<%= endDate %>" class="btn btn-primary">Export as PDF</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

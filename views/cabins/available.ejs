@@ -1,0 +1,80 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Available Cabins</h2>
+    <div>
+        <a href="/cabins" class="btn btn-secondary me-2">
+            <i class="fas fa-list"></i> All Cabins
+        </a>
+        <a href="/cabins/new" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Cabin
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <form action="/cabins/status/available" method="GET" class="row g-3">
+            <div class="col-md-6">
+                <label for="cabinType" class="form-label">Filter by Type</label>
+                <select class="form-select" id="cabinType" name="cabinType">
+                    <option value="">All Types</option>
+                    <option value="general" <%= selectedType === 'general' ? 'selected' : '' %>>General</option>
+                    <option value="private" <%= selectedType === 'private' ? 'selected' : '' %>>Private</option>
+                    <option value="icu" <%= selectedType === 'icu' ? 'selected' : '' %>>ICU</option>
+                </select>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                <a href="/cabins/status/available" class="btn btn-secondary ms-2">
+                    <i class="fas fa-redo"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Cabin Number</th>
+                        <th>Type</th>
+                        <th>Floor</th>
+                        <th>Price/Day</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (cabins && cabins.length > 0) { %>
+                        <% cabins.forEach(cabin => { %>
+                            <tr>
+                                <td><%= cabin.cabinNumber %></td>
+                                <td><%= cabin.cabinType.charAt(0).toUpperCase() + cabin.cabinType.slice(1) %></td>
+                                <td><%= cabin.floor %></td>
+                                <td>$<%= cabin.pricePerDay %></td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="/cabins/<%= cabin.id %>" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="/cabins/<%= cabin.id %>/assign" class="btn btn-sm btn-success">
+                                            <i class="fas fa-user-plus"></i> Assign
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="5" class="text-center">No available cabins found</td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

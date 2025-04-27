@@ -1,0 +1,129 @@
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Revenue Report: <%= new Date(startDate).toLocaleDateString() %> to <%= new Date(endDate).toLocaleDateString() %></h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">Total Billed</h6>
+                                    <h3 class="card-title text-primary">$<%= summary.totalBilled.toFixed(2) %></h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">Total Collected</h6>
+                                    <h3 class="card-title text-success">$<%= summary.totalCollected.toFixed(2) %></h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">Outstanding</h6>
+                                    <h3 class="card-title text-danger">$<%= summary.outstanding.toFixed(2) %></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Daily Revenue Breakdown</h6>
+                </div>
+                <div class="card-body">
+                    <% if (billingData && billingData.length > 0) { %>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Total Billed</th>
+                                        <th>Total Collected</th>
+                                        <th>Collection Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% billingData.forEach(billing => { %>
+                                        <tr>
+                                            <td><%= new Date(billing.dataValues.date).toLocaleDateString() %></td>
+                                            <td>$<%= parseFloat(billing.dataValues.totalAmount).toFixed(2) %></td>
+                                            <td>$<%= parseFloat(billing.dataValues.paidAmount).toFixed(2) %></td>
+                                            <td>
+                                                <% const rate = (parseFloat(billing.dataValues.paidAmount) / parseFloat(billing.dataValues.totalAmount) * 100).toFixed(1) %>
+                                                <%= rate %>%
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-info">No revenue data available for the selected period.</div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Payment Method Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <% if (paymentMethodData && paymentMethodData.length > 0) { %>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Payment Method</th>
+                                        <th>Amount</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% paymentMethodData.forEach(payment => { %>
+                                        <tr>
+                                            <td><%= payment.dataValues.paymentMethod %></td>
+                                            <td>$<%= parseFloat(payment.dataValues.amount).toFixed(2) %></td>
+                                            <td>
+                                                <% const percentage = (parseFloat(payment.dataValues.amount) / summary.totalCollected * 100).toFixed(1) %>
+                                                <%= percentage %>%
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-info">No payment method data available.</div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card-footer bg-light d-flex justify-content-between">
+                <a href="/reports/revenue" class="btn btn-outline-secondary">New Report</a>
+                <div>
+                    <a href="/reports/export?reportType=revenue&format=csv&startDate=<%= startDate %>&endDate=<%= endDate %>" class="btn btn-outline-primary">Export as CSV</a>
+                    <a href="/reports/export?reportType=revenue&format=pdf&startDate=<%= startDate %>&endDate=<%= endDate %>" class="btn btn-primary">Export as PDF</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

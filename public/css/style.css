@@ -1,0 +1,319 @@
+:root {
+  --primary: #5e72e4;
+  --secondary: #f7fafc;
+  --success: #2dce89;
+  --danger: #f5365c;
+  --warning: #fb6340;
+  --info: #11cdef;
+  --light: #f8f9fe;
+  --dark: #172b4d;
+  --white: #ffffff;
+  --shadow: 0 0 35px 0 rgba(154, 161, 171, 0.15);
+  --border-radius: 0.5rem;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #f8f9fe;
+  color: #525f7f;
+  line-height: 1.5;
+}
+
+.navbar {
+  box-shadow: var(--shadow);
+  border-radius: 0;
+  padding: 0.8rem 1rem;
+}
+
+.navbar-brand {
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.navbar-dark .navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.navbar-dark .navbar-nav .nav-link:hover {
+  color: rgba(255, 255, 255, 1);
+}
+
+.card {
+  border: none;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  height: 100%;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 25px 0 rgba(154, 161, 171, 0.25);
+}
+
+.card-header {
+  padding: 1.25rem 1.5rem;
+  background-color: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.card-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.stat-card {
+  color: white;
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.15), transparent);
+  z-index: -1;
+}
+
+.stat-card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+.stat-card-title {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+  opacity: 0.8;
+}
+
+.stat-card-primary {
+  background: linear-gradient(45deg, #5e72e4, #825ee4);
+}
+
+.stat-card-success {
+  background: linear-gradient(45deg, #2dce89, #2cce8f);
+}
+
+.stat-card-info {
+  background: linear-gradient(45deg, #11cdef, #1171ef);
+}
+
+.stat-card-warning {
+  background: linear-gradient(45deg, #fb6340, #fbb140);
+}
+
+.btn {
+  font-weight: 600;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--border-radius);
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(50, 50, 93, .11), 0 1px 3px rgba(0, 0, 0, .08);
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-outline-primary {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.875rem;
+}
+
+.table {
+  color: #525f7f;
+}
+
+.table th {
+  font-weight: 600;
+  border-top: 0;
+}
+
+.table td {
+  vertical-align: middle;
+  padding: 1rem;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.badge {
+  font-weight: 600;
+  padding: 0.5em 0.75em;
+}
+
+footer {
+  background-color: #fff;
+  box-shadow: 0 -10px 35px 0 rgba(154, 161, 171, 0.05);
+  padding: 1.5rem 0;
+}
+
+/* Custom animation for alerts */
+.alert {
+  border: none;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}
+
+/* Page title styling */
+h1.page-title {
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--dark);
+  position: relative;
+  display: inline-block;
+}
+
+h1.page-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -8px;
+  height: 4px;
+  width: 40px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+/* Dashboard-specific styling */
+.welcome-card {
+  background: linear-gradient(45deg, #5e72e4, #825ee4);
+  color: white;
+}
+
+/* Appointment list styling */
+.appointment-list .list-group-item {
+  padding: 1rem 1.5rem;
+  transition: all 0.2s;
+}
+
+.appointment-list .list-group-item:hover {
+  background-color: rgba(94, 114, 228, 0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Modal styling improvements */
+.modal{
+  z-index: 1050;
+}
+
+.modal-content {
+  border: none;
+  border-radius: var(--border-radius);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+/* Fix for modal backdrop */
+.modal-backdrop {
+  z-index: 1040;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+.modal-backdrop.show {
+  opacity: 0.5;
+}
+
+/* Fix for multiple backdrops */
+.modal-backdrop + .modal-backdrop {
+  display: none;
+}
+
+/* Specifically target doctor modals to prevent jumping */
+#deleteModal[id^="deleteModal"] {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  outline: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Ensure modals are properly centered and stable */
+.modal-dialog {
+  margin: 1.75rem auto;
+  transform: translate(0, 0) !important;
+}
+
+.modal-dialog-centered {
+  display: flex;
+  align-items: center;
+  min-height: calc(100% - 3.5rem);
+  transform: translate(0, 0) !important;
+}
+
+/* Fix for nested modals */
+.modal-open .modal {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 0 !important;
+}
+
+.modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.modal-title {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+/* Patient Link Styling */
+a.patient-link, a.doctor-link {
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+a.patient-link:hover, a.doctor-link:hover {
+  color: var(--primary);
+  text-decoration: underline;
+} 

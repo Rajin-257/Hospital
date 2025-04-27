@@ -1,0 +1,119 @@
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Patient Visit Report: <%= new Date(startDate).toLocaleDateString() %> to <%= new Date(endDate).toLocaleDateString() %></h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">Total Appointments</h6>
+                                    <h3 class="card-title text-primary"><%= totalAppointments %></h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-subtitle mb-2 text-muted">New Patient Registrations</h6>
+                                    <h3 class="card-title text-success"><%= totalNewPatients %></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Appointment Status Breakdown</h6>
+                </div>
+                <div class="card-body">
+                    <% if (appointments && appointments.length > 0) { %>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% appointments.forEach(appointment => { %>
+                                        <tr>
+                                            <td><%= new Date(appointment.dataValues.date).toLocaleDateString() %></td>
+                                            <td>
+                                                <span class="badge <%= 
+                                                    appointment.dataValues.status === 'scheduled' ? 'bg-warning' : 
+                                                    appointment.dataValues.status === 'completed' ? 'bg-success' : 
+                                                    appointment.dataValues.status === 'cancelled' ? 'bg-danger' : 
+                                                    'bg-secondary' %>">
+                                                    <%= appointment.dataValues.status %>
+                                                </span>
+                                            </td>
+                                            <td><%= appointment.dataValues.count %></td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-info">No appointment data available for the selected period.</div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">New Patient Registrations</h6>
+                </div>
+                <div class="card-body">
+                    <% if (newPatients && newPatients.length > 0) { %>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% newPatients.forEach(patient => { %>
+                                        <tr>
+                                            <td><%= new Date(patient.dataValues.date).toLocaleDateString() %></td>
+                                            <td><%= patient.dataValues.count %></td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-info">No new patient registrations in the selected period.</div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card-footer bg-light d-flex justify-content-between">
+                <a href="/reports/patient-visits" class="btn btn-outline-secondary">New Report</a>
+                <div>
+                    <a href="/reports/export?reportType=patient-visits&format=csv&startDate=<%= startDate %>&endDate=<%= endDate %>" class="btn btn-outline-primary">Export as CSV</a>
+                    <a href="/reports/export?reportType=patient-visits&format=pdf&startDate=<%= startDate %>&endDate=<%= endDate %>" class="btn btn-primary">Export as PDF</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

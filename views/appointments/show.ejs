@@ -1,0 +1,125 @@
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Appointment Details</h5>
+            </div>
+            <div class="card-body">
+                <!-- Appointment Info -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Date & Time</h6>
+                        <p><%= new Date(appointment.appointmentDate).toLocaleDateString() %> at <%= appointment.appointmentTime %></p>
+                        
+                        <h6 class="fw-bold mt-3">Status</h6>
+                        <span class="badge <%= appointment.status === 'scheduled' ? 'bg-warning' : 
+                               appointment.status === 'completed' ? 'bg-success' : 
+                               appointment.status === 'cancelled' ? 'bg-danger' : 'bg-secondary' %> p-2">
+                            <%= appointment.status %>
+                        </span>
+                        
+                        <h6 class="fw-bold mt-3">Reason</h6>
+                        <p><%= appointment.reason || 'Not specified' %></p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Patient</h6>
+                        <p>
+                            <a href="/patients/<%= appointment.Patient.id %>">
+                                <%= appointment.Patient.firstName %> <%= appointment.Patient.lastName %>
+                            </a><br>
+                            ID: <%= appointment.Patient.patientId %><br>
+                            Contact: <%= appointment.Patient.contactNumber %><br>
+                            Email: <%= appointment.Patient.email || 'N/A' %>
+                        </p>
+                        
+                        <h6 class="fw-bold mt-3">Doctor</h6>
+                        <p>
+                            <a href="/doctors/<%= appointment.Doctor.id %>">
+                                Dr. <%= appointment.Doctor.firstName %> <%= appointment.Doctor.lastName %>
+                            </a><br>
+                            Specialization: <%= appointment.Doctor.specialization %><br>
+                            Contact: <%= appointment.Doctor.contactNumber %>
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Notes Section -->
+                <% if (appointment.notes) { %>
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Notes</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0"><%= appointment.notes %></p>
+                        </div>
+                    </div>
+                <% } %>
+
+                <!-- Status Update Form -->
+                <% if (appointment.status === 'scheduled') { %>
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Update Status</h6>
+                        </div>
+                        <div class="card-body">
+                            <form action="/appointments/<%= appointment.id %>/status?_method=PUT" method="POST" class="row g-3">
+                                <div class="col-md-8">
+                                    <select class="form-select" name="status" required>
+                                        <option value="completed">Completed</option>
+                                        <option value="cancelled">Cancelled</option>
+                                        <option value="no-show">No Show</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" class="btn btn-primary w-100">Update</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                <% } %>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <a href="/appointments" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                    <div>
+                        <a href="/appointments/<%= appointment.id %>/edit" class="btn btn-warning me-2">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="/medical-records/new?patientId=<%= appointment.Patient.id %>" class="btn btn-success me-2">
+                            <i class="fas fa-notes-medical"></i> Add Medical Record
+                        </a>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this appointment?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="/appointments/<%= appointment.id %>?_method=DELETE" method="POST">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

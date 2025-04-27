@@ -1,0 +1,81 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Cabin Management</h2>
+    <div>
+        <a href="/cabins/status/available" class="btn btn-success me-2">
+            <i class="fas fa-check-circle"></i> Available Cabins
+        </a>
+        <a href="/cabins/new" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Cabin
+        </a>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Cabin Number</th>
+                        <th>Type</th>
+                        <th>Floor</th>
+                        <th>Price/Day</th>
+                        <th>Status</th>
+                        <th>Patient</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (cabins && cabins.length > 0) { %>
+                        <% cabins.forEach(cabin => { %>
+                            <tr>
+                                <td><%= cabin.cabinNumber %></td>
+                                <td><%= cabin.cabinType.charAt(0).toUpperCase() + cabin.cabinType.slice(1) %></td>
+                                <td><%= cabin.floor %></td>
+                                <td>$<%= cabin.pricePerDay %></td>
+                                <td>
+                                    <span class="badge <%= cabin.status === 'available' ? 'bg-success' : 
+                                           cabin.status === 'occupied' ? 'bg-danger' : 'bg-warning' %>">
+                                        <%= cabin.status %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% if (cabin.Patient) { %>
+                                        <a href="/patients/<%= cabin.Patient.id %>">
+                                            <%= cabin.Patient.firstName %> <%= cabin.Patient.lastName %>
+                                        </a>
+                                    <% } else { %>
+                                        -
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="/cabins/<%= cabin.id %>" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="/cabins/<%= cabin.id %>/edit" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <% if (cabin.status === 'available') { %>
+                                            <a href="/cabins/<%= cabin.id %>/assign" class="btn btn-sm btn-success">
+                                                <i class="fas fa-user-plus"></i>
+                                            </a>
+                                        <% } else if (cabin.status === 'occupied') { %>
+                                            <a href="/cabins/<%= cabin.id %>/discharge" class="btn btn-sm btn-secondary">
+                                                <i class="fas fa-user-minus"></i>
+                                            </a>
+                                        <% } %>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="7" class="text-center">No cabins found</td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,51 @@
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Edit Cabin</h2>
+                <form action="/cabins/<%= cabin.id %>?_method=PUT" method="POST">
+                    <div class="mb-3">
+                        <label for="cabinNumber" class="form-label">Cabin Number</label>
+                        <input type="text" class="form-control" id="cabinNumber" name="cabinNumber" value="<%= cabin.cabinNumber %>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cabinType" class="form-label">Cabin Type</label>
+                        <select class="form-select" id="cabinType" name="cabinType" required>
+                            <option value="general" <%= cabin.cabinType === 'general' ? 'selected' : '' %>>General</option>
+                            <option value="private" <%= cabin.cabinType === 'private' ? 'selected' : '' %>>Private</option>
+                            <option value="icu" <%= cabin.cabinType === 'icu' ? 'selected' : '' %>>ICU</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="floor" class="form-label">Floor</label>
+                        <input type="number" class="form-control" id="floor" name="floor" value="<%= cabin.floor %>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="pricePerDay" class="form-label">Price Per Day</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="0.01" class="form-control" id="pricePerDay" name="pricePerDay" value="<%= cabin.pricePerDay %>" required>
+                        </div>
+                    </div>
+                    <% if (cabin.status !== 'occupied') { %>
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="available" <%= cabin.status === 'available' ? 'selected' : '' %>>Available</option>
+                                <option value="maintenance" <%= cabin.status === 'maintenance' ? 'selected' : '' %>>Maintenance</option>
+                            </select>
+                        </div>
+                    <% } %>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"><%= cabin.notes %></textarea>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/cabins/<%= cabin.id %>" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Update Cabin</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

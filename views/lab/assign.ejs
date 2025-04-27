@@ -1,0 +1,42 @@
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Assign Technician to Test</h2>
+                
+                <div class="alert alert-info mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Test:</strong> <%= labTest.testName %></p>
+                            <p><strong>Code:</strong> <%= labTest.testCode %></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Patient:</strong> <%= labTest.Patient.firstName %> <%= labTest.Patient.lastName %></p>
+                            <p><strong>Request Date:</strong> <%= new Date(labTest.requestDate).toLocaleDateString() %></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <form action="/lab/<%= labTest.id %>/assign?_method=PUT" method="POST">
+                    <div class="mb-3">
+                        <label for="technicianId" class="form-label">Select Technician</label>
+                        <select class="form-select" id="technicianId" name="technicianId" required>
+                            <option value="">Select a technician</option>
+                            <% technicians.forEach(tech => { %>
+                                <option value="<%= tech.id %>"><%= tech.firstName %> <%= tech.lastName %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="scheduledDate" class="form-label">Scheduled Date</label>
+                        <input type="date" class="form-control" id="scheduledDate" name="scheduledDate" value="<%= labTest.scheduledDate ? labTest.scheduledDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0] %>" required>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/lab/<%= labTest.id %>" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Assign Technician</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

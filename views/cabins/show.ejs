@@ -1,0 +1,143 @@
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>Cabin: <%= cabin.cabinNumber %></h2>
+            <div class="btn-group">
+                <a href="/cabins/<%= cabin.id %>/edit" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <% if (cabin.status === 'available') { %>
+                    <a href="/cabins/<%= cabin.id %>/assign" class="btn btn-success">
+                        <i class="fas fa-user-plus"></i> Assign Patient
+                    </a>
+                <% } else if (cabin.status === 'occupied') { %>
+                    <a href="/cabins/<%= cabin.id %>/discharge" class="btn btn-secondary">
+                        <i class="fas fa-user-minus"></i> Discharge Patient
+                    </a>
+                <% } %>
+                <% if (user.role === 'admin' && cabin.status !== 'occupied') { %>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cabin Information -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Cabin Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <span class="badge <%= cabin.status === 'available' ? 'bg-success' : 
+                           cabin.status === 'occupied' ? 'bg-danger' : 'bg-warning' %> float-end p-2">
+                        <%= cabin.status %>
+                    </span>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-5 fw-bold">Cabin Number:</div>
+                    <div class="col-md-7"><%= cabin.cabinNumber %></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-5 fw-bold">Type:</div>
+                    <div class="col-md-7"><%= cabin.cabinType.charAt(0).toUpperCase() + cabin.cabinType.slice(1) %></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-5 fw-bold">Floor:</div>
+                    <div class="col-md-7"><%= cabin.floor %></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-5 fw-bold">Price Per Day:</div>
+                    <div class="col-md-7">$<%= cabin.pricePerDay %></div>
+                </div>
+                <% if (cabin.notes) { %>
+                    <div class="row mb-2">
+                        <div class="col-md-5 fw-bold">Notes:</div>
+                        <div class="col-md-7"><%= cabin.notes %></div>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Information (if occupied) -->
+    <% if (cabin.status === 'occupied' && cabin.Patient) { %>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">Current Patient</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-md-5 fw-bold">Patient:</div>
+                        <div class="col-md-7">
+                            <a href="/patients/<%= cabin.Patient.id %>">
+                                <%= cabin.Patient.firstName %> <%= cabin.Patient.lastName %>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 fw-bold">Patient ID:</div>
+                        <div class="col-md-7"><%= cabin.Patient.patientId %></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 fw-bold">Contact:</div>
+                        <div class="col-md-7"><%= cabin.Patient.contactNumber %></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 fw-bold">Admission Date:</div>
+                        <div class="col-md-7"><%= new Date(cabin.admissionDate).toLocaleDateString() %></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 fw-bold">Duration:</div>
+                        <div class="col-md-7">
+                            <% 
+                                const admissionDate = new Date(cabin.admissionDate);
+                                const today = new Date();
+                                const diffTime = Math.abs(today - admissionDate);
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                            %>
+                            <%= diffDays %> day<%= diffDays !== 1 ? 's' : '' %>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 fw-bold">Estimated Cost:</div>
+                        <div class="col-md-7">$<%= (diffDays * cabin.pricePerDay).toFixed(2) %></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <% } %>
+
+    <!-- Action Buttons -->
+    <div class="col-md-12 mb-4">
+        <a href="/cabins" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Cabins
+        </a>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete cabin <%= cabin.cabinNumber %>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="/cabins/<%= cabin.id %>?_method=DELETE" method="POST">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

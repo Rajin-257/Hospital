@@ -1,0 +1,111 @@
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Create New Medical Record</h2>
+                
+                <% if (!patient) { %>
+                    <!-- Select Patient First -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Select Patient</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Patient ID</th>
+                                            <th>Name</th>
+                                            <th>Contact</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% patients.forEach(patient => { %>
+                                            <tr>
+                                                <td><%= patient.patientId %></td>
+                                                <td><%= patient.firstName %> <%= patient.lastName %></td>
+                                                <td><%= patient.contactNumber %></td>
+                                                <td>
+                                                    <a href="/medical-records/new?patientId=<%= patient.id %>" class="btn btn-sm btn-primary">
+                                                        Select
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <% }); %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <!-- Create Medical Record Form -->
+                    <form action="/medical-records" method="POST">
+                        <input type="hidden" name="patientId" value="<%= patient.id %>">
+                        
+                        <!-- Patient Information -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Patient Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Name:</strong> <%= patient.firstName %> <%= patient.lastName %></p>
+                                        <p><strong>Patient ID:</strong> <%= patient.patientId %></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Date of Birth:</strong> <%= new Date(patient.dateOfBirth).toLocaleDateString() %></p>
+                                        <p><strong>Blood Group:</strong> <%= patient.bloodGroup || 'Not specified' %></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Medical Information -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">Medical Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="doctorId" class="form-label">Attending Doctor</label>
+                                    <select class="form-select" id="doctorId" name="doctorId" required>
+                                        <option value="">Select a doctor</option>
+                                        <% doctors.forEach(doctor => { %>
+                                            <option value="<%= doctor.id %>">Dr. <%= doctor.firstName %> <%= doctor.lastName %> (<%= doctor.specialization %>)</option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="diagnosis" class="form-label">Diagnosis</label>
+                                    <textarea class="form-control" id="diagnosis" name="diagnosis" rows="4" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="prescription" class="form-label">Prescription</label>
+                                    <textarea class="form-control" id="prescription" name="prescription" rows="3"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="followUpDate" class="form-label">Follow-up Date (if needed)</label>
+                                    <input type="date" class="form-control" id="followUpDate" name="followUpDate">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notes Section -->
+                        <div class="mb-4">
+                            <label for="notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/medical-records" class="btn btn-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Medical Record</button>
+                        </div>
+                    </form>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
