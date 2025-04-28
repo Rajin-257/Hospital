@@ -13,7 +13,7 @@ const connectDB = async () => {
     console.log('Database connected successfully');
     
     // Sync database
-    await sequelize.sync({ alter: false });
+    await sequelize.sync({ alter: true });
     console.log('Database synchronized');
     
     setTimeout(async () => {
