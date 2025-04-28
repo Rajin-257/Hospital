@@ -1,8 +1,8 @@
 const { Sequelize } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
-const sequelize = new Sequelize('sql12775741', 'sql12775741', 'SqfShjftED', {
-  host: 'sql12.freesqldatabase.com',
+const sequelize = new Sequelize('technocracyinn_hospital', 'technocracyinn_hospital', 'Aburajin@1', {
+  host: '103.163.246.104',
   dialect: 'mysql',
   logging: false
 });
