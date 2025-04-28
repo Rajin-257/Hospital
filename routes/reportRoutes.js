@@ -1,23 +1,42 @@
 const express = require('express');
+const router = express.Router();
 const reportController = require('../controllers/reportController');
 const { protect, authorize } = require('../middleware/auth');
 
-const router = express.Router();
+// Reports dashboard - accessible to admin and staff
+router.get('/', protect, authorize('admin'), reportController.getReportsDashboard);
 
-// Protect all routes
-router.use(protect);
-router.use(authorize('admin'));
+// Patient statistics
+router.get('/patient-stats', protect, authorize('admin'), reportController.getPatientStats);
 
-router.get('/', protect, authorize('admin'), reportController.showReportDashboard);
-router.get('/export', protect, authorize('admin'), reportController.exportReport);
+// Doctor statistics
+router.get('/doctor-stats', protect, authorize('admin'), reportController.getDoctorStats);
 
-// Get patient visit report
-router.get('/patient-visits', reportController.getPatientVisitReport);
+// Appointment statistics
+router.get('/appointment-stats', protect, authorize('admin'), reportController.getAppointmentStats);
 
-// Get revenue report
-router.get('/revenue', reportController.getRevenueReport);
+// Test statistics
+router.get('/test-stats', protect, authorize('admin'), reportController.getTestStats);
 
-// Get lab test report
-router.get('/lab-tests', reportController.getLabTestReport);
+// Billing statistics
+router.get('/billing-stats', protect, authorize('admin'), reportController.getBillingStats);
 
-module.exports = router;
+// Cabin statistics
+router.get('/cabin-stats', protect, authorize('admin'), reportController.getCabinStats);
+
+// Get all billing records
+router.get('/all-billings', protect, authorize('admin'), reportController.getAllBillingRecords);
+
+// Get unbilled appointments
+router.get('/unbilled-appointments', protect, authorize('admin'), reportController.getUnbilledAppointments);
+
+// Get unbilled tests
+router.get('/unbilled-tests', protect, authorize('admin'), reportController.getUnbilledTests);
+
+// Billing report routes
+router.get('/billing/partial', protect, authorize('admin'), reportController.getPartialPaymentBills);
+router.get('/billing/paid', protect, authorize('admin'), reportController.getFullyPaidBills);
+router.get('/billing/due', protect, authorize('admin'), reportController.getDuePaymentBills);
+router.get('/billing/daily', protect, authorize('admin'), reportController.getDailyBillingReport);
+
+module.exports = router; 

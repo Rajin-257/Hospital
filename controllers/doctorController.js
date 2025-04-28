@@ -1,175 +1,91 @@
-// doctorController.js
 const Doctor = require('../models/Doctor');
-const User = require('../models/User');
-const Appointment = require('../models/Appointment');
-const Patient = require('../models/Patient');
-const { sequelize } = require('../config/db');
-
-// Show doctor creation form
-exports.showCreateDoctorForm = (req, res) => {
-  res.render('doctors/new', {
-    pageTitle: 'Add New Doctor'
-  });
-};
-
-// Create a new doctor
-exports.createDoctor = async (req, res) => {
-  const t = await sequelize.transaction();
-  
-  try {
-    const { 
-      username, password, email, 
-      firstName, lastName, specialization, qualification,
-      contactNumber, address, consultationFee 
-    } = req.body;
-    
-    // Create user account first
-    const user = await User.create({
-      username,
-      password,
-      email,
-      role: 'doctor'
-    }, { transaction: t });
-    
-    // Create doctor profile
-    const doctor = await Doctor.create({
-      userId: user.id,
-      firstName,
-      lastName,
-      specialization,
-      qualification,
-      contactNumber,
-      email,
-      address,
-      consultationFee,
-      isAvailable: true
-    }, { transaction: t });
-    
-    await t.commit();
-    
-    req.flash('success_msg', `Dr. ${firstName} ${lastName} added successfully`);
-    res.redirect('/doctors');
-  } catch (error) {
-    await t.rollback();
-    console.error(error);
-    req.flash('error_msg', 'Error adding doctor: ' + error.message);
-    res.redirect('/doctors/new');
-  }
-};
+const { Op } = require('sequelize');
 
 // Get all doctors
 exports.getAllDoctors = async (req, res) => {
   try {
-    const doctors = await Doctor.findAll({
-      include: [
-        {
-          model: User,
-          attributes: ['username', 'email', 'role', 'isActive']
-        }
-      ]
-    });
+    const doctors = await Doctor.findAll();
     
-    res.render('doctors/index', {
-      pageTitle: 'Doctors',
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.json(doctors);
+    }
+    
+    res.render('doctors', {
+      title: 'Doctors',
       doctors
     });
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error retrieving doctors list');
-    res.redirect('/dashboard');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// Get doctor by ID
-exports.getDoctorById = async (req, res) => {
+// Get single doctor
+exports.getDoctor = async (req, res) => {
   try {
-    const doctor = await Doctor.findByPk(req.params.id, {
-      include: [
-        {
-          model: User,
-          attributes: ['username', 'email', 'role', 'isActive']
-        }
-      ]
-    });
+    const doctor = await Doctor.findByPk(req.params.id);
     
     if (!doctor) {
-      req.flash('error_msg', 'Doctor not found');
-      return res.redirect('/doctors');
+      return res.status(404).json({ message: 'Doctor not found' });
     }
     
-    // Get upcoming appointments for this doctor
-    const today = new Date();
-    const appointments = await Appointment.findAll({
-      where: { 
-        doctorId: doctor.id,
-        appointmentDate: { [Op.gte]: today }
-      },
-      include: [{
-        model: Patient,
-        attributes: ['id', 'patientId', 'firstName', 'lastName', 'contactNumber']
-      }],
-      order: [['appointmentDate', 'ASC'], ['appointmentTime', 'ASC']],
-      limit: 5
-    });
-    
-    res.render('doctors/show', {
-      pageTitle: `Dr. ${doctor.firstName} ${doctor.lastName}`,
-      doctor,
-      appointments
-    });
+    res.json(doctor);
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error retrieving doctor details');
-    res.redirect('/doctors');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// Show edit doctor form
-exports.showEditDoctorForm = async (req, res) => {
+// Create new doctor
+exports.createDoctor = async (req, res) => {
   try {
-    const doctor = await Doctor.findByPk(req.params.id, {
-      include: [
-        {
-          model: User,
-          attributes: ['username', 'email']
-        }
-      ]
+    const { name, specialization, qualification, phone, email, consultationFee } = req.body;
+    
+    const doctor = await Doctor.create({
+      name,
+      specialization,
+      qualification,
+      phone,
+      email,
+      consultationFee
     });
     
-    if (!doctor) {
-      req.flash('error_msg', 'Doctor not found');
-      return res.redirect('/doctors');
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.status(201).json(doctor);
     }
     
-    res.render('doctors/edit', {
-      pageTitle: `Edit: Dr. ${doctor.firstName} ${doctor.lastName}`,
-      doctor
-    });
+    res.redirect('/doctors');
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error loading doctor data');
-    res.redirect('/doctors');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
 // Update doctor
 exports.updateDoctor = async (req, res) => {
   try {
-    const doctor = await Doctor.findByPk(req.params.id);
+    const { name, specialization, qualification, phone, email, consultationFee, isAvailable } = req.body;
+    
+    let doctor = await Doctor.findByPk(req.params.id);
     
     if (!doctor) {
-      req.flash('error_msg', 'Doctor not found');
-      return res.redirect('/doctors');
+      return res.status(404).json({ message: 'Doctor not found' });
     }
     
-    await doctor.update(req.body);
+    doctor = await doctor.update({
+      name,
+      specialization,
+      qualification,
+      phone,
+      email,
+      consultationFee,
+      isAvailable
+    });
     
-    req.flash('success_msg', 'Doctor information updated successfully');
-    res.redirect(`/doctors/${doctor.id}`);
+    res.json(doctor);
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error updating doctor: ' + error.message);
-    res.redirect(`/doctors/${req.params.id}/edit`);
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
@@ -179,132 +95,36 @@ exports.deleteDoctor = async (req, res) => {
     const doctor = await Doctor.findByPk(req.params.id);
     
     if (!doctor) {
-      req.flash('error_msg', 'Doctor not found');
-      return res.redirect('/doctors');
+      return res.status(404).json({ message: 'Doctor not found' });
     }
     
-    // Check for associated appointments
-    const appointments = await Appointment.findAll({
-      where: { doctorId: doctor.id }
-    });
+    await doctor.destroy();
+    
+    res.json({ message: 'Doctor removed' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
 
-    if (appointments.length > 0) {
-      req.flash('error_msg', 'Cannot delete doctor as they have associated appointments. Please delete or reassign the appointments first.');
-      return res.redirect(`/doctors/${doctor.id}`);
-    }
+// Search doctors
+exports.searchDoctors = async (req, res) => {
+  try {
+    const { term } = req.query;
     
-    const t = await sequelize.transaction();
-    
-    try {
-      // Delete doctor profile
-      await doctor.destroy({ transaction: t });
-      
-      // Delete associated user account
-      if (doctor.userId) {
-        await User.destroy({
-          where: { id: doctor.userId },
-          transaction: t
-        });
+    const doctors = await Doctor.findAll({
+      where: {
+        [Op.or]: [
+          { name: { [Op.like]: `%${term}%` } },
+          { specialization: { [Op.like]: `%${term}%` } },
+          { email: { [Op.like]: `%${term}%` } }
+        ]
       }
-      
-      await t.commit();
-      
-      req.flash('success_msg', 'Doctor deleted successfully');
-      res.redirect('/doctors');
-    } catch (error) {
-      await t.rollback();
-      throw error;
-    }
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error deleting doctor: ' + error.message);
-    res.redirect('/doctors');
-  }
-};
-
-// Get doctor's appointments
-exports.getDoctorAppointments = async (req, res) => {
-  try {
-    const doctorId = req.params.id;
-    const doctor = await Doctor.findByPk(doctorId);
-    
-    if (!doctor) {
-      req.flash('error_msg', 'Doctor not found');
-      return res.redirect('/doctors');
-    }
-    
-    const { date } = req.query;
-    
-    let whereClause = { doctorId };
-    
-    if (date) {
-      whereClause.appointmentDate = date;
-    }
-    
-    const appointments = await Appointment.findAll({
-      where: whereClause,
-      include: [
-        {
-          model: Patient,
-          attributes: ['id', 'patientId', 'firstName', 'lastName', 'contactNumber']
-        }
-      ],
-      order: [['appointmentDate', 'ASC'], ['appointmentTime', 'ASC']]
     });
     
-    res.render('doctors/appointments', {
-      pageTitle: `Appointments: Dr. ${doctor.firstName} ${doctor.lastName}`,
-      doctor,
-      appointments,
-      selectedDate: date
-    });
+    res.json(doctors);
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error retrieving appointments');
-    res.redirect('/doctors');
-  }
-};
-
-// Show availability update form
-exports.showAvailabilityForm = async (req, res) => {
-  try {
-    const doctor = await Doctor.findByPk(req.params.id);
-    
-    if (!doctor) {
-      req.flash('error_msg', 'Doctor not found');
-      return res.redirect('/doctors');
-    }
-    
-    res.render('doctors/availability', {
-      pageTitle: `Update Availability: Dr. ${doctor.firstName} ${doctor.lastName}`,
-      doctor
-    });
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error loading doctor data');
-    res.redirect('/doctors');
-  }
-};
-
-// Update doctor availability
-exports.updateAvailability = async (req, res) => {
-  try {
-    const doctor = await Doctor.findByPk(req.params.id);
-    
-    if (!doctor) {
-      req.flash('error_msg', 'Doctor not found');
-      return res.redirect('/doctors');
-    }
-    
-    const { isAvailable } = req.body;
-    
-    await doctor.update({ isAvailable });
-    
-    req.flash('success_msg', `Availability status updated to ${isAvailable ? 'Available' : 'Unavailable'}`);
-    res.redirect(`/doctors/${doctor.id}`);
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error updating availability: ' + error.message);
-    res.redirect(`/doctors/${req.params.id}`);
+    res.status(500).json({ message: 'Server Error' });
   }
 };

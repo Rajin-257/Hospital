@@ -1,0 +1,381 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container-fluid py-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-user-md me-2"></i>Doctors</h5>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDoctorModal">
+                <i class="fas fa-plus me-1"></i> Add Doctor
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="doctor-search" placeholder="Search doctors...">
+                    <button class="btn btn-outline-secondary" type="button" id="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Specialization</th>
+                            <th>Qualification</th>
+                            <th>Contact</th>
+                            <th>Fee</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="doctor-list">
+                        <% doctors.forEach(doctor => { %>
+                            <tr>
+                                <td>Dr. <%= doctor.name %></td>
+                                <td><%= doctor.specialization %></td>
+                                <td><%= doctor.qualification %></td>
+                                <td><%= doctor.phone %></td>
+                                <td>$<%= parseFloat(doctor.consultationFee).toFixed(2) %></td>
+                                <td>
+                                    <% if(doctor.isAvailable) { %>
+                                        <span class="badge bg-success">Available</span>
+                                    <% } else { %>
+                                        <span class="badge bg-danger">Unavailable</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-info view-doctor" data-id="<%= doctor.id %>">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-primary edit-doctor" data-id="<%= doctor.id %>">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger btn-delete" data-url="/doctors/<%= doctor.id %>" data-name="doctor">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Doctor Modal -->
+<div class="modal fade" id="addDoctorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-md me-2"></i>Add New Doctor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="doctor-form">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label required-label">Full Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-label">Specialization</label>
+                        <input type="text" class="form-control" name="specialization" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-label">Qualification</label>
+                        <input type="text" class="form-control" name="qualification" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Phone</label>
+                            <input type="tel" class="form-control" name="phone" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Email</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-label">Consultation Fee</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" name="consultationFee" min="0" step="0.01" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Save Doctor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Doctor Modal -->
+<div class="modal fade" id="editDoctorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-md me-2"></i>Edit Doctor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="edit-doctor-form">
+                <input type="hidden" id="edit-doctor-id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label required-label">Full Name</label>
+                        <input type="text" class="form-control" id="edit-doctor-name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-label">Specialization</label>
+                        <input type="text" class="form-control" id="edit-doctor-specialization" name="specialization" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-label">Qualification</label>
+                        <input type="text" class="form-control" id="edit-doctor-qualification" name="qualification" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Phone</label>
+                            <input type="tel" class="form-control" id="edit-doctor-phone" name="phone" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Email</label>
+                            <input type="email" class="form-control" id="edit-doctor-email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-label">Consultation Fee</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="edit-doctor-fee" name="consultationFee" min="0" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="edit-doctor-status" name="isAvailable">
+                            <option value="1">Available</option>
+                            <option value="0">Unavailable</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Update Doctor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Doctor Modal -->
+<div class="modal fade" id="viewDoctorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-md me-2"></i>Doctor Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <p class="mb-1 fw-bold">Name:</p>
+                    <p id="view-doctor-name"></p>
+                </div>
+                <div class="mb-3">
+                    <p class="mb-1 fw-bold">Specialization:</p>
+                    <p id="view-doctor-specialization"></p>
+                </div>
+                <div class="mb-3">
+                    <p class="mb-1 fw-bold">Qualification:</p>
+                    <p id="view-doctor-qualification"></p>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Phone:</p>
+                        <p id="view-doctor-phone"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Email:</p>
+                        <p id="view-doctor-email"></p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Consultation Fee:</p>
+                        <p id="view-doctor-fee"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Status:</p>
+                        <p id="view-doctor-status"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Initialize Select2
+        initializeSelects();
+        
+        // Doctor search
+        $('#search-btn').on('click', function() {
+            const searchTerm = $('#doctor-search').val();
+            if (searchTerm.length > 0) {
+                $.ajax({
+                    url: '/doctors/search',
+                    type: 'GET',
+                    data: { term: searchTerm },
+                    success: function(doctors) {
+                        let html = '';
+                        doctors.forEach(doctor => {
+                            const statusBadge = doctor.isAvailable ? 
+                                '<span class="badge bg-success">Available</span>' : 
+                                '<span class="badge bg-danger">Unavailable</span>';
+                            
+                            html += `
+                                <tr>
+                                    <td>Dr. ${doctor.name}</td>
+                                    <td>${doctor.specialization}</td>
+                                    <td>${doctor.qualification}</td>
+                                    <td>${doctor.phone}</td>
+                                    <td>$${parseFloat(doctor.consultationFee).toFixed(2)}</td>
+                                    <td>${statusBadge}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info view-doctor" data-id="${doctor.id}">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-primary edit-doctor" data-id="${doctor.id}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger btn-delete" data-url="/doctors/${doctor.id}" data-name="doctor">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        
+                        if (html === '') {
+                            html = '<tr><td colspan="7" class="text-center">No doctors found</td></tr>';
+                        }
+                        
+                        $('#doctor-list').html(html);
+                    },
+                    error: function(error) {
+                        showToast('Error searching doctors', 'error');
+                    }
+                });
+            } else {
+                window.location.reload();
+            }
+        });
+        
+        // Add doctor
+        $('#doctor-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            $.ajax({
+                url: '/doctors',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    $('#addDoctorModal').modal('hide');
+                    showToast('Doctor added successfully');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                },
+                error: function(error) {
+                    showToast('Error adding doctor: ' + (error.responseJSON?.message || 'Unknown error'), 'error');
+                }
+            });
+        });
+        
+        // Edit doctor - load data
+        $(document).on('click', '.edit-doctor', function() {
+            const doctorId = $(this).data('id');
+            
+            $.ajax({
+                url: `/doctors/${doctorId}`,
+                type: 'GET',
+                success: function(doctor) {
+                    $('#edit-doctor-id').val(doctor.id);
+                    $('#edit-doctor-name').val(doctor.name);
+                    $('#edit-doctor-specialization').val(doctor.specialization);
+                    $('#edit-doctor-qualification').val(doctor.qualification);
+                    $('#edit-doctor-phone').val(doctor.phone);
+                    $('#edit-doctor-email').val(doctor.email);
+                    $('#edit-doctor-fee').val(doctor.consultationFee);
+                    $('#edit-doctor-status').val(doctor.isAvailable ? '1' : '0').trigger('change');
+                    
+                    $('#editDoctorModal').modal('show');
+                },
+                error: function(error) {
+                    showToast('Error loading doctor data', 'error');
+                }
+            });
+        });
+        
+        // Edit doctor - submit form
+        $('#edit-doctor-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const doctorId = $('#edit-doctor-id').val();
+            
+            $.ajax({
+                url: `/doctors/${doctorId}`,
+                type: 'PUT',
+                data: $(this).serialize(),
+                success: function(response) {
+                    $('#editDoctorModal').modal('hide');
+                    showToast('Doctor updated successfully');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                },
+                error: function(error) {
+                    showToast('Error updating doctor: ' + (error.responseJSON?.message || 'Unknown error'), 'error');
+                }
+            });
+        });
+        
+        // View doctor
+        $(document).on('click', '.view-doctor', function() {
+            const doctorId = $(this).data('id');
+            
+            $.ajax({
+                url: `/doctors/${doctorId}`,
+                type: 'GET',
+                success: function(doctor) {
+                    $('#view-doctor-name').text('Dr. ' + doctor.name);
+                    $('#view-doctor-specialization').text(doctor.specialization);
+                    $('#view-doctor-qualification').text(doctor.qualification);
+                    $('#view-doctor-phone').text(doctor.phone);
+                    $('#view-doctor-email').text(doctor.email);
+                    $('#view-doctor-fee').text('$' + parseFloat(doctor.consultationFee).toFixed(2));
+                    
+                    const statusHtml = doctor.isAvailable ? 
+                        '<span class="badge bg-success">Available</span>' : 
+                        '<span class="badge bg-danger">Unavailable</span>';
+                    $('#view-doctor-status').html(statusHtml);
+                    
+                    $('#viewDoctorModal').modal('show');
+                },
+                error: function(error) {
+                    showToast('Error loading doctor data', 'error');
+                }
+            });
+        });
+    });
+</script>
+
+<%- include('partials/footer') %>

@@ -1,32 +1,28 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
-const Cabin = sequelize.define('Cabin', {
+const Test = sequelize.define('Test', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  cabinNumber: {
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  code: {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true
   },
-  cabinType: {
-    type: DataTypes.ENUM('VIP', 'Deluxe', 'Regular'),
-    allowNull: false
-  },
-  pricePerDay: {
+  price: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
-  },
-  status: {
-    type: DataTypes.ENUM('Available', 'Occupied', 'Maintenance'),
-    defaultValue: 'Available'
   },
   description: {
     type: DataTypes.TEXT
   }
 });
 
-module.exports = Cabin;
+module.exports = Test;

@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
-const User = require('./User');
 
 const Doctor = sequelize.define('Doctor', {
   id: {
@@ -8,18 +7,7 @@ const Doctor = sequelize.define('Doctor', {
     primaryKey: true,
     autoIncrement: true
   },
-  userId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: User,
-      key: 'id'
-    }
-  },
-  firstName: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  lastName: {
+  name: {
     type: DataTypes.STRING,
     allowNull: false
   },
@@ -31,7 +19,7 @@ const Doctor = sequelize.define('Doctor', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  contactNumber: {
+  phone: {
     type: DataTypes.STRING,
     allowNull: false
   },
@@ -42,10 +30,6 @@ const Doctor = sequelize.define('Doctor', {
       isEmail: true
     }
   },
-  address: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
   consultationFee: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
@@ -55,7 +39,5 @@ const Doctor = sequelize.define('Doctor', {
     defaultValue: true
   }
 });
-
-Doctor.belongsTo(User, { foreignKey: 'userId' });
 
 module.exports = Doctor;

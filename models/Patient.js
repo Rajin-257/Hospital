@@ -9,51 +9,34 @@ const Patient = sequelize.define('Patient', {
   },
   patientId: {
     type: DataTypes.STRING,
-    unique: true,
-    allowNull: false
+    allowNull: false,
+    unique: true
   },
-  firstName: {
+  name: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  lastName: {
-    type: DataTypes.STRING,
+  gender: {
+    type: DataTypes.ENUM('male', 'female', 'other'),
     allowNull: false
   },
   dateOfBirth: {
     type: DataTypes.DATEONLY,
     allowNull: false
   },
-  gender: {
-    type: DataTypes.ENUM('Male', 'Female', 'Other'),
-    allowNull: false
-  },
-  contactNumber: {
+  phone: {
     type: DataTypes.STRING,
     allowNull: false
   },
   email: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    validate: {
-      isEmail: true
-    }
+    type: DataTypes.STRING
   },
   address: {
-    type: DataTypes.TEXT,
-    allowNull: false
+    type: DataTypes.TEXT
   },
   bloodGroup: {
-    type: DataTypes.STRING,
+    type: DataTypes.ENUM('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'),
     allowNull: true
-  },
-  emergencyContact: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  registrationDate: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
   }
 });
 

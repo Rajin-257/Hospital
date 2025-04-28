@@ -1,195 +1,108 @@
-// patientController.js
 const Patient = require('../models/Patient');
-const Appointment = require('../models/Appointment');
-const MedicalRecord = require('../models/MedicalRecord');
-const Doctor = require('../models/Doctor');
-const Cabin = require('../models/Cabin');
 const { Op } = require('sequelize');
 
-// Generate a unique patient ID
-exports.showCreatePatientForm = async (req, res) => {
+// Get all patients
+exports.getAllPatients = async (req, res) => {
   try {
-    res.render('patients/new', {
-      pageTitle: 'New Patient Form'
+    const patients = await Patient.findAll();
+    
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.json(patients);
+    }
+    
+    res.render('patients', {
+      title: 'Patients',
+      patients
     });
   } catch (error) {
     console.error(error);
-    res.status(500).send('Server Error');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
-
-
-const generatePatientId = async () => {
-  const date = new Date();
-  const year = date.getFullYear().toString().slice(-2);
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  
-  // Get count of patients for this month to create sequential number
-  const count = await Patient.count({
-    where: {
-      createdAt: {
-        [Op.gte]: new Date(date.getFullYear(), date.getMonth(), 1)
-      }
+// Get single patient
+exports.getPatient = async (req, res) => {
+  try {
+    const patient = await Patient.findByPk(req.params.id);
+    
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' });
     }
-  });
-  
-  const sequence = (count + 1).toString().padStart(4, '0');
-  return `P${year}${month}${sequence}`;
+    
+    res.json(patient);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
 };
 
 // Create new patient
 exports.createPatient = async (req, res) => {
   try {
-    const { firstName, lastName, dateOfBirth, gender, contactNumber, email, address, bloodGroup, emergencyContact } = req.body;
+    const { name, gender, dateOfBirth, phone, email, address, bloodGroup } = req.body;
     
-    // Generate patient ID
-    const patientId = await generatePatientId();
+    // Generate patient ID (e.g., P + current year + 4-digit sequence)
+    const latestPatient = await Patient.findOne({
+      order: [['id', 'DESC']]
+    });
     
-    // Create patient
+    let sequence = 1;
+    if (latestPatient) {
+      const latestId = latestPatient.patientId;
+      const latestSequence = parseInt(latestId.substring(latestId.length - 4));
+      sequence = latestSequence + 1;
+    }
+    
+    const year = new Date().getFullYear().toString().substr(-2);
+    const patientId = `P${year}${sequence.toString().padStart(4, '0')}`;
+    
     const patient = await Patient.create({
       patientId,
-      firstName,
-      lastName,
-      dateOfBirth,
+      name,
       gender,
-      contactNumber,
+      dateOfBirth,
+      phone,
       email,
       address,
-      bloodGroup,
-      emergencyContact
+      bloodGroup
     });
     
-    req.flash('success_msg', `Patient ${firstName} ${lastName} created successfully`);
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.status(201).json(patient);
+    }
+    
     res.redirect('/patients');
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error creating patient: ' + error.message);
-    res.redirect('/patients/new');
-  }
-};
-
-// Show all patients
-exports.getAllPatients = async (req, res) => {
-  try {
-    const searchQuery = req.query.search || '';
-    const whereClause = {};
-    
-    if (searchQuery) {
-      whereClause[Op.or] = [
-        { firstName: { [Op.like]: `%${searchQuery}%` } },
-        { lastName: { [Op.like]: `%${searchQuery}%` } },
-        { patientId: { [Op.like]: `%${searchQuery}%` } },
-        { contactNumber: { [Op.like]: `%${searchQuery}%` } },
-        { email: { [Op.like]: `%${searchQuery}%` } }
-      ];
-    }
-    
-    const patients = await Patient.findAll({
-      where: whereClause,
-      order: [['createdAt', 'DESC']]
-    });
-    
-    res.render('patients/index', {
-      pageTitle: 'Patients',
-      patients,
-      searchQuery
-    });
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error retrieving patients');
-    res.redirect('/dashboard');
-  }
-};
-
-// Get patient by ID
-exports.getPatientById = async (req, res) => {
-  try {
-    const patient = await Patient.findByPk(req.params.id);
-    
-    if (!patient) {
-      req.flash('error_msg', 'Patient not found');
-      return res.redirect('/patients');
-    }
-    
-    // Get appointments for this patient
-    const appointments = await Appointment.findAll({
-      where: { patientId: patient.id },
-      include: [{
-        model: Doctor,
-        attributes: ['firstName', 'lastName', 'specialization']
-      }],
-      order: [['appointmentDate', 'DESC']]
-    });
-    
-    // Get cabin information for this patient
-    const cabin = await Cabin.findOne({
-      where: { 
-        patientId: patient.id,
-        status: 'occupied'
-      }
-    });
-    
-    // Get available cabins
-    const availableCabins = await Cabin.findAll({
-      where: { status: 'available' },
-      order: [['cabinType', 'ASC'], ['cabinNumber', 'ASC']]
-    });
-    
-    res.render('patients/show', {
-      pageTitle: `Patient: ${patient.firstName} ${patient.lastName}`,
-      patient,
-      appointments,
-      cabin,
-      availableCabins
-    });
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error retrieving patient details');
-    res.redirect('/patients');
-  }
-};
-
-// Show edit patient form
-exports.showEditPatientForm = async (req, res) => {
-  try {
-    const patient = await Patient.findByPk(req.params.id);
-    
-    if (!patient) {
-      req.flash('error_msg', 'Patient not found');
-      return res.redirect('/patients');
-    }
-    
-    res.render('patients/edit', {
-      pageTitle: `Edit Patient: ${patient.firstName} ${patient.lastName}`,
-      patient
-    });
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error retrieving patient data');
-    res.redirect('/patients');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
 // Update patient
 exports.updatePatient = async (req, res) => {
   try {
-    const patient = await Patient.findByPk(req.params.id);
+    const { name, gender, dateOfBirth, phone, email, address, bloodGroup } = req.body;
+    
+    let patient = await Patient.findByPk(req.params.id);
     
     if (!patient) {
-      req.flash('error_msg', 'Patient not found');
-      return res.redirect('/patients');
+      return res.status(404).json({ message: 'Patient not found' });
     }
     
-    // Update patient
-    await patient.update(req.body);
+    patient = await patient.update({
+      name,
+      gender,
+      dateOfBirth,
+      phone,
+      email,
+      address,
+      bloodGroup
+    });
     
-    req.flash('success_msg', 'Patient information updated successfully');
-    res.redirect(`/patients/${patient.id}`);
+    res.json(patient);
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error updating patient: ' + error.message);
-    res.redirect(`/patients/${req.params.id}/edit`);
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
@@ -199,165 +112,129 @@ exports.deletePatient = async (req, res) => {
     const patient = await Patient.findByPk(req.params.id);
     
     if (!patient) {
-      req.flash('error_msg', 'Patient not found');
-      return res.redirect('/patients');
-    }
-    
-    // Check for associated appointments
-    const appointments = await Appointment.findAll({
-      where: { patientId: patient.id }
-    });
-
-    if (appointments.length > 0) {
-      req.flash('error_msg', 'Cannot delete patient as they have associated appointments. Please delete the appointments first.');
-      return res.redirect(`/patients/${patient.id}`);
-    }
-    
-    // Check for associated medical records
-    const medicalRecords = await MedicalRecord.findAll({
-      where: { patientId: patient.id }
-    });
-
-    if (medicalRecords.length > 0) {
-      req.flash('error_msg', 'Cannot delete patient as they have associated medical records. Please delete the medical records first.');
-      return res.redirect(`/patients/${patient.id}`);
+      return res.status(404).json({ message: 'Patient not found' });
     }
     
     await patient.destroy();
     
-    req.flash('success_msg', 'Patient deleted successfully');
-    res.redirect('/patients');
+    res.json({ message: 'Patient removed' });
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error deleting patient: ' + error.message);
-    res.redirect('/patients');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// Show create appointment form
-exports.showCreateAppointmentForm = async (req, res) => {
+// Search patients
+exports.searchPatients = async (req, res) => {
   try {
-    const patient = await Patient.findByPk(req.params.id);
-    const doctors = await Doctor.findAll({ where: { isAvailable: true } });
+    const { term } = req.query;
     
-    if (!patient) {
-      req.flash('error_msg', 'Patient not found');
-      return res.redirect('/patients');
-    }
-    
-    res.render('appointments/new', {
-      pageTitle: `New Appointment for ${patient.firstName} ${patient.lastName}`,
-      patient,
-      doctors
-    });
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error loading appointment form');
-    res.redirect(`/patients/${req.params.id}`);
-  }
-};
-
-// Create appointment
-exports.createAppointment = async (req, res) => {
-  try {
-    const { patientId, doctorId, appointmentDate, appointmentTime, reason } = req.body;
-    
-    // Create appointment
-    const appointment = await Appointment.create({
-      patientId,
-      doctorId,
-      appointmentDate,
-      appointmentTime,
-      reason,
-      status: 'scheduled'
-    });
-    
-    req.flash('success_msg', 'Appointment scheduled successfully');
-    res.redirect(`/patients/${patientId}`);
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error scheduling appointment: ' + error.message);
-    res.redirect(`/patients/${req.body.patientId}/appointments/new`);
-  }
-};
-
-// Get patient's medical records
-exports.getPatientMedicalRecords = async (req, res) => {
-  try {
-    const patientId = req.params.id;
-    const patient = await Patient.findByPk(patientId);
-    
-    if (!patient) {
-      req.flash('error_msg', 'Patient not found');
-      return res.redirect('/patients');
-    }
-    
-    const medicalRecords = await MedicalRecord.findAll({
-      where: { patientId },
-      include: [{
-        model: Doctor,
-        attributes: ['firstName', 'lastName', 'specialization']
-      }],
-      order: [['visitDate', 'DESC']]
-    });
-    
-    res.render('medical-records/index', {
-      pageTitle: `Medical Records: ${patient.firstName} ${patient.lastName}`,
-      patient,
-      medicalRecords,
-      filters: {
-        patientId: patient.id
+    const patients = await Patient.findAll({
+      where: {
+        [Op.or]: [
+          { name: { [Op.like]: `%${term}%` } },
+          { patientId: { [Op.like]: `%${term}%` } },
+          { phone: { [Op.like]: `%${term}%` } },
+          { email: { [Op.like]: `%${term}%` } }
+        ]
       }
     });
+    
+    res.json(patients);
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error retrieving medical records');
-    res.redirect(`/patients/${req.params.id}`);
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// Show create medical record form
-exports.showCreateMedicalRecordForm = async (req, res) => {
+// Get patient dashboard
+exports.getPatientDashboard = async (req, res) => {
   try {
+    // Import required models
+    const TestRequest = require('../models/TestRequest');
+    const Appointment = require('../models/Appointment');
+    const CabinBooking = require('../models/CabinBooking');
+    const Billing = require('../models/Billing');
+    const Doctor = require('../models/Doctor');
+    const Cabin = require('../models/Cabin');
+    const Test = require('../models/Test');
+    
     const patient = await Patient.findByPk(req.params.id);
-    const doctors = await Doctor.findAll();
     
     if (!patient) {
-      req.flash('error_msg', 'Patient not found');
-      return res.redirect('/patients');
+      return res.status(404).render('error', {
+        title: 'Error',
+        message: 'Patient not found'
+      });
     }
     
-    res.render('medical-records/new', {
-      pageTitle: `New Medical Record: ${patient.firstName} ${patient.lastName}`,
+    // Fetch related data directly from models
+    const [tests, appointments, cabinBookings, invoices] = await Promise.all([
+      // Get test requests
+      TestRequest.findAll({
+        where: { PatientId: patient.id },
+        include: [{ model: Test }],
+        order: [['createdAt', 'DESC']]
+      }),
+      
+      // Get appointments
+      Appointment.findAll({
+        where: { PatientId: patient.id },
+        include: [{ model: Doctor }],
+        order: [['appointmentDate', 'DESC'], ['appointmentTime', 'ASC']]
+      }),
+      
+      // Get cabin bookings
+      CabinBooking.findAll({
+        where: { PatientId: patient.id },
+        include: [{ model: Cabin }],
+        order: [['createdAt', 'DESC']]
+      }),
+      
+      // Get invoices (billings)
+      Billing.findAll({
+        where: { PatientId: patient.id },
+        order: [['createdAt', 'DESC']]
+      })
+    ]);
+    
+    // Map the data to match the expected format in the template
+    const formattedAppointments = appointments.map(appointment => {
+      return {
+        id: appointment.id,
+        appointmentId: appointment.id, // Use ID if there's no specific appointmentId field
+        doctorName: appointment.Doctor ? appointment.Doctor.name : 'Unknown Doctor',
+        department: appointment.Doctor ? appointment.Doctor.department : 'Unknown',
+        appointmentDateTime: new Date(`${appointment.appointmentDate}T${appointment.appointmentTime}`),
+        status: appointment.status
+      };
+    });
+    
+    const formattedCabinBookings = cabinBookings.map(booking => {
+      return {
+        id: booking.id,
+        bookingId: booking.id, // Use ID if there's no specific bookingId field
+        cabinNumber: booking.Cabin ? booking.Cabin.cabinNumber : 'Unknown',
+        cabinType: booking.Cabin ? booking.Cabin.cabinType : 'Unknown',
+        checkInDate: booking.admissionDate,
+        checkOutDate: booking.dischargeDate,
+        status: booking.status
+      };
+    });
+    
+    res.render('patient-dashboard', {
+      title: `Patient Dashboard - ${patient.name}`,
       patient,
-      doctors
+      tests,
+      appointments: formattedAppointments,
+      cabinBookings: formattedCabinBookings,
+      invoices
     });
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error loading medical record form');
-    res.redirect(`/patients/${req.params.id}`);
-  }
-};
-
-// Create medical record
-exports.createMedicalRecord = async (req, res) => {
-  try {
-    const { patientId, doctorId, diagnosis, prescription, notes, followUpDate } = req.body;
-    
-    const medicalRecord = await MedicalRecord.create({
-      patientId,
-      doctorId,
-      diagnosis,
-      prescription,
-      notes,
-      followUpDate
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Server Error'
     });
-    
-    req.flash('success_msg', 'Medical record created successfully');
-    res.redirect(`/patients/${patientId}/medical-records`);
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error creating medical record: ' + error.message);
-    res.redirect(`/patients/${req.body.patientId}/medical-records/new`);
   }
 };

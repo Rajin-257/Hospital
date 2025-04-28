@@ -9,20 +9,6 @@ const Appointment = sequelize.define('Appointment', {
     primaryKey: true,
     autoIncrement: true
   },
-  patientId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Patient,
-      key: 'id'
-    }
-  },
-  doctorId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Doctor,
-      key: 'id'
-    }
-  },
   appointmentDate: {
     type: DataTypes.DATEONLY,
     allowNull: false
@@ -32,24 +18,20 @@ const Appointment = sequelize.define('Appointment', {
     allowNull: false
   },
   status: {
-    type: DataTypes.ENUM('scheduled', 'completed', 'cancelled', 'no-show'),
+    type: DataTypes.ENUM('scheduled', 'completed', 'cancelled'),
     defaultValue: 'scheduled'
   },
-  invoice_status: {
-    type: DataTypes.ENUM('pending', 'invoiced'),
-    defaultValue: 'pending'
+  billingStatus: {
+    type: DataTypes.ENUM('billed', 'not_billed'),
+    defaultValue: 'not_billed'
   },
-  reason: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  notes: {
-    type: DataTypes.TEXT,
-    allowNull: true
+  remarks: {
+    type: DataTypes.TEXT
   }
 });
 
-Appointment.belongsTo(Patient, { foreignKey: 'patientId' });
-Appointment.belongsTo(Doctor, { foreignKey: 'doctorId' });
+// Relationships
+Appointment.belongsTo(Patient);
+Appointment.belongsTo(Doctor);
 
 module.exports = Appointment;

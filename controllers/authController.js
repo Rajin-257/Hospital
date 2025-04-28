@@ -1,52 +1,45 @@
-// authController.js
-const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
 
-// JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
-
-// Show Login Form
-exports.showLoginForm = (req, res) => {
-  res.render('auth/login', {
-    pageTitle: 'Login',
-    layout: 'layouts/main'
-  });
-};
-
-// Show Register Form
-exports.showRegisterForm = (req, res) => {
-  res.render('auth/register', {
-    pageTitle: 'Register',
-    layout: 'layouts/main'
-  });
-};
-
-// Register a new user
+// Register user
 exports.register = async (req, res) => {
   try {
-    const { username, password, email, role } = req.body;
-    
+    const { username, email, password, role } = req.body;
+
     // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      req.flash('error_msg', 'User already exists');
-      return res.redirect('/register');
+    const userExists = await User.findOne({ where: { email } });
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists' });
     }
-    
+
     // Create new user
     const user = await User.create({
       username,
-      password,
       email,
-      role
+      password,
+      role: role || 'receptionist'
     });
-    
-    req.flash('success_msg', 'You are now registered and can log in');
-    res.redirect('/login');
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secretkey', {
+      expiresIn: '1d'
+    });
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error during registration: ' + error.message);
-    res.redirect('/register');
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
@@ -54,66 +47,70 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
-    
-    // Find user
+
+    // Check if user exists
     const user = await User.findOne({ where: { username } });
     if (!user) {
-      req.flash('error_msg', 'Invalid credentials');
-      return res.redirect('/login');
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
-    
-    // Check password
+
+    // Check if password matches
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      req.flash('error_msg', 'Invalid credentials');
-      return res.redirect('/login');
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
-    
-    // Store user in session
-    req.session.user = {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role
-    };
-    
-    res.redirect('/dashboard');
+
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(401).json({ message: 'Account is deactivated' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secretkey', {
+      expiresIn: '1d'
+    });
+
+    // Set token in cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+
+    // Render dashboard or redirect
+    res.redirect('/billing');
   } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error during login: ' + error.message);
-    res.redirect('/login');
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
 // Logout user
 exports.logout = (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.redirect('/dashboard');
-    }
-    res.redirect('/login');
-  });
+  res.clearCookie('token');
+  res.redirect('/login');
 };
 
 // Get current user
-exports.getCurrentUser = async (req, res) => {
+exports.getMe = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id, {
       attributes: { exclude: ['password'] }
     });
-    
+
     if (!user) {
-      req.flash('error_msg', 'User not found');
-      return res.redirect('/dashboard');
+      return res.status(404).json({ message: 'User not found' });
     }
-    
-    res.render('auth/profile', {
-      pageTitle: 'My Profile',
-      user
+
+    res.status(200).json({
+      success: true,
+      data: user
     });
   } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error retrieving profile');
-    res.redirect('/dashboard');
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };

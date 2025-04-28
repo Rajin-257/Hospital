@@ -1,244 +1,381 @@
-// reportController.js
-const { sequelize } = require('../config/db');
 const Patient = require('../models/Patient');
 const Appointment = require('../models/Appointment');
+const TestRequest = require('../models/TestRequest');
 const Billing = require('../models/Billing');
-const LabTest = require('../models/LabTest');
+const CabinBooking = require('../models/CabinBooking');
+const Doctor = require('../models/Doctor');
+const Test = require('../models/Test');
 const { Op } = require('sequelize');
 
-// Show report selection form
-exports.showReportDashboard = (req, res) => {
-  res.render('reports/dashboard', {
-    pageTitle: 'Reports Dashboard'
-  });
+// Get reports dashboard
+exports.getReportsDashboard = async (req, res) => {
+  try {
+    res.render('reports', {
+      title: 'Reports',
+      user: req.user
+    });
+  } catch (error) {
+    console.error('Error in getReportsDashboard:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to load reports dashboard'
+    });
+  }
 };
 
-// Get patient visit report
-exports.getPatientVisitReport = async (req, res) => {
+// Get patient statistics
+exports.getPatientStats = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const totalPatients = await Patient.count();
     
-    // If no dates provided, show form
-    if (!startDate || !endDate) {
-      return res.render('reports/patient-visits-form', {
-        pageTitle: 'Patient Visit Report'
-      });
-    }
+    // Get patients registered in the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999); // Set to end of day
+    const newPatients = await Patient.count({
+      where: {
+        createdAt: {
+          [Op.gte]: thirtyDaysAgo
+        }
+      }
+    });
     
-    // Get appointments within date range
+    res.json({
+      totalPatients,
+      newPatients
+    });
+  } catch (error) {
+    console.error('Error in getPatientStats:', error);
+    res.status(500).json({ message: 'Failed to fetch patient statistics' });
+  }
+};
+
+// Get doctor statistics
+exports.getDoctorStats = async (req, res) => {
+  try {
+    const totalDoctors = await Doctor.count();
+    
+    res.json({
+      totalDoctors
+    });
+  } catch (error) {
+    console.error('Error in getDoctorStats:', error);
+    res.status(500).json({ message: 'Failed to fetch doctor statistics' });
+  }
+};
+
+// Get appointment statistics
+exports.getAppointmentStats = async (req, res) => {
+  try {
+    const totalAppointments = await Appointment.count();
+    
+    const pendingAppointments = await Appointment.count({
+      where: {
+        status: {
+          [Op.in]: ['Scheduled', 'Confirmed']
+        },
+        billingStatus: 'not_billed'
+      }
+    });
+    
+    res.json({
+      totalAppointments,
+      pendingAppointments
+    });
+  } catch (error) {
+    console.error('Error in getAppointmentStats:', error);
+    res.status(500).json({ message: 'Failed to fetch appointment statistics' });
+  }
+};
+
+// Get test statistics
+exports.getTestStats = async (req, res) => {
+  try {
+    const totalTests = await TestRequest.count();
+    const pendingTests = await TestRequest.count({
+      where: {
+        billingStatus: 'not_billed'
+      }
+    });
+    
+    res.json({
+      totalTests,
+      pendingTests
+    });
+  } catch (error) {
+    console.error('Error in getTestStats:', error);
+    res.status(500).json({ message: 'Failed to fetch test statistics' });
+  }
+};
+
+// Get billing statistics
+exports.getBillingStats = async (req, res) => {
+  try {
+    const totalBillings = await Billing.count();
+    
+    // Calculate total revenue
+    const billings = await Billing.findAll({
+      attributes: ['totalAmount']
+    });
+    
+    const totalRevenue = billings.reduce((sum, bill) => sum + Number(bill.totalAmount), 0);
+    
+    res.json({
+      totalBillings,
+      totalRevenue
+    });
+  } catch (error) {
+    console.error('Error in getBillingStats:', error);
+    res.status(500).json({ message: 'Failed to fetch billing statistics' });
+  }
+};
+
+// Get cabin statistics
+exports.getCabinStats = async (req, res) => {
+  try {
+    const totalBookings = await CabinBooking.count();
+    const activeBookings = await CabinBooking.count({
+      where: {
+        status: 'Occupied'
+      }
+    });
+    
+    res.json({
+      totalBookings,
+      activeBookings
+    });
+  } catch (error) {
+    console.error('Error in getCabinStats:', error);
+    res.status(500).json({ message: 'Failed to fetch cabin statistics' });
+  }
+};
+
+// Get all billing records
+exports.getAllBillingRecords = async (req, res) => {
+  try {
+    const billings = await Billing.findAll({
+      include: [{ model: Patient }],
+      order: [['createdAt', 'DESC']]
+    });
+    
+    res.json(billings);
+  } catch (error) {
+    console.error('Error in getAllBillingRecords:', error);
+    res.status(500).json({ message: 'Failed to fetch billing records' });
+  }
+};
+
+// Get unbilled appointments
+exports.getUnbilledAppointments = async (req, res) => {
+  try {
     const appointments = await Appointment.findAll({
       where: {
-        appointmentDate: {
-          [Op.between]: [start, end]
-        }
+        billingStatus: 'not_billed'
       },
-      attributes: [
-        'status',
-        [sequelize.fn('DATE', sequelize.col('appointmentDate')), 'date'],
-        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+      include: [
+        { model: Patient },
+        { model: Doctor }
       ],
-      group: ['date', 'status'],
-      order: [[sequelize.fn('DATE', sequelize.col('appointmentDate')), 'ASC']]
+      order: [['appointmentDate', 'DESC'], ['appointmentTime', 'ASC']]
     });
     
-    // Get new patient registrations within date range
-    const newPatients = await Patient.findAll({
-      where: {
-        registrationDate: {
-          [Op.between]: [start, end]
-        }
-      },
-      attributes: [
-        [sequelize.fn('DATE', sequelize.col('registrationDate')), 'date'],
-        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
-      ],
-      group: ['date'],
-      order: [[sequelize.fn('DATE', sequelize.col('registrationDate')), 'ASC']]
-    });
-    
-    // Calculate totals
-    const totalAppointments = appointments.reduce((sum, item) => sum + parseInt(item.dataValues.count), 0);
-    const totalNewPatients = newPatients.reduce((sum, item) => sum + parseInt(item.dataValues.count), 0);
-    
-    res.render('reports/patient-visits', {
-      pageTitle: 'Patient Visit Report',
-      appointments,
-      newPatients,
-      totalAppointments,
-      totalNewPatients,
-      startDate,
-      endDate
-    });
+    res.json(appointments);
   } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error generating report: ' + error.message);
-    res.redirect('/reports');
+    console.error('Error in getUnbilledAppointments:', error);
+    res.status(500).json({ message: 'Failed to fetch unbilled appointments' });
   }
 };
 
-// Get revenue report
-exports.getRevenueReport = async (req, res) => {
+// Get unbilled tests
+exports.getUnbilledTests = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
-    
-    // If no dates provided, show form
-    if (!startDate || !endDate) {
-      return res.render('reports/revenue-form', {
-        pageTitle: 'Revenue Report'
-      });
-    }
-    
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999); // Set to end of day
-    
-    // Get billing data within date range
-    const billingData = await Billing.findAll({
+    const tests = await TestRequest.findAll({
       where: {
-        invoiceDate: {
-          [Op.between]: [start, end]
-        }
+        billingStatus: 'not_billed'
       },
-      attributes: [
-        [sequelize.fn('DATE', sequelize.col('invoiceDate')), 'date'],
-        [sequelize.fn('SUM', sequelize.col('totalAmount')), 'totalAmount'],
-        [sequelize.fn('SUM', sequelize.col('paidAmount')), 'paidAmount']
+      include: [
+        { model: Patient },
+        { model: Test }
       ],
-      group: ['date'],
-      order: [[sequelize.fn('DATE', sequelize.col('invoiceDate')), 'ASC']]
+      order: [['requestDate', 'DESC']]
     });
     
-    // Get revenue by payment method
-    const paymentMethodData = await Billing.findAll({
+    res.json(tests);
+  } catch (error) {
+    console.error('Error in getUnbilledTests:', error);
+    res.status(500).json({ message: 'Failed to fetch unbilled tests' });
+  }
+};
+
+// Get partial payment bills
+exports.getPartialPaymentBills = async (req, res) => {
+  try {
+    const billings = await Billing.findAll({
       where: {
-        invoiceDate: {
-          [Op.between]: [start, end]
+        dueAmount: {
+          [Op.gt]: 0
         },
-        paymentMethod: {
-          [Op.ne]: null
+        paidAmount: {
+          [Op.gt]: 0
         }
       },
-      attributes: [
-        'paymentMethod',
-        [sequelize.fn('SUM', sequelize.col('paidAmount')), 'amount']
-      ],
-      group: ['paymentMethod']
+      include: [{ model: Patient }],
+      order: [['createdAt', 'DESC']]
     });
     
-    // Calculate summary
-    const totalBilled = billingData.reduce((sum, item) => sum + parseFloat(item.dataValues.totalAmount), 0);
-    const totalCollected = billingData.reduce((sum, item) => sum + parseFloat(item.dataValues.paidAmount), 0);
-    
-    res.render('reports/revenue', {
-      pageTitle: 'Revenue Report',
-      billingData,
-      paymentMethodData,
-      summary: {
-        totalBilled,
-        totalCollected,
-        outstanding: totalBilled - totalCollected
-      },
-      startDate,
-      endDate
+    res.render('billing_reports', {
+      title: 'Partial Payment Bills',
+      user: req.user,
+      billings,
+      reportType: 'partial'
     });
   } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error generating revenue report: ' + error.message);
-    res.redirect('/reports');
+    console.error('Error in getPartialPaymentBills:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to fetch partial payment bills'
+    });
   }
 };
 
-// Get lab test report
-exports.getLabTestReport = async (req, res) => {
+// Get fully paid bills
+exports.getFullyPaidBills = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
-    
-    // If no dates provided, show form
-    if (!startDate || !endDate) {
-      return res.render('reports/lab-tests-form', {
-        pageTitle: 'Lab Test Report'
-      });
-    }
-    
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999); // Set to end of day
-    
-    // Get lab tests within date range
-    const labTests = await LabTest.findAll({
+    const billings = await Billing.findAll({
       where: {
-        requestDate: {
-          [Op.between]: [start, end]
-        }
+        dueAmount: 0
       },
-      attributes: [
-        'testName',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
-        [sequelize.fn('SUM', sequelize.col('price')), 'revenue']
-      ],
-      group: ['testName'],
-      order: [[sequelize.fn('COUNT', sequelize.col('id')), 'DESC']]
+      include: [{ model: Patient }],
+      order: [['createdAt', 'DESC']]
     });
     
-    // Get lab test status
-    const testStatus = await LabTest.findAll({
+    res.render('billing_reports', {
+      title: 'Fully Paid Bills',
+      user: req.user,
+      billings,
+      reportType: 'paid'
+    });
+  } catch (error) {
+    console.error('Error in getFullyPaidBills:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to fetch fully paid bills'
+    });
+  }
+};
+
+// Get due payment bills
+exports.getDuePaymentBills = async (req, res) => {
+  try {
+    const billings = await Billing.findAll({
       where: {
-        requestDate: {
-          [Op.between]: [start, end]
+        dueAmount: {
+          [Op.gt]: 0
         }
       },
-      attributes: [
-        'status',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
-      ],
-      group: ['status']
+      include: [{ model: Patient }],
+      order: [['createdAt', 'DESC']]
+    });
+    
+    res.render('billing_reports', {
+      title: 'Due Payment Bills',
+      user: req.user,
+      billings,
+      reportType: 'due'
+    });
+  } catch (error) {
+    console.error('Error in getDuePaymentBills:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to fetch due payment bills'
+    });
+  }
+};
+
+// Get daily billing report
+exports.getDailyBillingReport = async (req, res) => {
+  try {
+    const today = new Date();
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+    
+    const billings = await Billing.findAll({
+      where: {
+        createdAt: {
+          [Op.between]: [startOfDay, endOfDay]
+        }
+      },
+      include: [{ model: Patient }],
+      order: [['createdAt', 'DESC']]
     });
     
     // Calculate totals
-    const totalTests = labTests.reduce((sum, item) => sum + parseInt(item.dataValues.count), 0);
-    const totalRevenue = labTests.reduce((sum, item) => sum + parseFloat(item.dataValues.revenue), 0);
+    let totalAmount = 0;
+    let totalPaid = 0;
+    let totalDue = 0;
     
-    res.render('reports/lab-tests', {
-      pageTitle: 'Lab Test Report',
-      labTests,
-      testStatus,
+    billings.forEach(bill => {
+      totalAmount += Number(bill.totalAmount);
+      totalPaid += Number(bill.paidAmount);
+      totalDue += Number(bill.dueAmount);
+    });
+    
+    res.render('billing_reports', {
+      title: 'Daily Billing Report',
+      user: req.user,
+      billings,
+      reportType: 'daily',
       summary: {
-        totalTests,
-        totalRevenue
-      },
-      startDate,
-      endDate
+        totalAmount,
+        totalPaid,
+        totalDue,
+        billCount: billings.length
+      }
     });
   } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error generating lab test report: ' + error.message);
-    res.redirect('/reports');
+    console.error('Error in getDailyBillingReport:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to fetch daily billing report'
+    });
   }
 };
 
-// Export report to CSV or PDF
-exports.exportReport = async (req, res) => {
+// Generate monthly revenue report
+exports.getMonthlyRevenueReport = async (req, res) => {
   try {
-    const { reportType, format, startDate, endDate } = req.query;
+    const { year } = req.query;
+    const selectedYear = year || new Date().getFullYear();
     
-    if (!reportType || !format || !startDate || !endDate) {
-      req.flash('error_msg', 'Missing required parameters for report export');
-      return res.redirect('/reports');
-    }
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const startDate = new Date(selectedYear, i, 1);
+      const endDate = new Date(selectedYear, i + 1, 0);
+      return { startDate, endDate };
+    });
     
-    // Here you would generate the report data based on reportType
-    // and then format it as CSV or PDF
+    const monthlyRevenue = await Promise.all(
+      months.map(async ({ startDate, endDate }, index) => {
+        const billings = await Billing.findAll({
+          where: {
+            createdAt: {
+              [Op.between]: [startDate, endDate]
+            }
+          },
+          attributes: ['totalAmount']
+        });
+        
+        const revenue = billings.reduce((sum, bill) => sum + Number(bill.totalAmount), 0);
+        
+        return {
+          month: index + 1,
+          revenue
+        };
+      })
+    );
     
-    // For this example, we'll just send a success message
-    req.flash('success_msg', `${reportType} report exported as ${format.toUpperCase()} successfully`);
-    res.redirect('/reports');
+    res.json(monthlyRevenue);
   } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error exporting report: ' + error.message);
-    res.redirect('/reports');
+    console.error('Error in getMonthlyRevenueReport:', error);
+    res.status(500).json({ message: 'Failed to generate monthly revenue report' });
   }
-};
+}; 

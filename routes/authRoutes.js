@@ -1,25 +1,21 @@
 const express = require('express');
-const authController = require('../controllers/authController');
-const { protect } = require('../middleware/auth');
-
 const router = express.Router();
+const authController = require('../controllers/authController');
+const { protect, authorize } = require('../middleware/auth');
 
-// Login page
-router.get('/login', authController.showLoginForm);
+// Login and register pages
+router.get('/login', (req, res) => {
+  res.render('auth/login', { title: 'Login' });
+});
 
-// Register page
-router.get('/register', authController.showRegisterForm);
+router.get('/register', protect, authorize('admin'), (req, res) => {
+  res.render('auth/register', { title: 'Register User' });
+});
 
-// Register a new user
-router.post('/register', authController.register);
-
-// Login user
+// Authentication routes
+router.post('/register', protect, authorize('admin'), authController.register);
 router.post('/login', authController.login);
-
-// Logout user
 router.get('/logout', authController.logout);
-
-// Get current user profile
-router.get('/profile', protect, authController.getCurrentUser);
+router.get('/me', protect, authController.getMe);
 
 module.exports = router;

@@ -1,0 +1,323 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<style>
+    @media print {
+        .navbar, .btn, footer, .no-print {
+            display: none !important;
+        }
+        body {
+            background-color: white;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+            margin: 0;
+            padding: 0;
+        }
+        .print-invoice {
+            padding: 30px;
+            max-width: 100%;
+        }
+    }
+    
+    .print-invoice {
+        background-color: white;
+        color: #333;
+        padding: 40px;
+        max-width: 800px;
+        margin: 0 auto;
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    
+    .invoice-header {
+        border-bottom: 1px solid #f0f0f0;
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .invoice-title {
+        font-size: 28px;
+        color: #2c3e50;
+        margin-bottom: 5px;
+        font-weight: 300;
+    }
+    
+    .invoice-subtitle {
+        color: #7f8c8d;
+        font-weight: 300;
+        margin-bottom: 0;
+    }
+    
+    .invoice-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+    }
+    
+    .invoice-info-block {
+        flex: 1;
+    }
+    
+    .info-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #95a5a6;
+        margin-bottom: 5px;
+    }
+    
+    .info-value {
+        font-size: 16px;
+    }
+    
+    .section-title {
+        font-size: 14px;
+        text-transform: uppercase;
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-weight: 600;
+        letter-spacing: 1px;
+    }
+    
+    .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 25px;
+    }
+    
+    .invoice-table th {
+        background-color: #f9f9f9;
+        padding: 10px;
+        text-align: left;
+        font-weight: 500;
+        color: #2c3e50;
+        font-size: 14px;
+    }
+    
+    .invoice-table td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 14px;
+    }
+    
+    .text-right {
+        text-align: right;
+    }
+    
+    .invoice-total-section {
+        margin-top: 30px;
+        border-top: 1px solid #f0f0f0;
+        padding-top: 20px;
+    }
+    
+    .invoice-total {
+        width: 100%;
+        max-width: 300px;
+        margin-left: auto;
+    }
+    
+    .invoice-total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    
+    .invoice-total-label {
+        color: #7f8c8d;
+    }
+    
+    .invoice-total-value {
+        font-weight: 500;
+        text-align: right;
+        min-width: 100px;
+    }
+    
+    .invoice-grand-total {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #f0f0f0;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 30px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-paid {
+        background-color: #e8f5e9;
+        color: #388e3c;
+    }
+    
+    .status-partial {
+        background-color: #fff8e1;
+        color: #f57c00;
+    }
+    
+    .status-unpaid {
+        background-color: #ffebee;
+        color: #d32f2f;
+    }
+    
+    .invoice-footer {
+        margin-top: 50px;
+        text-align: center;
+        color: #95a5a6;
+        font-size: 12px;
+    }
+</style>
+
+<div class="container mb-4 no-print">
+    <div class="d-flex justify-content-end mt-4">
+        <button class="btn btn-outline-secondary me-2" onclick="window.print()">
+            <i class="fas fa-print me-1"></i> Print Invoice
+        </button>
+        <a href="/billing" class="btn btn-primary">
+            <i class="fas fa-arrow-left me-1"></i> Back
+        </a>
+    </div>
+</div>
+
+<% 
+const items = JSON.parse(billing.items);
+const appointments = items.filter(item => item.type === 'appointment');
+const cabins = items.filter(item => item.type === 'cabin');
+const tests = items.filter(item => item.type === 'test');
+%>
+
+<div class="print-invoice">
+    <div class="invoice-header">
+        <h1 class="invoice-title">Invoice</h1>
+        <p class="invoice-subtitle">Medical Services</p>
+    </div>
+    
+    <div class="invoice-info">
+        <div class="invoice-info-block">
+            <div class="info-label">Bill To</div>
+            <div class="info-value"><strong><%= billing.Patient.name %></strong></div>
+            <div class="info-value">Patient ID: <%= billing.Patient.patientId %></div>
+        </div>
+        
+        <div class="invoice-info-block">
+            <div class="info-label">Invoice Details</div>
+            <div class="info-value">Invoice #: <%= billing.billNumber %></div>
+            <div class="info-value">Date: <%= new Date(billing.billDate).toLocaleDateString() %></div>
+            <div class="info-value">
+                Status:
+                <% if (billing.status === 'paid') { %>
+                    <span class="status-badge status-paid">Paid</span>
+                <% } else if (billing.status === 'partial') { %>
+                    <span class="status-badge status-partial">Partial</span>
+                <% } else { %>
+                    <span class="status-badge status-unpaid">Unpaid</span>
+                <% } %>
+            </div>
+        </div>
+    </div>
+    
+    <% if (appointments.length > 0) { %>
+    <div class="section-title">Consultations</div>
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th>Doctor</th>
+                <th>Service</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% appointments.forEach(item => { %>
+                <tr>
+                    <td><%= item.name.replace('Consultation with Dr. ', 'Dr. ') %></td>
+                    <td>Medical Consultation</td>
+                    <td class="text-right">$<%= parseFloat(item.price).toFixed(2) %></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+    <% } %>
+    
+    <% if (cabins.length > 0) { %>
+    <div class="section-title">Accommodation</div>
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th>Room Details</th>
+                <th>Service Type</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% cabins.forEach(item => { %>
+                <tr>
+                    <td><%= item.name %></td>
+                    <td>Room Charges</td>
+                    <td class="text-right">$<%= parseFloat(item.price).toFixed(2) %></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+    <% } %>
+    
+    <% if (tests.length > 0) { %>
+    <div class="section-title">Laboratory Tests</div>
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th>Test</th>
+                <th>Test Code</th>
+                <th>Priority</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% tests.forEach(item => { %>
+                <tr>
+                    <td><%= item.name %></td>
+                    <td><%= item.code %></td>
+                    <td><%= item.priority %></td>
+                    <td class="text-right">$<%= parseFloat(item.price).toFixed(2) %></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+    <% } %>
+    
+    <div class="invoice-total-section">
+        <div class="invoice-total">
+            <div class="invoice-total-row">
+                <div class="invoice-total-label">Subtotal:</div>
+                <div class="invoice-total-value">$<%= parseFloat(billing.totalAmount).toFixed(2) %></div>
+            </div>
+            <div class="invoice-total-row">
+                <div class="invoice-total-label">Discount (<%= parseFloat(billing.discountPercentage).toFixed(2) %>%):</div>
+                <div class="invoice-total-value">$<%= parseFloat(billing.discountAmount).toFixed(2) %></div>
+            </div>
+            <div class="invoice-total-row invoice-grand-total">
+                <div class="invoice-total-label">Total:</div>
+                <div class="invoice-total-value">$<%= parseFloat(billing.netPayable).toFixed(2) %></div>
+            </div>
+            <div class="invoice-total-row">
+                <div class="invoice-total-label">Amount Paid:</div>
+                <div class="invoice-total-value">$<%= parseFloat(billing.paidAmount).toFixed(2) %></div>
+            </div>
+            <% if (parseFloat(billing.dueAmount) > 0) { %>
+            <div class="invoice-total-row invoice-grand-total">
+                <div class="invoice-total-label">Balance Due:</div>
+                <div class="invoice-total-value">$<%= parseFloat(billing.dueAmount).toFixed(2) %></div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+    
+    <div class="invoice-footer">
+        Thank you for choosing our services
+    </div>
+</div>
+
+<%- include('partials/footer') %>

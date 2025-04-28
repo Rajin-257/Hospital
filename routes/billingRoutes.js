@@ -1,34 +1,14 @@
 const express = require('express');
-const billingController = require('../controllers/billingController');
-const { protect, authorize } = require('../middleware/auth');
-
 const router = express.Router();
+const billingController = require('../controllers/billingController');
+const { protect } = require('../middleware/auth');
 
-// Protect all routes
-router.use(protect);
-
-// get Pages
-router.get('/new', authorize('admin', 'receptionist'), billingController.showCreateBillingForm);
-router.get('/:id/edit', authorize('admin', 'receptionist'), billingController.showEditBillingForm);
-// Print invoice route
-router.get('/:id/print', authorize('admin', 'receptionist', 'doctor'), billingController.printInvoice);
-
-// Create new billing
-router.post('/', authorize('admin', 'receptionist'), billingController.createBilling);
-
-// Get all billings
-router.get('/', authorize('admin', 'receptionist'), billingController.getAllBillings);
-
-// Get billing by ID
-router.get('/:id', authorize('admin', 'receptionist'), billingController.getBillingById);
-
-// Update billing
-router.put('/:id', authorize('admin', 'receptionist'), billingController.updateBilling);
-
-// Delete billing
-router.delete('/:id', authorize('admin'), billingController.deleteBilling);
-
-// Get patient's billings
-router.get('/patient/:patientId', authorize('admin', 'receptionist', 'doctor'), billingController.getPatientBillings);
+router.get('/', protect, billingController.renderBillingPage);
+router.post('/', protect, billingController.createBilling);
+router.get('/receipt/:id', protect, billingController.getBilling);
+router.get('/patient/:patientId', protect, billingController.getBillingsByPatient);
+router.get('/patient/:patientId/unbilled-appointments', protect, billingController.getUnbilledAppointments);
+router.put('/appointments/update-status', protect, billingController.updateAppointmentBillingStatus);
+router.put('/:id/payment', protect, billingController.processPayment);
 
 module.exports = router;

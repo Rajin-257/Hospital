@@ -1,0 +1,164 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container py-4">
+  <div class="row mb-4">
+    <div class="col">
+      <div class="d-flex justify-content-between align-items-center">
+        <h2>
+          <% if (reportType === 'partial') { %>
+            <i class="fas fa-wallet me-2 text-warning"></i>Partial Payment Bills
+          <% } else if (reportType === 'paid') { %>
+            <i class="fas fa-check-circle me-2 text-success"></i>Fully Paid Bills
+          <% } else if (reportType === 'due') { %>
+            <i class="fas fa-exclamation-circle me-2 text-danger"></i>Due Payment Bills
+          <% } else if (reportType === 'daily') { %>
+            <i class="fas fa-calendar-day me-2 text-primary"></i>Daily Billing Report
+            <small class="text-muted ms-2">(<%= new Date().toLocaleDateString() %>)</small>
+          <% } %>
+        </h2>
+        <div>
+          <button class="btn btn-outline-secondary" id="print-report">
+            <i class="fas fa-print me-1"></i> Print Report
+          </button>
+          <a href="/reports" class="btn btn-outline-primary ms-2">
+            <i class="fas fa-arrow-left me-1"></i> Back to Reports
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% if (reportType === 'daily' && summary) { %>
+  <div class="row mb-4">
+    <div class="col">
+      <div class="card bg-light">
+        <div class="card-body">
+          <h5 class="card-title">Today's Summary</h5>
+          <div class="row">
+            <div class="col-md-3">
+              <div class="mb-2">
+                <small class="text-muted">Total Bills</small>
+                <h4><%= summary.billCount %></h4>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-2">
+                <small class="text-muted">Total Amount</small>
+                <h4>₹<%= summary.totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-2">
+                <small class="text-muted">Total Paid</small>
+                <h4 class="text-success">₹<%= summary.totalPaid.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-2">
+                <small class="text-muted">Total Due</small>
+                <h4 class="text-danger">₹<%= summary.totalDue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Billing Records</h5>
+      <div>
+        <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search records...">
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover" id="billings-table">
+          <thead class="table-light">
+            <tr>
+              <th>Bill #</th>
+              <th>Date</th>
+              <th>Patient</th>
+              <th>Items</th>
+              <th>Sub Total</th>
+              <th>Discount</th>
+              <th>Total</th>
+              <th>Paid</th>
+              <th>Due</th>
+              <th class="no-print">Action</th>
+            </tr>
+          </thead>
+          <tbody id="billings-list">
+            <% if (billings && billings.length > 0) { %>
+              <% billings.forEach(bill => { %>
+                <tr>
+                  <td><strong>#<%= bill.billNumber %></strong></td>
+                  <td><%= new Date(bill.createdAt).toLocaleDateString() %></td>
+                  <td><%= bill.Patient.name %></td>
+                  <td><%= bill.items.length %></td>
+                  <td>₹<%= parseFloat(bill.subtotalAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                  <td>₹<%= parseFloat(bill.discountAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                  <td><strong>₹<%= parseFloat(bill.totalAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></strong></td>
+                  <td>₹<%= parseFloat(bill.paidAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                  <td class="<%= parseFloat(bill.dueAmount) > 0 ? 'text-danger' : '' %>">
+                    <%= parseFloat(bill.dueAmount) > 0 ? '₹' + parseFloat(bill.dueAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'Paid' %>
+                  </td>
+                  <td class="no-print">
+                    <a href="/billing/receipt/<%= bill.id %>" class="btn btn-sm btn-primary">
+                      <i class="fas fa-eye"></i> View
+                    </a>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="10" class="text-center">No billing records found</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    .card {
+      box-shadow: none !important;
+      border: 1px solid #ddd;
+    }
+    .container {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    document.getElementById('search-input').addEventListener('keyup', function() {
+      const searchValue = this.value.toLowerCase();
+      const rows = document.querySelectorAll('#billings-list tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchValue) ? '' : 'none';
+      });
+    });
+    
+    // Print functionality
+    document.getElementById('print-report').addEventListener('click', function() {
+      window.print();
+    });
+  });
+</script>
+
+<%- include('partials/footer') %> 

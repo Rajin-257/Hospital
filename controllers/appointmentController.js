@@ -1,238 +1,132 @@
-// appointmentController.js
 const Appointment = require('../models/Appointment');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const { Op } = require('sequelize');
 
-// Show all appointments
+// Get all appointments
 exports.getAllAppointments = async (req, res) => {
   try {
-    const { date, status } = req.query;
-    
-    let whereClause = {};
-    
-    if (date) {
-      whereClause.appointmentDate = date;
-    }
-    
-    if (status) {
-      whereClause.status = status;
-    }
-    
     const appointments = await Appointment.findAll({
-      where: whereClause,
       include: [
-        {
-          model: Patient,
-          attributes: ['id', 'patientId', 'firstName', 'lastName', 'contactNumber']
-        },
-        {
-          model: Doctor,
-          attributes: ['id', 'firstName', 'lastName', 'specialization']
-        }
+        { model: Patient },
+        { model: Doctor }
       ],
-      order: [
-        ['appointmentDate', 'ASC'], 
-        ['appointmentTime', 'ASC']
-      ]
+      order: [['appointmentDate', 'ASC'], ['appointmentTime', 'ASC']]
     });
     
-    res.render('appointments/index', {
-      pageTitle: 'Appointments',
-      appointments,
-      selectedDate: date,
-      selectedStatus: status
-    });
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error retrieving appointments');
-    res.redirect('/dashboard');
-  }
-};
-
-// Show create appointment form
-exports.showCreateAppointmentForm = async (req, res) => {
-  try {
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.json(appointments);
+    }
+    
+    // Fetch all patients and doctors for the appointment form
     const patients = await Patient.findAll({
-      order: [['firstName', 'ASC'], ['lastName', 'ASC']]
+      order: [['name', 'ASC']]
     });
     
     const doctors = await Doctor.findAll({
-      where: { isAvailable: true },
-      order: [['firstName', 'ASC'], ['lastName', 'ASC']]
+      order: [['name', 'ASC']]
     });
     
-    res.render('appointments/new', {
-      pageTitle: 'Schedule New Appointment',
+    res.render('appointments', {
+      title: 'Appointments',
+      appointments,
       patients,
       doctors
     });
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error loading appointment form');
-    res.redirect('/appointments');
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Get appointments by date
+exports.getAppointmentsByDate = async (req, res) => {
+  try {
+    const { date } = req.params;
+    
+    const appointments = await Appointment.findAll({
+      where: { appointmentDate: date },
+      include: [
+        { model: Patient },
+        { model: Doctor }
+      ],
+      order: [['appointmentTime', 'ASC']]
+    });
+    
+    res.json(appointments);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
 // Create new appointment
 exports.createAppointment = async (req, res) => {
   try {
-    const { patientId, doctorId, appointmentDate, appointmentTime, reason, notes } = req.body;
+    const { patientId, doctorId, appointmentDate, appointmentTime, remarks } = req.body;
     
-    // Check if the doctor is available at this time
+    // Check if the time slot is available for the doctor
     const existingAppointment = await Appointment.findOne({
       where: {
         doctorId,
         appointmentDate,
         appointmentTime,
-        status: 'scheduled'
+        status: {
+          [Op.ne]: 'cancelled'
+        }
       }
     });
     
     if (existingAppointment) {
-      req.flash('error_msg', 'Doctor already has an appointment at this time');
-      return res.redirect('/appointments/new');
+      return res.status(400).json({ message: 'This time slot is already booked for the selected doctor' });
     }
     
-    // Create appointment
     const appointment = await Appointment.create({
-      patientId,
-      doctorId,
+      PatientId: patientId,
+      DoctorId: doctorId,
       appointmentDate,
       appointmentTime,
-      reason,
-      notes,
-      status: 'scheduled'
+      remarks
     });
     
-    req.flash('success_msg', 'Appointment scheduled successfully');
-    res.redirect(`/appointments/${appointment.id}`);
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error scheduling appointment: ' + error.message);
-    res.redirect('/appointments/new');
-  }
-};
-
-// Get appointment by ID
-exports.getAppointmentById = async (req, res) => {
-  try {
-    const appointment = await Appointment.findByPk(req.params.id, {
+    const fullAppointment = await Appointment.findByPk(appointment.id, {
       include: [
-        {
-          model: Patient,
-          attributes: ['id', 'patientId', 'firstName', 'lastName', 'contactNumber', 'email']
-        },
-        {
-          model: Doctor,
-          attributes: ['id', 'firstName', 'lastName', 'specialization', 'contactNumber']
-        }
+        { model: Patient },
+        { model: Doctor }
       ]
     });
     
-    if (!appointment) {
-      req.flash('error_msg', 'Appointment not found');
-      return res.redirect('/appointments');
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.status(201).json(fullAppointment);
     }
     
-    res.render('appointments/show', {
-      pageTitle: 'Appointment Details',
-      appointment
-    });
+    res.redirect('/appointments');
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error retrieving appointment details');
-    res.redirect('/appointments');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// Show edit appointment form
-exports.showEditAppointmentForm = async (req, res) => {
+// Update appointment status
+exports.updateAppointmentStatus = async (req, res) => {
   try {
-    const appointment = await Appointment.findByPk(req.params.id, {
-      include: [
-        {
-          model: Patient,
-          attributes: ['id', 'patientId', 'firstName', 'lastName']
-        },
-        {
-          model: Doctor,
-          attributes: ['id', 'firstName', 'lastName', 'specialization']
-        }
-      ]
-    });
+    const { status, remarks } = req.body;
+    
+    let appointment = await Appointment.findByPk(req.params.id);
     
     if (!appointment) {
-      req.flash('error_msg', 'Appointment not found');
-      return res.redirect('/appointments');
+      return res.status(404).json({ message: 'Appointment not found' });
     }
     
-    const doctors = await Doctor.findAll({
-      where: { isAvailable: true },
-      order: [['firstName', 'ASC'], ['lastName', 'ASC']]
+    appointment = await appointment.update({
+      status,
+      remarks: remarks || appointment.remarks
     });
     
-    res.render('appointments/edit', {
-      pageTitle: 'Edit Appointment',
-      appointment,
-      doctors
-    });
+    res.json(appointment);
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error loading appointment data');
-    res.redirect('/appointments');
-  }
-};
-
-// Update appointment
-exports.updateAppointment = async (req, res) => {
-  try {
-    const appointment = await Appointment.findByPk(req.params.id);
-    
-    if (!appointment) {
-      req.flash('error_msg', 'Appointment not found');
-      return res.redirect('/appointments');
-    }
-    
-    const { doctorId, appointmentDate, appointmentTime, reason, notes, status } = req.body;
-    
-    // Check if the new time is available (if time or doctor is changed)
-    if ((doctorId !== appointment.doctorId || 
-         appointmentDate !== appointment.appointmentDate || 
-         appointmentTime !== appointment.appointmentTime) &&
-        status === 'scheduled') {
-      
-      const existingAppointment = await Appointment.findOne({
-        where: {
-          doctorId,
-          appointmentDate,
-          appointmentTime,
-          status: 'scheduled',
-          id: { [Op.ne]: appointment.id }
-        }
-      });
-      
-      if (existingAppointment) {
-        req.flash('error_msg', 'Doctor already has an appointment at this time');
-        return res.redirect(`/appointments/${appointment.id}/edit`);
-      }
-    }
-    
-    await appointment.update({
-      doctorId,
-      appointmentDate,
-      appointmentTime,
-      reason,
-      notes,
-      status
-    });
-    
-    req.flash('success_msg', 'Appointment updated successfully');
-    res.redirect(`/appointments/${appointment.id}`);
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error updating appointment: ' + error.message);
-    res.redirect(`/appointments/${req.params.id}/edit`);
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
@@ -242,96 +136,34 @@ exports.deleteAppointment = async (req, res) => {
     const appointment = await Appointment.findByPk(req.params.id);
     
     if (!appointment) {
-      req.flash('error_msg', 'Appointment not found');
-      return res.redirect('/appointments');
+      return res.status(404).json({ message: 'Appointment not found' });
     }
     
     await appointment.destroy();
     
-    req.flash('success_msg', 'Appointment deleted successfully');
-    res.redirect('/appointments');
+    res.json({ message: 'Appointment removed' });
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error deleting appointment: ' + error.message);
-    res.redirect('/appointments');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// Update appointment status
-exports.updateStatus = async (req, res) => {
+// Get appointments by patient
+exports.getAppointmentsByPatient = async (req, res) => {
   try {
-    const appointment = await Appointment.findByPk(req.params.id);
-    
-    if (!appointment) {
-      req.flash('error_msg', 'Appointment not found');
-      return res.redirect('/appointments');
-    }
-    
-    const { status, statusNotes } = req.body;
-    
-    // Prepare update data
-    const updateData = { status };
-    
-    // If status notes provided, append them to existing notes
-    if (statusNotes) {
-      const timestamp = new Date().toLocaleString();
-      const newNote = `[${timestamp}] Status changed to ${status}: ${statusNotes}`;
-      
-      // If there are existing notes, append to them, otherwise create new notes
-      if (appointment.notes) {
-        updateData.notes = `${appointment.notes}\n\n${newNote}`;
-      } else {
-        updateData.notes = newNote;
-      }
-    }
-    
-    await appointment.update(updateData);
-    
-    req.flash('success_msg', `Appointment marked as ${status}`);
-    
-    // Redirect back to the list instead of the detail page for better UX
-    if (req.headers.referer && req.headers.referer.includes('/appointments')) {
-      return res.redirect(req.headers.referer);
-    }
-    
-    res.redirect('/appointments');
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error updating appointment status: ' + error.message);
-    res.redirect(`/appointments/${req.params.id}`);
-  }
-};
-
-// Get today's appointments
-exports.getTodayAppointments = async (req, res) => {
-  try {
-    const today = new Date().toISOString().split('T')[0];
+    const { patientId } = req.params;
     
     const appointments = await Appointment.findAll({
-      where: {
-        appointmentDate: today
-      },
+      where: { PatientId: patientId },
       include: [
-        {
-          model: Patient,
-          attributes: ['id', 'patientId', 'firstName', 'lastName', 'contactNumber']
-        },
-        {
-          model: Doctor,
-          attributes: ['id', 'firstName', 'lastName', 'specialization']
-        }
+        { model: Doctor }
       ],
-      order: [['appointmentTime', 'ASC']]
+      order: [['appointmentDate', 'DESC'], ['appointmentTime', 'ASC']]
     });
     
-    res.render('appointments/today', {
-      pageTitle: 'Today\'s Appointments',
-      appointments,
-      date: today
-    });
+    res.json(appointments);
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error retrieving today\'s appointments');
-    res.redirect('/dashboard');
+    res.status(500).json({ message: 'Server Error' });
   }
 };

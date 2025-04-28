@@ -8,19 +8,12 @@ const Billing = sequelize.define('Billing', {
     primaryKey: true,
     autoIncrement: true
   },
-  patientId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Patient,
-      key: 'id'
-    }
-  },
-  invoiceNumber: {
+  billNumber: {
     type: DataTypes.STRING,
-    unique: true,
-    allowNull: false
+    allowNull: false,
+    unique: true
   },
-  invoiceDate: {
+  billDate: {
     type: DataTypes.DATEONLY,
     allowNull: false,
     defaultValue: DataTypes.NOW
@@ -29,50 +22,42 @@ const Billing = sequelize.define('Billing', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
   },
-  discount: {
+  discountPercentage: {
+    type: DataTypes.DECIMAL(5, 2),
+    defaultValue: 0
+  },
+  discountAmount: {
     type: DataTypes.DECIMAL(10, 2),
-    defaultValue: 0,
-    allowNull: false
+    defaultValue: 0
   },
-  discountType: {
-    type: DataTypes.ENUM('percentage', 'fixed'),
-    defaultValue: 'fixed',
-    allowNull: false
-  },
-  discountedAmount: {
+  netPayable: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
+  },
+  paymentMethod: {
+    type: DataTypes.ENUM('cash', 'card', 'insurance'),
+    allowNull: false,
+    defaultValue: 'cash'
   },
   paidAmount: {
     type: DataTypes.DECIMAL(10, 2),
     defaultValue: 0
   },
-  paymentStatus: {
-    type: DataTypes.ENUM('pending', 'partial', 'paid'),
-    defaultValue: 'pending'
+  dueAmount: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0
   },
-  paymentDate: {
-    type: DataTypes.DATEONLY,
-    allowNull: true
+  status: {
+    type: DataTypes.ENUM('paid', 'partial', 'due'),
+    defaultValue: 'due'
   },
-  paymentMethod: {
-    type: DataTypes.ENUM('cash', 'card', 'insurance', 'online'),
-    allowNull: true
-  },
-  insuranceDetails: {
-    type: DataTypes.JSON,
-    allowNull: true
-  },
-  services: {
+  items: {
     type: DataTypes.JSON,
     allowNull: false
-  },
-  notes: {
-    type: DataTypes.TEXT,
-    allowNull: true
   }
 });
 
-Billing.belongsTo(Patient, { foreignKey: 'patientId' });
+// Relationships
+Billing.belongsTo(Patient);
 
 module.exports = Billing;

@@ -1,136 +1,102 @@
-// cabinController.js
 const Cabin = require('../models/Cabin');
+const CabinBooking = require('../models/CabinBooking');
 const Patient = require('../models/Patient');
+const { Op } = require('sequelize');
 
-// Show create cabin form
-exports.showCreateCabinForm = (req, res) => {
-  res.render('cabins/new', {
-    pageTitle: 'Add New Cabin'
-  });
+// Get all cabins
+exports.getAllCabins = async (req, res) => {
+  try {
+    const cabins = await Cabin.findAll();
+    
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.json(cabins);
+    }
+    
+    res.render('cabins', {
+      title: 'Cabins',
+      cabins
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Get available cabins
+exports.getAvailableCabins = async (req, res) => {
+  try {
+    const cabins = await Cabin.findAll({
+      where: { status: 'Available' }
+    });
+    
+    res.json(cabins);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Get single cabin
+exports.getCabin = async (req, res) => {
+  try {
+    const cabin = await Cabin.findByPk(req.params.id);
+    
+    if (!cabin) {
+      return res.status(404).json({ message: 'Cabin not found' });
+    }
+    
+    res.json(cabin);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
 };
 
 // Create new cabin
 exports.createCabin = async (req, res) => {
   try {
-    const { 
-      cabinNumber, 
-      cabinType, 
-      floor, 
-      pricePerDay, 
-      notes 
-    } = req.body;
+    const { cabinNumber, cabinType, pricePerDay, description } = req.body;
     
     const cabin = await Cabin.create({
       cabinNumber,
       cabinType,
-      floor,
       pricePerDay,
-      status: 'available',
-      notes
+      description
     });
     
-    req.flash('success_msg', `Cabin ${cabinNumber} created successfully`);
-    res.redirect('/cabins');
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error creating cabin: ' + error.message);
-    res.redirect('/cabins/new');
-  }
-};
-
-// Get all cabins
-exports.getAllCabins = async (req, res) => {
-  try {
-    const cabins = await Cabin.findAll({
-      include: [
-        {
-          model: Patient,
-          attributes: ['id', 'patientId', 'firstName', 'lastName'],
-          required: false
-        }
-      ],
-      order: [['floor', 'ASC'], ['cabinNumber', 'ASC']]
-    });
-    
-    res.render('cabins/index', {
-      pageTitle: 'Cabins',
-      cabins
-    });
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error retrieving cabins');
-    res.redirect('/dashboard');
-  }
-};
-
-// Get cabin by ID
-exports.getCabinById = async (req, res) => {
-  try {
-    const cabin = await Cabin.findByPk(req.params.id, {
-      include: [
-        {
-          model: Patient,
-          attributes: ['id', 'patientId', 'firstName', 'lastName', 'contactNumber'],
-          required: false
-        }
-      ]
-    });
-    
-    if (!cabin) {
-      req.flash('error_msg', 'Cabin not found');
-      return res.redirect('/cabins');
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.status(201).json(cabin);
     }
     
-    res.render('cabins/show', {
-      pageTitle: `Cabin: ${cabin.cabinNumber}`,
-      cabin
-    });
+    res.redirect('/cabins');
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error retrieving cabin details');
-    res.redirect('/cabins');
-  }
-};
-
-// Show edit cabin form
-exports.showEditCabinForm = async (req, res) => {
-  try {
-    const cabin = await Cabin.findByPk(req.params.id);
-    
-    if (!cabin) {
-      req.flash('error_msg', 'Cabin not found');
-      return res.redirect('/cabins');
-    }
-    
-    res.render('cabins/edit', {
-      pageTitle: `Edit Cabin: ${cabin.cabinNumber}`,
-      cabin
-    });
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error loading cabin data');
-    res.redirect('/cabins');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
 // Update cabin
 exports.updateCabin = async (req, res) => {
   try {
-    const cabin = await Cabin.findByPk(req.params.id);
+    const { cabinType, pricePerDay, status, description } = req.body;
+    
+    let cabin = await Cabin.findByPk(req.params.id);
     
     if (!cabin) {
-      req.flash('error_msg', 'Cabin not found');
-      return res.redirect('/cabins');
+      return res.status(404).json({ message: 'Cabin not found' });
     }
     
-    await cabin.update(req.body);
+    cabin = await cabin.update({
+      cabinType,
+      pricePerDay,
+      status,
+      description
+    });
     
-    req.flash('success_msg', 'Cabin updated successfully');
-    res.redirect(`/cabins/${cabin.id}`);
+    res.json(cabin);
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error updating cabin: ' + error.message);
-    res.redirect(`/cabins/${req.params.id}/edit`);
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
@@ -140,216 +106,132 @@ exports.deleteCabin = async (req, res) => {
     const cabin = await Cabin.findByPk(req.params.id);
     
     if (!cabin) {
-      req.flash('error_msg', 'Cabin not found');
-      return res.redirect('/cabins');
-    }
-    
-    if (cabin.status === 'occupied') {
-      req.flash('error_msg', 'Cannot delete an occupied cabin');
-      return res.redirect(`/cabins/${cabin.id}`);
+      return res.status(404).json({ message: 'Cabin not found' });
     }
     
     await cabin.destroy();
     
-    req.flash('success_msg', 'Cabin deleted successfully');
-    res.redirect('/cabins');
+    res.json({ message: 'Cabin removed' });
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error deleting cabin: ' + error.message);
-    res.redirect('/cabins');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// Show assign patient form
-exports.showAssignPatientForm = async (req, res) => {
+// Create cabin booking
+exports.createCabinBooking = async (req, res) => {
   try {
-    const cabin = await Cabin.findByPk(req.params.id);
+    const { patientId, cabinId, admissionDate, expectedStay } = req.body;
     
+    // Get cabin details to set the dailyRate
+    const cabin = await Cabin.findByPk(cabinId);
     if (!cabin) {
-      req.flash('error_msg', 'Cabin not found');
-      return res.redirect('/cabins');
+      return res.status(404).json({ message: 'Cabin not found' });
     }
     
-    if (cabin.status !== 'available') {
-      req.flash('error_msg', 'Cabin is not available for assignment');
-      return res.redirect(`/cabins/${cabin.id}`);
-    }
-    
-    const patients = await Patient.findAll({
-      order: [['firstName', 'ASC'], ['lastName', 'ASC']]
+    // Create booking
+    const booking = await CabinBooking.create({
+      PatientId: patientId,
+      CabinId: cabinId,
+      admissionDate,
+      expectedStay,
+      dailyRate: cabin.pricePerDay,
+      status: 'active',
+      billingStatus: 'not_billed'
     });
     
-    res.render('cabins/assign', {
-      pageTitle: `Assign Patient to Cabin ${cabin.cabinNumber}`,
-      cabin,
-      patients
-    });
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error loading assignment form');
-    res.redirect('/cabins');
-  }
-};
-
-// Assign patient to cabin
-exports.assignPatient = async (req, res) => {
-  try {
-    const cabin = await Cabin.findByPk(req.params.id);
+    // Update cabin status to Occupied
+    await cabin.update({ status: 'Occupied' });
     
-    if (!cabin) {
-      req.flash('error_msg', 'Cabin not found');
-      return res.redirect('/cabins');
-    }
-    
-    const { patientId, admissionDate } = req.body;
-    
-    if (cabin.status !== 'available' && cabin.patientId !== patientId) {
-      req.flash('error_msg', 'Cabin is not available');
-      return res.redirect(`/cabins/${cabin.id}`);
-    }
-    
-    await cabin.update({
-      patientId,
-      admissionDate: admissionDate || new Date(),
-      dischargeDate: null,
-      status: 'occupied'
-    });
-    
-    req.flash('success_msg', 'Patient assigned to cabin successfully');
-    res.redirect(`/cabins/${cabin.id}`);
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error assigning patient: ' + error.message);
-    res.redirect(`/cabins/${req.params.id}/assign`);
-  }
-};
-
-// Show discharge form
-exports.showDischargeForm = async (req, res) => {
-  try {
-    const cabin = await Cabin.findByPk(req.params.id, {
+    const fullBooking = await CabinBooking.findByPk(booking.id, {
       include: [
-        {
-          model: Patient,
-          attributes: ['id', 'patientId', 'firstName', 'lastName'],
-          required: false
-        }
+        { model: Patient },
+        { model: Cabin }
       ]
     });
     
-    if (!cabin) {
-      req.flash('error_msg', 'Cabin not found');
-      return res.redirect('/cabins');
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.status(201).json(fullBooking);
     }
     
-    if (cabin.status !== 'occupied') {
-      req.flash('error_msg', 'This cabin has no patient to discharge');
-      return res.redirect(`/cabins/${cabin.id}`);
-    }
-    
-    res.render('cabins/discharge', {
-      pageTitle: `Discharge Patient from Cabin ${cabin.cabinNumber}`,
-      cabin
-    });
-  } catch (error) {
-    console.error(error);
-    req.flash('error_msg', 'Error loading discharge form');
     res.redirect('/cabins');
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// Discharge patient from cabin
-exports.dischargePatient = async (req, res) => {
+// Get cabin bookings by patient
+exports.getCabinBookingsByPatient = async (req, res) => {
   try {
-    const cabin = await Cabin.findByPk(req.params.id);
+    const { patientId } = req.params;
     
-    if (!cabin) {
-      req.flash('error_msg', 'Cabin not found');
-      return res.redirect('/cabins');
-    }
-    
-    if (cabin.status !== 'occupied') {
-      req.flash('error_msg', 'Cabin is not occupied');
-      return res.redirect(`/cabins/${cabin.id}`);
-    }
-    
-    const { dischargeDate } = req.body;
-    
-    await cabin.update({
-      dischargeDate: dischargeDate || new Date(),
-      status: 'available',
-      patientId: null
+    const bookings = await CabinBooking.findAll({
+      where: { 
+        PatientId: patientId 
+      },
+      include: [
+        { model: Cabin }
+      ],
+      order: [['admissionDate', 'DESC']]
     });
     
-    req.flash('success_msg', 'Patient discharged successfully');
-    res.redirect(`/cabins/${cabin.id}`);
+    res.json(bookings);
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error discharging patient: ' + error.message);
-    res.redirect(`/cabins/${req.params.id}/discharge`);
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// Get available cabins
-exports.getAvailableCabins = async (req, res) => {
+// Get unbilled cabin bookings by patient
+exports.getUnbilledCabinBookings = async (req, res) => {
   try {
-    const { cabinType } = req.query;
+    const { patientId } = req.params;
     
-    let whereClause = { status: 'available' };
-    
-    if (cabinType) {
-      whereClause.cabinType = cabinType;
-    }
-    
-    const cabins = await Cabin.findAll({
-      where: whereClause,
-      order: [['floor', 'ASC'], ['cabinNumber', 'ASC']]
+    const bookings = await CabinBooking.findAll({
+      where: { 
+        PatientId: patientId,
+        billingStatus: 'not_billed',
+        status: {
+          [Op.ne]: 'cancelled'
+        }
+      },
+      include: [
+        { model: Cabin }
+      ],
+      order: [['admissionDate', 'DESC']]
     });
     
-    res.render('cabins/available', {
-      pageTitle: 'Available Cabins',
-      cabins,
-      selectedType: cabinType
-    });
+    res.json(bookings);
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error retrieving available cabins');
-    res.redirect('/cabins');
+    res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// Assign patient to cabin from patient details page
-exports.assignPatientFromDetails = async (req, res) => {
+// Update cabin booking billing status
+exports.updateCabinBookingBillingStatus = async (req, res) => {
   try {
-    const { patientId, cabinId, admissionDate, notes } = req.body;
+    const { bookingIds } = req.body;
     
-    // Find the cabin
-    const cabin = await Cabin.findByPk(cabinId);
-    
-    if (!cabin) {
-      req.flash('error_msg', 'Cabin not found');
-      return res.redirect(`/patients/${patientId}`);
+    if (!bookingIds || !bookingIds.length) {
+      return res.status(400).json({ message: 'No bookings provided' });
     }
     
-    if (cabin.status !== 'available') {
-      req.flash('error_msg', 'Selected cabin is not available');
-      return res.redirect(`/patients/${patientId}`);
-    }
+    await CabinBooking.update(
+      { billingStatus: 'billed' },
+      { 
+        where: { 
+          id: { 
+            [Op.in]: bookingIds 
+          } 
+        } 
+      }
+    );
     
-    // Update cabin with patient info
-    await cabin.update({
-      patientId,
-      admissionDate,
-      notes: notes || cabin.notes,
-      status: 'occupied',
-      dischargeDate: null
-    });
-    
-    req.flash('success_msg', `Patient successfully assigned to cabin ${cabin.cabinNumber}`);
-    res.redirect(`/patients/${patientId}`);
+    res.json({ success: true });
   } catch (error) {
     console.error(error);
-    req.flash('error_msg', 'Error assigning cabin to patient: ' + error.message);
-    res.redirect(`/patients/${req.body.patientId}`);
+    res.status(500).json({ message: 'Server Error' });
   }
 };

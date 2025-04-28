@@ -1,0 +1,519 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container py-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h2><i class="fas fa-chart-line me-2"></i>Hospital Reports Dashboard</h2>
+      <p class="text-muted">View statistics and reports for hospital operations</p>
+    </div>
+  </div>
+
+  <!-- Entity Count Cards -->
+  <div class="row mb-4">
+    <!-- Patient Card -->
+    <div class="col-md-4 col-lg-3 mb-3">
+      <a href="/patients" class="text-decoration-none">
+        <div class="card h-100 shadow-sm hover-card">
+          <div class="card-body">
+            <h5 class="card-title text-primary">Patients</h5>
+            <div class="d-flex align-items-center mb-2">
+              <i class="fas fa-user-injured fa-2x text-primary me-3"></i>
+              <div>
+                <h3 id="totalPatients" class="mb-0">-</h3>
+                <small class="text-muted">Total Patients</small>
+              </div>
+            </div>
+            <div class="mt-2">
+              <span id="newPatients">-</span>
+              <small class="text-muted"> new in last 30 days</small>
+            </div>
+          </div>
+          <div class="card-footer bg-light text-center">
+            <small class="text-muted">Click to view all patients</small>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <!-- Doctor Card -->
+    <div class="col-md-4 col-lg-3 mb-3">
+      <a href="/doctors" class="text-decoration-none">
+        <div class="card h-100 shadow-sm hover-card">
+          <div class="card-body">
+            <h5 class="card-title text-secondary">Doctors</h5>
+            <div class="d-flex align-items-center mb-2">
+              <i class="fas fa-user-md fa-2x text-secondary me-3"></i>
+              <div>
+                <h3 id="totalDoctors" class="mb-0">-</h3>
+                <small class="text-muted">Total Doctors</small>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer bg-light text-center">
+            <small class="text-muted">Click to view all doctors</small>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <!-- Appointment Card -->
+    <div class="col-md-4 col-lg-3 mb-3">
+      <div class="card h-100 shadow-sm hover-card appointment-card">
+        <div class="card-body">
+          <h5 class="card-title text-danger">Appointments</h5>
+          <div class="d-flex align-items-center mb-2">
+            <i class="fas fa-calendar-check fa-2x text-danger me-3"></i>
+            <div>
+              <h3 id="totalAppointments" class="mb-0">-</h3>
+              <small class="text-muted">Total Appointments</small>
+            </div>
+          </div>
+          <div class="mt-2">
+            <span id="pendingAppointments">-</span>
+            <small class="text-muted"> Not Billed</small>
+          </div>
+        </div>
+        <div class="card-footer bg-light text-center">
+          <button class="btn btn-sm btn-outline-danger show-unbilled-appointments-btn">
+            <i class="fas fa-list-alt me-1"></i> Show Not Billed Appointments
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Billing Card -->
+    <div class="col-md-4 col-lg-3 mb-3">
+      <div class="card h-100 shadow-sm hover-card">
+        <div class="card-body">
+          <h5 class="card-title text-success">Billing</h5>
+          <div class="d-flex align-items-center mb-2">
+            <i class="fas fa-file-invoice-dollar fa-2x text-success me-3"></i>
+            <div>
+              <h3 id="totalBillings" class="mb-0">-</h3>
+              <small class="text-muted">Total Billings</small>
+            </div>
+          </div>
+          <div class="mt-2">
+            <span id="totalRevenue">-</span>
+            <small class="text-muted"> revenue</small>
+          </div>
+        </div>
+        <div class="card-footer bg-light text-center">
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-success dropdown-toggle" type="button" id="billingReportsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fas fa-file-alt me-1"></i> Billing Reports
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="billingReportsDropdown">
+              <li><a class="dropdown-item" href="/reports/billing/partial">Partial Payments</a></li>
+              <li><a class="dropdown-item" href="/reports/billing/paid">Fully Paid</a></li>
+              <li><a class="dropdown-item" href="/reports/billing/due">Due Payments</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/reports/billing/daily">Daily Billing Report</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Test Request Card -->
+    <div class="col-md-4 col-lg-3 mb-3">
+      <div class="card h-100 shadow-sm hover-card test-card">
+        <div class="card-body">
+          <h5 class="card-title text-info">Tests request</h5>
+          <div class="d-flex align-items-center mb-2">
+            <i class="fas fa-vial fa-2x text-info me-3"></i>
+            <div>
+              <h3 id="totalTests" class="mb-0">-</h3>
+              <small class="text-muted">Total Test Request</small>
+            </div>
+          </div>
+          <div class="mt-2">
+            <span id="pendingTests">-</span>
+            <small class="text-muted"> tests Not Billed</small>
+          </div>
+        </div>
+        <div class="card-footer bg-light text-center">
+          <button class="btn btn-sm btn-outline-info show-unbilled-tests-btn">
+            <i class="fas fa-list-alt me-1"></i> Show Not Billed Tests
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Cabin Card -->
+    <div class="col-md-4 col-lg-3 mb-3">
+      <a href="/cabins" class="text-decoration-none">
+        <div class="card h-100 shadow-sm hover-card">
+          <div class="card-body">
+            <h5 class="card-title text-warning">Cabins</h5>
+            <div class="d-flex align-items-center mb-2">
+              <i class="fas fa-bed fa-2x text-warning me-3"></i>
+              <div>
+                <h3 id="totalBookings" class="mb-0">-</h3>
+                <small class="text-muted">Total Bookings</small>
+              </div>
+            </div>
+            <div class="mt-2">
+              <span id="activeBookings">-</span>
+              <small class="text-muted"> cabins currently occupied</small>
+            </div>
+          </div>
+          <div class="card-footer bg-light text-center">
+            <small class="text-muted">Click to view all cabins</small>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Unbilled Appointments Section -->
+  <div class="card mt-4 d-none" id="unbilled-appointments-section">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Unbilled Appointments</h5>
+      <div>
+        <button class="btn btn-sm btn-outline-secondary me-2" id="print-appointments-btn">
+          <i class="fas fa-print me-1"></i> Print
+        </button>
+        <button class="btn btn-sm btn-outline-danger" id="close-appointments-btn">
+          <i class="fas fa-times me-1"></i> Close
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover" id="unbilled-appointments-table">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Patient</th>
+              <th>Doctor</th>
+              <th>Status</th>
+              <th>Fee</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="unbilled-appointments-list">
+            <!-- Unbilled appointments will be loaded here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unbilled Tests Section -->
+  <div class="card mt-4 d-none" id="unbilled-tests-section">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="fas fa-vial me-2"></i>Unbilled Test Requests</h5>
+      <div>
+        <button class="btn btn-sm btn-outline-secondary me-2" id="print-tests-btn">
+          <i class="fas fa-print me-1"></i> Print
+        </button>
+        <button class="btn btn-sm btn-outline-danger" id="close-tests-btn">
+          <i class="fas fa-times me-1"></i> Close
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover" id="unbilled-tests-table">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Patient</th>
+              <th>Test Name</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Fee</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="unbilled-tests-list">
+            <!-- Unbilled tests will be loaded here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom CSS for hover effect -->
+<style>
+  .hover-card {
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  }
+  .hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  }
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    .card {
+      box-shadow: none !important;
+      border: 1px solid #ddd;
+    }
+    .container {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+</style>
+
+<!-- JavaScript for handling the reports -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Fetch patient statistics
+    fetch('/reports/patient-stats')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('totalPatients').textContent = data.totalPatients;
+        document.getElementById('newPatients').textContent = data.newPatients;
+      })
+      .catch(error => console.error('Error fetching patient stats:', error));
+    
+    // Fetch doctor statistics
+    fetch('/reports/doctor-stats')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('totalDoctors').textContent = data.totalDoctors;
+      })
+      .catch(error => console.error('Error fetching doctor stats:', error));
+    
+    // Fetch appointment statistics
+    fetch('/reports/appointment-stats')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('totalAppointments').textContent = data.totalAppointments;
+        document.getElementById('pendingAppointments').textContent = data.pendingAppointments;
+      })
+      .catch(error => console.error('Error fetching appointment stats:', error));
+    
+    // Fetch test statistics
+    fetch('/reports/test-stats')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('totalTests').textContent = data.totalTests;
+        document.getElementById('pendingTests').textContent = data.pendingTests;
+      })
+      .catch(error => console.error('Error fetching test stats:', error));
+    
+    // Fetch billing statistics
+    fetch('/reports/billing-stats')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('totalBillings').textContent = data.totalBillings;
+        document.getElementById('totalRevenue').textContent = '₹' + data.totalRevenue.toLocaleString();
+      })
+      .catch(error => console.error('Error fetching billing stats:', error));
+    
+    // Fetch cabin statistics
+    fetch('/reports/cabin-stats')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('totalBookings').textContent = data.totalBookings;
+        document.getElementById('activeBookings').textContent = data.activeBookings;
+      })
+      .catch(error => console.error('Error fetching cabin stats:', error));
+
+    // Load all billing records
+    loadBillingRecords();
+
+    // Function to load all billing records
+    function loadBillingRecords() {
+      fetch('/reports/all-billings')
+        .then(response => response.json())
+        .then(data => {
+          $('#billing-list').empty();
+          
+          if (data.length > 0) {
+            data.forEach(bill => {
+              const date = new Date(bill.createdAt);
+              const formattedDate = date.toLocaleDateString();
+              
+              const subTotal = parseFloat(bill.subtotalAmount);
+              const discount = parseFloat(bill.discountAmount);
+              const total = parseFloat(bill.totalAmount);
+              const paid = parseFloat(bill.paidAmount);
+              const due = parseFloat(bill.dueAmount);
+              
+              const row = `
+                <tr>
+                  <td><strong>#${bill.billNumber}</strong></td>
+                  <td>${formattedDate}</td>
+                  <td>${bill.Patient.name}</td>
+                  <td>${bill.items.length}</td>
+                  <td>₹${subTotal.toFixed(2)}</td>
+                  <td>₹${discount.toFixed(2)}</td>
+                  <td><strong>₹${total.toFixed(2)}</strong></td>
+                  <td>₹${paid.toFixed(2)}</td>
+                  <td class="${due > 0 ? 'text-danger' : ''}">${due > 0 ? '₹' + due.toFixed(2) : 'Paid'}</td>
+                  <td>
+                    <a href="/billing/receipt/${bill.id}" class="btn btn-sm btn-primary">
+                      <i class="fas fa-eye"></i> View
+                    </a>
+                  </td>
+                </tr>
+              `;
+              
+              $('#billing-list').append(row);
+            });
+          } else {
+            $('#billing-list').html('<tr><td colspan="10" class="text-center">No billing records found</td></tr>');
+          }
+        })
+        .catch(error => {
+          console.error('Error loading billing records:', error);
+          $('#billing-list').html('<tr><td colspan="10" class="text-center text-danger">Error loading billing records</td></tr>');
+        });
+    }
+
+    // Show unbilled appointments
+    $('.show-unbilled-appointments-btn').on('click', function() {
+      $('#unbilled-appointments-section').removeClass('d-none');
+      loadUnbilledAppointments();
+    });
+
+    // Close unbilled appointments section
+    $('#close-appointments-btn').on('click', function() {
+      $('#unbilled-appointments-section').addClass('d-none');
+    });
+
+    // Show unbilled tests
+    $('.show-unbilled-tests-btn').on('click', function() {
+      $('#unbilled-tests-section').removeClass('d-none');
+      loadUnbilledTests();
+    });
+
+    // Close unbilled tests section
+    $('#close-tests-btn').on('click', function() {
+      $('#unbilled-tests-section').addClass('d-none');
+    });
+
+    // Print unbilled appointments
+    $('#print-appointments-btn').on('click', function() {
+      printSection('unbilled-appointments-section');
+    });
+
+    // Print unbilled tests
+    $('#print-tests-btn').on('click', function() {
+      printSection('unbilled-tests-section');
+    });
+
+    // Function to load unbilled appointments
+    function loadUnbilledAppointments() {
+      fetch('/reports/unbilled-appointments')
+        .then(response => response.json())
+        .then(data => {
+          $('#unbilled-appointments-list').empty();
+          
+          if (data.length > 0) {
+            data.forEach(appointment => {
+              const appointmentDate = new Date(appointment.appointmentDate);
+              const formattedDate = appointmentDate.toLocaleDateString();
+              const formattedTime = appointment.appointmentTime;
+              
+              const fee = parseFloat(appointment.Doctor.consultationFee || 0);
+              
+              const row = `
+                <tr>
+                  <td>${formattedDate}</td>
+                  <td>${formattedTime}</td>
+                  <td>${appointment.Patient.name}</td>
+                  <td>Dr. ${appointment.Doctor.name}</td>
+                  <td><span class="badge bg-warning">${appointment.status}</span></td>
+                  <td>₹${fee.toFixed(2)}</td>
+                  <td>
+                    <a href="/billing?patientId=${appointment.PatientId}" class="btn btn-sm btn-success">
+                      <i class="fas fa-file-invoice"></i> Bill Now
+                    </a>
+                  </td>
+                </tr>
+              `;
+              
+              $('#unbilled-appointments-list').append(row);
+            });
+          } else {
+            $('#unbilled-appointments-list').html('<tr><td colspan="7" class="text-center">No unbilled appointments found</td></tr>');
+          }
+        })
+        .catch(error => {
+          console.error('Error loading unbilled appointments:', error);
+          $('#unbilled-appointments-list').html('<tr><td colspan="7" class="text-center text-danger">Error loading unbilled appointments</td></tr>');
+        });
+    }
+
+    // Function to load unbilled tests
+    function loadUnbilledTests() {
+      fetch('/reports/unbilled-tests')
+        .then(response => response.json())
+        .then(data => {
+          $('#unbilled-tests-list').empty();
+          
+          if (data.length > 0) {
+            data.forEach(test => {
+              const requestDate = new Date(test.requestDate);
+              const formattedDate = requestDate.toLocaleDateString();
+              
+              const fee = parseFloat(test.Test.price || 0);
+              
+              const row = `
+                <tr>
+                  <td>${formattedDate}</td>
+                  <td>${test.Patient.name}</td>
+                  <td>${test.Test.name}</td>
+                  <td><span class="badge ${test.priority === 'Urgent' ? 'bg-danger' : 'bg-info'}">${test.priority}</span></td>
+                  <td><span class="badge bg-warning">${test.status}</span></td>
+                  <td>₹${fee.toFixed(2)}</td>
+                  <td>
+                    <a href="/billing?patientId=${test.PatientId}" class="btn btn-sm btn-success">
+                      <i class="fas fa-file-invoice"></i> Bill Now
+                    </a>
+                  </td>
+                </tr>
+              `;
+              
+              $('#unbilled-tests-list').append(row);
+            });
+          } else {
+            $('#unbilled-tests-list').html('<tr><td colspan="7" class="text-center">No unbilled test requests found</td></tr>');
+          }
+        })
+        .catch(error => {
+          console.error('Error loading unbilled tests:', error);
+          $('#unbilled-tests-list').html('<tr><td colspan="7" class="text-center text-danger">Error loading unbilled tests</td></tr>');
+        });
+    }
+
+    // Function to print a specific section
+    function printSection(sectionId) {
+      const printContents = document.getElementById(sectionId).innerHTML;
+      const originalContents = document.body.innerHTML;
+
+      document.body.innerHTML = `
+        <div class="container">
+          <div class="row mb-4">
+            <div class="col text-center">
+              <h2>Hospital Management System</h2>
+              <h4>${document.getElementById(sectionId).querySelector('.card-header h5').innerText}</h4>
+              <p class="text-muted">Generated on ${new Date().toLocaleString()}</p>
+            </div>
+          </div>
+          ${printContents}
+        </div>
+      `;
+
+      window.print();
+      document.body.innerHTML = originalContents;
+      
+      // Reattach event listeners after printing
+      document.addEventListener('DOMContentLoaded', function() {
+        location.reload();
+      });
+    }
+  });
+</script>
+
+<%- include('partials/footer') %> 

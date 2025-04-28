@@ -1,0 +1,316 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container-fluid py-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Appointments</h5>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAppointmentModal">
+                <i class="fas fa-plus me-1"></i> New Appointment
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <div class="input-group">
+                    <input type="date" class="form-control" id="appointment-date-filter" value="<%= new Date().toISOString().split('T')[0] %>">
+                    <button class="btn btn-outline-secondary" type="button" id="filter-btn">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appointment-list">
+                        <% appointments.forEach(appointment => { %>
+                            <tr>
+                                <td><%= appointment.Patient.name %> (<%= appointment.Patient.patientId %>)</td>
+                                <td>Dr. <%= appointment.Doctor.name %></td>
+                                <td><%= new Date(appointment.appointmentDate).toLocaleDateString() %></td>
+                                <td><%= appointment.appointmentTime.substring(0, 5) %></td>
+                                <td>
+                                    <% if(appointment.status === 'scheduled') { %>
+                                        <span class="badge bg-info">Scheduled</span>
+                                    <% } else if(appointment.status === 'completed') { %>
+                                        <span class="badge bg-success">Completed</span>
+                                    <% } else { %>
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-info view-appointment" data-id="<%= appointment.id %>">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    
+                                    <% if(appointment.status === 'scheduled') { %>
+                                        <button class="btn btn-sm btn-success update-status" data-id="<%= appointment.id %>" data-status="completed">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger update-status" data-id="<%= appointment.id %>" data-status="cancelled">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    <% } %>
+                                    
+                                    <button class="btn btn-sm btn-danger btn-delete" data-url="/appointments/<%= appointment.id %>" data-name="appointment">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Appointment Modal -->
+<div class="modal fade" id="addAppointmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-calendar-plus me-2"></i>New Appointment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="appointment-form">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Patient</label>
+                            <select class="form-select" name="patientId" required>
+                                <option value="">Select Patient</option>
+                                <% patients.forEach(patient => { %>
+                                    <option value="<%= patient.id %>"><%= patient.name %> (<%= patient.patientId %>)</option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Doctor</label>
+                            <select class="form-select" name="doctorId" required>
+                                <option value="">Select Doctor</option>
+                                <% doctors.forEach(doctor => { %>
+                                    <option value="<%= doctor.id %>">Dr. <%= doctor.name %> (<%= doctor.specialization %>)</option>
+                                <% }); %>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Date</label>
+                            <input type="date" class="form-control" name="appointmentDate" required min="<%= new Date().toISOString().split('T')[0] %>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Time</label>
+                            <input type="time" class="form-control" name="appointmentTime" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Remarks</label>
+                        <textarea class="form-control" name="remarks" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Schedule Appointment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Appointment Modal -->
+<div class="modal fade" id="viewAppointmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-calendar-check me-2"></i>Appointment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Patient:</p>
+                        <p id="view-appointment-patient"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Doctor:</p>
+                        <p id="view-appointment-doctor"></p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Date:</p>
+                        <p id="view-appointment-date"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Time:</p>
+                        <p id="view-appointment-time"></p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Status:</p>
+                        <p id="view-appointment-status"></p>
+                    </div>
+                </div>
+                <div>
+                    <p class="mb-1 fw-bold">Remarks:</p>
+                    <p id="view-appointment-remarks"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Initialize Select2
+        initializeSelects();
+        
+        // Filter appointments by date
+        $('#filter-btn').on('click', function() {
+            const date = $('#appointment-date-filter').val();
+            if (date) {
+                $.ajax({
+                    url: `/appointments/date/${date}`,
+                    type: 'GET',
+                    success: function(appointments) {
+                        let html = '';
+                        appointments.forEach(appointment => {
+                            let statusBadge = '';
+                            if (appointment.status === 'scheduled') {
+                                statusBadge = '<span class="badge bg-info">Scheduled</span>';
+                            } else if (appointment.status === 'completed') {
+                                statusBadge = '<span class="badge bg-success">Completed</span>';
+                            } else {
+                                statusBadge = '<span class="badge bg-danger">Cancelled</span>';
+                            }
+                            
+                            let actionButtons = `
+                                <button class="btn btn-sm btn-info view-appointment" data-id="${appointment.id}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            `;
+                            
+                            if (appointment.status === 'scheduled') {
+                                actionButtons += `
+                                    <button class="btn btn-sm btn-success update-status" data-id="${appointment.id}" data-status="completed">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger update-status" data-id="${appointment.id}" data-status="cancelled">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                `;
+                            }
+                            
+                            actionButtons += `
+                                <button class="btn btn-sm btn-danger btn-delete" data-url="/appointments/${appointment.id}" data-name="appointment">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            `;
+                            
+                            html += `
+                                <tr>
+                                    <td>${appointment.Patient.name} (${appointment.Patient.patientId})</td>
+                                    <td>Dr. ${appointment.Doctor.name}</td>
+                                    <td>${new Date(appointment.appointmentDate).toLocaleDateString()}</td>
+                                    <td>${appointment.appointmentTime.substring(0, 5)}</td>
+                                    <td>${statusBadge}</td>
+                                    <td>${actionButtons}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        if (html === '') {
+                            html = '<tr><td colspan="6" class="text-center">No appointments found for this date</td></tr>';
+                        }
+                        
+                        $('#appointment-list').html(html);
+                    },
+                    error: function(error) {
+                        showToast('Error fetching appointments', 'error');
+                    }
+                });
+            }
+        });
+        
+        // Add appointment
+        $('#appointment-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            $.ajax({
+                url: '/appointments',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    $('#addAppointmentModal').modal('hide');
+                    showToast('Appointment scheduled successfully');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                },
+                error: function(error) {
+                    showToast('Error: ' + (error.responseJSON?.message || 'Could not schedule appointment'), 'error');
+                }
+            });
+        });
+        
+        // Update appointment status
+        $(document).on('click', '.update-status', function() {
+            const appointmentId = $(this).data('id');
+            const status = $(this).data('status');
+            
+            $.ajax({
+                url: `/appointments/${appointmentId}/status`,
+                type: 'PUT',
+                data: { status },
+                success: function(response) {
+                    showToast(`Appointment marked as ${status}`);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                },
+                error: function(error) {
+                    showToast('Error updating appointment status', 'error');
+                }
+            });
+        });
+        
+        // View appointment
+        $(document).on('click', '.view-appointment', function() {
+            const appointmentId = $(this).data('id');
+            
+            // In a real application, you would fetch the appointment details
+            // For now, we'll use the data available in the page
+            const row = $(this).closest('tr');
+            const patient = row.find('td:eq(0)').text();
+            const doctor = row.find('td:eq(1)').text();
+            const date = row.find('td:eq(2)').text();
+            const time = row.find('td:eq(3)').text();
+            const status = row.find('td:eq(4)').html();
+            
+            $('#view-appointment-patient').text(patient);
+            $('#view-appointment-doctor').text(doctor);
+            $('#view-appointment-date').text(date);
+            $('#view-appointment-time').text(time);
+            $('#view-appointment-status').html(status);
+            $('#view-appointment-remarks').text('No remarks available'); // In a real app, fetch this from the server
+            
+            $('#viewAppointmentModal').modal('show');
+        });
+    });
+</script>
+
+<%- include('partials/footer') %>

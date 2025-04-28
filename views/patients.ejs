@@ -1,0 +1,446 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container-fluid py-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-user-injured me-2"></i>Patients</h5>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPatientModal">
+                <i class="fas fa-plus me-1"></i> Add Patient
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="patient-search" placeholder="Search patients...">
+                    <button class="btn btn-outline-secondary" type="button" id="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Gender</th>
+                            <th>Age</th>
+                            <th>Phone</th>
+                            <th>Blood Group</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patient-list">
+                        <% patients.forEach(patient => { %>
+                            <tr>
+                                <td><%= patient.patientId %></td>
+                                <td><%= patient.name %></td>
+                                <td><%= patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) %></td>
+                                <td>
+                                    <% 
+                                        const dob = new Date(patient.dateOfBirth);
+                                        const age = Math.floor((new Date() - dob) / (365.25 * 24 * 60 * 60 * 1000));
+                                    %>
+                                    <%= age %>
+                                </td>
+                                <td><%= patient.phone %></td>
+                                <td><%= patient.bloodGroup || '-' %></td>
+                                <td>
+                                    <a href="/patients/<%= patient.id %>/dashboard" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-primary edit-patient" data-id="<%= patient.id %>">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger btn-delete" data-url="/patients/<%= patient.id %>" data-name="patient">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Patient Modal -->
+<div class="modal fade" id="addPatientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Add New Patient</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="patient-form">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Full Name</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Gender</label>
+                            <select class="form-select" name="gender" required>
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Date of Birth</label>
+                            <input type="date" class="form-control" name="dateOfBirth" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Phone</label>
+                            <input type="tel" class="form-control" name="phone" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Blood Group</label>
+                            <select class="form-select" name="bloodGroup">
+                                <option value="">Select Blood Group</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" name="address" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Save Patient</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Patient Modal -->
+<div class="modal fade" id="editPatientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Edit Patient</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="edit-patient-form">
+                <input type="hidden" id="edit-patient-id" name="id">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Full Name</label>
+                            <input type="text" class="form-control" id="edit-patient-name" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Gender</label>
+                            <select class="form-select" id="edit-patient-gender" name="gender" required>
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="edit-patient-dob" name="dateOfBirth" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required-label">Phone</label>
+                            <input type="tel" class="form-control" id="edit-patient-phone" name="phone" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="edit-patient-email" name="email">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Blood Group</label>
+                            <select class="form-select" id="edit-patient-blood" name="bloodGroup">
+                                <option value="">Select Blood Group</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" id="edit-patient-address" name="address" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Update Patient</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Patient Modal -->
+<div class="modal fade" id="viewPatientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user me-2"></i>Patient Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Patient ID:</p>
+                        <p id="view-patient-id"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Name:</p>
+                        <p id="view-patient-name"></p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Gender:</p>
+                        <p id="view-patient-gender"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Date of Birth:</p>
+                        <p id="view-patient-dob"></p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Phone:</p>
+                        <p id="view-patient-phone"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Email:</p>
+                        <p id="view-patient-email"></p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Blood Group:</p>
+                        <p id="view-patient-blood"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Registration Date:</p>
+                        <p id="view-patient-created"></p>
+                    </div>
+                </div>
+                <div>
+                    <p class="mb-1 fw-bold">Address:</p>
+                    <p id="view-patient-address"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Initialize Select2
+        initializeSelects();
+        
+        // Reset form when modal is closed
+        $('#addPatientModal').on('hidden.bs.modal', function() {
+            $('#patient-form').trigger('reset');
+            // Reset any Select2 elements
+            $('#patient-form .form-select').val('').trigger('change');
+        });
+        
+        // Reinitialize Select2 when modal is shown
+        $('#addPatientModal').on('shown.bs.modal', function() {
+            $('#patient-form .form-select').each(function() {
+                $(this).select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    dropdownParent: $('#addPatientModal')
+                });
+            });
+        });
+        
+        // Patient search
+        $('#search-btn').on('click', function() {
+            const searchTerm = $('#patient-search').val();
+            if (searchTerm.length > 0) {
+                $.ajax({
+                    url: '/patients/search',
+                    type: 'GET',
+                    data: { term: searchTerm },
+                    success: function(patients) {
+                        let html = '';
+                        patients.forEach(patient => {
+                            const dob = new Date(patient.dateOfBirth);
+                            const age = Math.floor((new Date() - dob) / (365.25 * 24 * 60 * 60 * 1000));
+                            
+                            html += `
+                                <tr>
+                                    <td>${patient.patientId}</td>
+                                    <td>${patient.name}</td>
+                                    <td>${patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)}</td>
+                                    <td>${age}</td>
+                                    <td>${patient.phone}</td>
+                                    <td>${patient.bloodGroup || '-'}</td>
+                                    <td>
+                                        <a href="/patients/${patient.id}/dashboard" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-primary edit-patient" data-id="${patient.id}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger btn-delete" data-url="/patients/${patient.id}" data-name="patient">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        
+                        if (html === '') {
+                            html = '<tr><td colspan="7" class="text-center">No patients found</td></tr>';
+                        }
+                        
+                        $('#patient-list').html(html);
+                    },
+                    error: function(error) {
+                        showToast('Error searching patients', 'error');
+                    }
+                });
+            } else {
+                window.location.reload();
+            }
+        });
+        
+        // Add patient
+        $('#patient-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = $(this).serialize();
+            console.log('Submitting patient form data:', formData);
+            
+            $.ajax({
+                url: '/patients',
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    console.log('Patient created successfully:', response);
+                    $('#addPatientModal').modal('hide');
+                    showToast('Patient added successfully');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                },
+                error: function(error) {
+                    console.error('Error adding patient:', error);
+                    showToast('Error adding patient: ' + (error.responseJSON?.message || 'Unknown error'), 'error');
+                }
+            });
+        });
+        
+        // Edit patient - load data
+        $(document).on('click', '.edit-patient', function() {
+            const patientId = $(this).data('id');
+            
+            $.ajax({
+                url: `/patients/${patientId}`,
+                type: 'GET',
+                success: function(patient) {
+                    $('#edit-patient-id').val(patient.id);
+                    $('#edit-patient-name').val(patient.name);
+                    $('#edit-patient-gender').val(patient.gender).trigger('change');
+                    $('#edit-patient-dob').val(patient.dateOfBirth);
+                    $('#edit-patient-phone').val(patient.phone);
+                    $('#edit-patient-email').val(patient.email);
+                    $('#edit-patient-blood').val(patient.bloodGroup).trigger('change');
+                    $('#edit-patient-address').val(patient.address);
+                    
+                    $('#editPatientModal').modal('show');
+                },
+                error: function(error) {
+                    showToast('Error loading patient data', 'error');
+                }
+            });
+        });
+        
+        // Edit patient - submit form
+        $('#edit-patient-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const patientId = $('#edit-patient-id').val();
+            
+            $.ajax({
+                url: `/patients/${patientId}`,
+                type: 'PUT',
+                data: $(this).serialize(),
+                success: function(response) {
+                    $('#editPatientModal').modal('hide');
+                    showToast('Patient updated successfully');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                },
+                error: function(error) {
+                    showToast('Error updating patient: ' + (error.responseJSON?.message || 'Unknown error'), 'error');
+                }
+            });
+        });
+        
+        // View patient
+        $(document).on('click', '.view-patient', function() {
+            const patientId = $(this).data('id');
+            
+            $.ajax({
+                url: `/patients/${patientId}`,
+                type: 'GET',
+                success: function(patient) {
+                    $('#view-patient-id').text(patient.patientId);
+                    $('#view-patient-name').text(patient.name);
+                    $('#view-patient-gender').text(patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1));
+                    $('#view-patient-dob').text(new Date(patient.dateOfBirth).toLocaleDateString());
+                    $('#view-patient-phone').text(patient.phone);
+                    $('#view-patient-email').text(patient.email || '-');
+                    $('#view-patient-blood').text(patient.bloodGroup || '-');
+                    $('#view-patient-address').text(patient.address || '-');
+                    $('#view-patient-created').text(new Date(patient.createdAt).toLocaleDateString());
+                    
+                    $('#viewPatientModal').modal('show');
+                },
+                error: function(error) {
+                    showToast('Error loading patient data', 'error');
+                }
+            });
+        });
+    });
+</script>
+
+<%- include('partials/footer') %>
