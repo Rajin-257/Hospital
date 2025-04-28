@@ -1,8 +1,8 @@
 const { Sequelize } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
-const sequelize = new Sequelize('hospital_management', 'root', '', {
-  host: 'localhost',
+const sequelize = new Sequelize('bwkvtzzviot6zsuyrafd', 'u5hkm2xu1wcpkrik', 'pGBC5qW4HuUZlyPzywE0', {
+  host: 'bwkvtzzviot6zsuyrafd-mysql.services.clever-cloud.com',
   dialect: 'mysql',
   logging: false
 });
