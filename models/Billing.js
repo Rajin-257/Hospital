@@ -18,6 +18,10 @@ const Billing = sequelize.define('Billing', {
     allowNull: false,
     defaultValue: DataTypes.NOW
   },
+  billdelivaridate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
   totalAmount: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
@@ -48,7 +52,7 @@ const Billing = sequelize.define('Billing', {
     defaultValue: 0
   },
   status: {
-    type: DataTypes.ENUM('paid', 'partial', 'due'),
+    type: DataTypes.ENUM('paid', 'due'),
     defaultValue: 'due'
   },
   items: {

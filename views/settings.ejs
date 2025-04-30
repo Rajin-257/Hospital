@@ -1,0 +1,290 @@
+<%- include('./partials/header') %>
+<%- include('./partials/navbar') %>
+
+<div class="container my-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Hospital Settings</h5>
+                </div>
+                
+                <div class="card-body">
+                    <% if (message) { %>
+                        <div class="alert alert-success alert-dismissible fade show">
+                            <%= message %>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <% } %>
+                    
+                    <% if (error) { %>
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <%= error %>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <% } %>
+                    
+                    <!-- Tab navigation -->
+                    <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">
+                                <i class="fas fa-info-circle me-2"></i>General Settings
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="permissions-tab" data-bs-toggle="tab" data-bs-target="#permissions" type="button" role="tab" aria-controls="permissions" aria-selected="false">
+                                <i class="fas fa-lock me-2"></i>Feature Permissions
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <!-- Tab content -->
+                    <div class="tab-content" id="settingsTabsContent">
+                        <!-- General Settings Tab -->
+                        <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+                            <form action="/settings" method="POST" enctype="multipart/form-data">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="medical_name" class="form-label">Medical Facility Name *</label>
+                                        <input 
+                                            type="text" 
+                                            class="form-control" 
+                                            id="medical_name" 
+                                            name="medical_name" 
+                                            value="<%= settings.medical_name || '' %>" 
+                                            required
+                                        >
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="email" class="form-label">Email Address</label>
+                                        <input 
+                                            type="email" 
+                                            class="form-control" 
+                                            id="email" 
+                                            name="email" 
+                                            value="<%= settings.email || '' %>"
+                                        >
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="phone" class="form-label">Phone Number</label>
+                                        <input 
+                                            type="text" 
+                                            class="form-control" 
+                                            id="phone" 
+                                            name="phone" 
+                                            value="<%= settings.phone || '' %>"
+                                        >
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="favicon" class="form-label">Favicon</label>
+                                        <input 
+                                            type="file" 
+                                            class="form-control" 
+                                            id="favicon" 
+                                            name="favicon" 
+                                            accept=".ico,.png,.jpg,.jpeg,.svg"
+                                        >
+                                        <small class="text-muted">Recommended size: 32x32px or 64x64px. Max file size: 1MB</small>
+                                        
+                                        <% if (settings.favicon_path) { %>
+                                            <div class="mt-2">
+                                                <small>Current favicon:</small>
+                                                <img src="<%= settings.favicon_path %>" alt="Current Favicon" style="max-width: 32px; max-height: 32px;">
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="address" class="form-label">Address</label>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="address" 
+                                        name="address" 
+                                        rows="3"
+                                    ><%= settings.address || '' %></textarea>
+                                </div>
+                                
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Save Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Feature Permissions Tab -->
+                        <div class="tab-pane fade" id="permissions" role="tabpanel" aria-labelledby="permissions-tab">
+                            <div class="alert alert-primary mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Note:</strong> Admin users will always see all features regardless of permission settings. These settings only affect non-admin roles like receptionist.
+                            </div>
+                            
+                            <!-- Tab navigation for modules -->
+                            <ul class="nav nav-pills mb-3" id="modulesTabs" role="tablist">
+                                <% Object.keys(modules).forEach((moduleName, index) => { %>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link <%= index === 0 ? 'active' : '' %>" 
+                                                id="<%= moduleName.toLowerCase() %>-module-tab" 
+                                                data-bs-toggle="pill" 
+                                                data-bs-target="#<%= moduleName.toLowerCase() %>-module" 
+                                                type="button" role="tab" 
+                                                aria-controls="<%= moduleName.toLowerCase() %>-module" 
+                                                aria-selected="<%= index === 0 ? 'true' : 'false' %>">
+                                            <%= moduleName %>
+                                        </button>
+                                    </li>
+                                <% }); %>
+                            </ul>
+                            
+                            <!-- Tab content for modules -->
+                            <div class="tab-content" id="modulesTabsContent">
+                                <% Object.keys(modules).forEach((moduleName, index) => { %>
+                                    <div class="tab-pane fade <%= index === 0 ? 'show active' : '' %>" 
+                                         id="<%= moduleName.toLowerCase() %>-module" 
+                                         role="tabpanel" 
+                                         aria-labelledby="<%= moduleName.toLowerCase() %>-module-tab">
+                                        
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>Configure which features are visible to different user roles in the <%= moduleName %> module.
+                                        </div>
+                                        
+                                        <form id="<%= moduleName.toLowerCase() %>-permissions-form">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th width="40%">Feature</th>
+                                                            <th width="20%">Visibility</th>
+                                                            <th width="40%">Accessible By</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <% modules[moduleName].forEach(permission => { %>
+                                                            <tr data-permission-id="<%= permission.id %>">
+                                                                <td>
+                                                                    <strong><%= permission.featureName %></strong>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="form-check form-switch">
+                                                                        <input class="form-check-input permission-visibility" 
+                                                                               type="checkbox" 
+                                                                               id="visibility-<%= permission.id %>" 
+                                                                               <%= permission.isVisible ? 'checked' : '' %>>
+                                                                        <label class="form-check-label" for="visibility-<%= permission.id %>">
+                                                                            <%= permission.isVisible ? 'Visible' : 'Hidden' %>
+                                                                        </label>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <select class="form-select permission-roles" multiple>
+                                                                        <option value="admin" <%= permission.roles.includes('admin') ? 'selected' : '' %>>Admin</option>
+                                                                        <option value="receptionist" <%= permission.roles.includes('receptionist') ? 'selected' : '' %>>Receptionist</option>
+                                                                    </select>
+                                                                </td>
+                                                            </tr>
+                                                        <% }); %>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            
+                                            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+                                                <button type="submit" class="btn btn-primary save-permissions-btn" data-module="<%= moduleName %>">
+                                                    <i class="fas fa-save me-2"></i>Save Permissions
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feature Permissions Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle visibility label
+    document.querySelectorAll('.permission-visibility').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const label = this.nextElementSibling;
+            label.textContent = this.checked ? 'Visible' : 'Hidden';
+        });
+    });
+    
+    // Save permissions
+    document.querySelectorAll('.save-permissions-btn').forEach(button => {
+        button.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            const moduleName = this.dataset.module;
+            const permissionsForm = document.getElementById(`${moduleName.toLowerCase()}-permissions-form`);
+            const permissionRows = permissionsForm.querySelectorAll('tbody tr');
+            
+            const permissions = [];
+            
+            permissionRows.forEach(row => {
+                const id = row.dataset.permissionId;
+                const isVisible = row.querySelector('.permission-visibility').checked;
+                const rolesSelect = row.querySelector('.permission-roles');
+                const roles = Array.from(rolesSelect.selectedOptions).map(option => option.value);
+                
+                permissions.push({
+                    id,
+                    isVisible,
+                    roles
+                });
+            });
+            
+            try {
+                const response = await fetch('/settings/permissions', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ permissions })
+                });
+                
+                if (response.ok) {
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+                    alertDiv.innerHTML = `
+                        <i class="fas fa-check-circle me-2"></i>Permissions updated successfully
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    permissionsForm.prepend(alertDiv);
+                    
+                    // Auto dismiss after 3 seconds
+                    setTimeout(() => {
+                        alertDiv.classList.remove('show');
+                        setTimeout(() => alertDiv.remove(), 150);
+                    }, 3000);
+                } else {
+                    throw new Error('Failed to update permissions');
+                }
+            } catch (error) {
+                console.error('Error saving permissions:', error);
+                
+                // Show error message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-exclamation-circle me-2"></i>Failed to update permissions
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                permissionsForm.prepend(alertDiv);
+            }
+        });
+    });
+});
+</script>
+
+<%- include('./partials/footer') %> 

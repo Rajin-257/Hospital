@@ -1,11 +1,16 @@
 const { Sequelize } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
-const sequelize = new Sequelize('technocracyinn_hospital', 'technocracyinn_hospital', 'Aburajin@1', {
-  host: '103.163.246.104',
-  dialect: 'mysql',
-  logging: false
-});
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'hospital_management',
+  process.env.DB_USER || 'root',
+  process.env.DB_PASSWORD || '',
+  {
+    host: process.env.DB_HOST || 'localhost',
+    dialect: process.env.DB_DIALECT || 'mysql',
+    logging: false
+  }
+);
 
 const connectDB = async () => {
   try {
@@ -29,7 +34,7 @@ const connectDB = async () => {
           await User.create({
             username: 'admin',
             email: 'admin@hospital.com',
-            password: '$2a$12$m4lbAjaY35D0D6SbQ5hb3.IK9yze5OFACt26VoSkmWeSNZ7HBkLTi', // Will be hashed by the model hooks
+            password: '$2a$12$eQCRiWU9YfWIHYG/F7oHr.U5dKnnt3zJHZ59kofvg2.5.JfdrPCmO', // Will be hashed by the model hooks
             role: 'admin',
             isActive: true
           });

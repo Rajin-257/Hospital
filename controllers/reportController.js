@@ -10,9 +10,42 @@ const { Op } = require('sequelize');
 // Get reports dashboard
 exports.getReportsDashboard = async (req, res) => {
   try {
+    // Get feature permissions from request
+    const featurePermissions = req.featurePermissions || {};
+    
+    // Check feature visibility for current user
+    const userRole = req.user.role;
+    
+    // For admin users, all features are visible regardless of permission settings
+    let visibleFeatures;
+    if (userRole === 'admin') {
+      visibleFeatures = {
+        billingReports: true,
+        patientReports: true,
+        appointmentReports: true,
+        testReports: true
+      };
+    } else {
+      // Helper function imported from middleware
+      const isFeatureVisible = (permissionsMap, featureName, userRole) => {
+        if (!permissionsMap) return true;
+        const permission = permissionsMap[featureName];
+        if (!permission) return true;
+        return permission.isVisible && permission.roles.includes(userRole);
+      };
+      
+      visibleFeatures = {
+        billingReports: isFeatureVisible(featurePermissions, 'Billing Reports', userRole),
+        patientReports: isFeatureVisible(featurePermissions, 'Patient Reports', userRole),
+        appointmentReports: isFeatureVisible(featurePermissions, 'Appointment Reports', userRole),
+        testReports: isFeatureVisible(featurePermissions, 'Test Reports', userRole)
+      };
+    }
+    
     res.render('reports', {
       title: 'Reports',
-      user: req.user
+      user: req.user,
+      visibleFeatures
     });
   } catch (error) {
     console.error('Error in getReportsDashboard:', error);
@@ -153,15 +186,65 @@ exports.getCabinStats = async (req, res) => {
 // Get all billing records
 exports.getAllBillingRecords = async (req, res) => {
   try {
-    const billings = await Billing.findAll({
-      include: [{ model: Patient }],
-      order: [['createdAt', 'DESC']]
+    const { startDate, endDate, searchType, searchQuery } = req.query;
+    
+    // Build where clause based on filters
+    let whereClause = {};
+    let patientWhereClause = {};
+    
+    // Date range filter
+    if (startDate && endDate) {
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      endDateObj.setHours(23, 59, 59, 999); // Set to end of day
+      
+      whereClause.billDate = {
+        [Op.between]: [startDateObj, endDateObj]
+      };
+    }
+    
+    // Search filter
+    if (searchQuery && searchType) {
+      switch (searchType) {
+        case 'billNumber':
+          whereClause.billNumber = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientId':
+          patientWhereClause.patientId = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientName':
+          patientWhereClause.name = { [Op.like]: `%${searchQuery}%` };
+          break;
+        // If 'all' or any other value, we don't add specific filter criteria
+      }
+    }
+    
+    const bills = await Billing.findAll({
+      where: whereClause,
+      include: [
+        { 
+          model: Patient,
+          where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+        }
+      ],
+      order: [['billDate', 'DESC']]
     });
     
-    res.json(billings);
+    res.render('billing_reports', {
+      title: 'All Billing Records',
+      bills,
+      summary: calculateBillingSummary(bills),
+      reportType: 'all',
+      startDate: startDate || '',
+      endDate: endDate || '',
+      searchType: searchType || 'all',
+      searchQuery: searchQuery || ''
+    });
   } catch (error) {
     console.error('Error in getAllBillingRecords:', error);
-    res.status(500).json({ message: 'Failed to fetch billing records' });
+    res.status(500).render('error', {
+      message: 'Failed to fetch billing records'
+    });
   }
 };
 
@@ -210,24 +293,64 @@ exports.getUnbilledTests = async (req, res) => {
 // Get partial payment bills
 exports.getPartialPaymentBills = async (req, res) => {
   try {
-    const billings = await Billing.findAll({
-      where: {
-        dueAmount: {
-          [Op.gt]: 0
-        },
-        paidAmount: {
-          [Op.gt]: 0
-        }
+    const { startDate, endDate, searchType, searchQuery } = req.query;
+    
+    // Build where clause based on filters
+    let whereClause = {
+      dueAmount: {
+        [Op.gt]: 0
       },
-      include: [{ model: Patient }],
+      paidAmount: {
+        [Op.gt]: 0
+      }
+    };
+    let patientWhereClause = {};
+    
+    // Date range filter
+    if (startDate && endDate) {
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      endDateObj.setHours(23, 59, 59, 999); // Set to end of day
+      
+      whereClause.billDate = {
+        [Op.between]: [startDateObj, endDateObj]
+      };
+    }
+    
+    // Search filter
+    if (searchQuery && searchType) {
+      switch (searchType) {
+        case 'billNumber':
+          whereClause.billNumber = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientId':
+          patientWhereClause.patientId = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientName':
+          patientWhereClause.name = { [Op.like]: `%${searchQuery}%` };
+          break;
+        // If 'all' or any other value, we don't add specific filter criteria
+      }
+    }
+    
+    const bills = await Billing.findAll({
+      where: whereClause,
+      include: [{ 
+        model: Patient,
+        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+      }],
       order: [['createdAt', 'DESC']]
     });
     
     res.render('billing_reports', {
       title: 'Partial Payment Bills',
       user: req.user,
-      billings,
-      reportType: 'partial'
+      bills,
+      reportType: 'partial',
+      startDate: startDate || '',
+      endDate: endDate || '',
+      searchType: searchType || 'all',
+      searchQuery: searchQuery || ''
     });
   } catch (error) {
     console.error('Error in getPartialPaymentBills:', error);
@@ -241,19 +364,59 @@ exports.getPartialPaymentBills = async (req, res) => {
 // Get fully paid bills
 exports.getFullyPaidBills = async (req, res) => {
   try {
-    const billings = await Billing.findAll({
-      where: {
-        dueAmount: 0
-      },
-      include: [{ model: Patient }],
+    const { startDate, endDate, searchType, searchQuery } = req.query;
+    
+    // Build where clause based on filters
+    let whereClause = {
+      dueAmount: 0
+    };
+    let patientWhereClause = {};
+    
+    // Date range filter
+    if (startDate && endDate) {
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      endDateObj.setHours(23, 59, 59, 999); // Set to end of day
+      
+      whereClause.billDate = {
+        [Op.between]: [startDateObj, endDateObj]
+      };
+    }
+    
+    // Search filter
+    if (searchQuery && searchType) {
+      switch (searchType) {
+        case 'billNumber':
+          whereClause.billNumber = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientId':
+          patientWhereClause.patientId = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientName':
+          patientWhereClause.name = { [Op.like]: `%${searchQuery}%` };
+          break;
+        // If 'all' or any other value, we don't add specific filter criteria
+      }
+    }
+    
+    const bills = await Billing.findAll({
+      where: whereClause,
+      include: [{ 
+        model: Patient,
+        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+      }],
       order: [['createdAt', 'DESC']]
     });
     
     res.render('billing_reports', {
       title: 'Fully Paid Bills',
       user: req.user,
-      billings,
-      reportType: 'paid'
+      bills,
+      reportType: 'paid',
+      startDate: startDate || '',
+      endDate: endDate || '',
+      searchType: searchType || 'all',
+      searchQuery: searchQuery || ''
     });
   } catch (error) {
     console.error('Error in getFullyPaidBills:', error);
@@ -267,26 +430,66 @@ exports.getFullyPaidBills = async (req, res) => {
 // Get due payment bills
 exports.getDuePaymentBills = async (req, res) => {
   try {
-    const billings = await Billing.findAll({
-      where: {
-        dueAmount: {
-          [Op.gt]: 0
-        }
+    const { startDate, endDate, searchType, searchQuery } = req.query;
+    
+    // Build where clause based on filters
+    let whereClause = {
+      dueAmount: {
+        [Op.gt]: 0
       },
-      include: [{ model: Patient }],
-      order: [['createdAt', 'DESC']]
+      status: 'due'
+    };
+    let patientWhereClause = {};
+    
+    // Date range filter
+    if (startDate && endDate) {
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      endDateObj.setHours(23, 59, 59, 999); // Set to end of day
+      
+      whereClause.billDate = {
+        [Op.between]: [startDateObj, endDateObj]
+      };
+    }
+    
+    // Search filter
+    if (searchQuery && searchType) {
+      switch (searchType) {
+        case 'billNumber':
+          whereClause.billNumber = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientId':
+          patientWhereClause.patientId = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientName':
+          patientWhereClause.name = { [Op.like]: `%${searchQuery}%` };
+          break;
+        // If 'all' or any other value, we don't add specific filter criteria
+      }
+    }
+    
+    const bills = await Billing.findAll({
+      where: whereClause,
+      include: [{ 
+        model: Patient,
+        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+      }],
+      order: [['billDate', 'DESC']]
     });
     
     res.render('billing_reports', {
       title: 'Due Payment Bills',
-      user: req.user,
-      billings,
-      reportType: 'due'
+      bills,
+      summary: calculateBillingSummary(bills),
+      reportType: 'due',
+      startDate: startDate || '',
+      endDate: endDate || '',
+      searchType: searchType || 'all',
+      searchQuery: searchQuery || ''
     });
   } catch (error) {
     console.error('Error in getDuePaymentBills:', error);
     res.status(500).render('error', {
-      title: 'Error',
       message: 'Failed to fetch due payment bills'
     });
   }
@@ -295,42 +498,58 @@ exports.getDuePaymentBills = async (req, res) => {
 // Get daily billing report
 exports.getDailyBillingReport = async (req, res) => {
   try {
+    const { searchType, searchQuery } = req.query;
+    
     const today = new Date();
     const startOfDay = new Date(today.setHours(0, 0, 0, 0));
     const endOfDay = new Date(today.setHours(23, 59, 59, 999));
     
-    const billings = await Billing.findAll({
-      where: {
-        createdAt: {
-          [Op.between]: [startOfDay, endOfDay]
-        }
-      },
-      include: [{ model: Patient }],
+    // Build where clause based on filters
+    let whereClause = {
+      createdAt: {
+        [Op.between]: [startOfDay, endOfDay]
+      }
+    };
+    let patientWhereClause = {};
+    
+    // Search filter
+    if (searchQuery && searchType) {
+      switch (searchType) {
+        case 'billNumber':
+          whereClause.billNumber = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientId':
+          patientWhereClause.patientId = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientName':
+          patientWhereClause.name = { [Op.like]: `%${searchQuery}%` };
+          break;
+        // If 'all' or any other value, we don't add specific filter criteria
+      }
+    }
+    
+    const bills = await Billing.findAll({
+      where: whereClause,
+      include: [{ 
+        model: Patient,
+        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+      }],
       order: [['createdAt', 'DESC']]
-    });
-    
-    // Calculate totals
-    let totalAmount = 0;
-    let totalPaid = 0;
-    let totalDue = 0;
-    
-    billings.forEach(bill => {
-      totalAmount += Number(bill.totalAmount);
-      totalPaid += Number(bill.paidAmount);
-      totalDue += Number(bill.dueAmount);
     });
     
     res.render('billing_reports', {
       title: 'Daily Billing Report',
       user: req.user,
-      billings,
+      bills,
       reportType: 'daily',
       summary: {
-        totalAmount,
-        totalPaid,
-        totalDue,
-        billCount: billings.length
-      }
+        totalAmount: bills.reduce((sum, bill) => sum + Number(bill.totalAmount), 0),
+        totalPaid: bills.reduce((sum, bill) => sum + Number(bill.paidAmount), 0),
+        totalDue: bills.reduce((sum, bill) => sum + Number(bill.dueAmount), 0),
+        billCount: bills.length
+      },
+      searchType: searchType || 'all',
+      searchQuery: searchQuery || ''
     });
   } catch (error) {
     console.error('Error in getDailyBillingReport:', error);
@@ -377,5 +596,140 @@ exports.getMonthlyRevenueReport = async (req, res) => {
   } catch (error) {
     console.error('Error in getMonthlyRevenueReport:', error);
     res.status(500).json({ message: 'Failed to generate monthly revenue report' });
+  }
+};
+
+// Get all payment types report (both paid and due)
+exports.getAllPaymentTypesReport = async (req, res) => {
+  try {
+    const { startDate, endDate, searchType, searchQuery } = req.query;
+    
+    // Build where clause based on filters
+    let whereClause = {};
+    let patientWhereClause = {};
+    
+    // Date range filter
+    if (startDate && endDate) {
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      endDateObj.setHours(23, 59, 59, 999); // Set to end of day
+      
+      whereClause.billDate = {
+        [Op.between]: [startDateObj, endDateObj]
+      };
+    }
+    
+    // Search filter
+    if (searchQuery && searchType) {
+      switch (searchType) {
+        case 'billNumber':
+          whereClause.billNumber = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientId':
+          patientWhereClause.patientId = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientName':
+          patientWhereClause.name = { [Op.like]: `%${searchQuery}%` };
+          break;
+        // If 'all' or any other value, we don't add specific filter criteria
+      }
+    }
+    
+    const bills = await Billing.findAll({
+      where: whereClause,
+      include: [{ 
+        model: Patient,
+        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+      }],
+      order: [['billDate', 'DESC']]
+    });
+    
+    res.render('billing_reports', {
+      title: 'All Payment Types Report',
+      user: req.user,
+      bills,
+      reportType: 'all-payment-types',
+      summary: calculateBillingSummary(bills),
+      startDate: startDate || '',
+      endDate: endDate || '',
+      searchType: searchType || 'all',
+      searchQuery: searchQuery || ''
+    });
+  } catch (error) {
+    console.error('Error in getAllPaymentTypesReport:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to fetch payment reports'
+    });
+  }
+};
+
+// Helper function to calculate billing summary
+function calculateBillingSummary(bills) {
+  let totalAmount = 0;
+  let totalDiscount = 0;
+  let totalNet = 0;
+  let totalPaid = 0;
+  let totalDue = 0;
+  let paidCount = 0;
+  let dueCount = 0;
+  
+  bills.forEach(bill => {
+    totalAmount += Number(bill.totalAmount);
+    totalDiscount += Number(bill.discountAmount);
+    totalNet += Number(bill.netPayable);
+    totalPaid += Number(bill.paidAmount);
+    totalDue += Number(bill.dueAmount);
+    
+    if (bill.status === 'paid') {
+      paidCount++;
+    } else {
+      dueCount++;
+    }
+  });
+  
+  return {
+    totalAmount,
+    totalDiscount,
+    totalNet,
+    totalPaid,
+    totalDue,
+    paidCount,
+    dueCount,
+    totalCount: bills.length
+  };
+}
+
+// Render billing reports page
+exports.renderBillingReports = async (req, res) => {
+  try {
+    res.render('reports', {
+      title: 'Billing Reports',
+      activeReport: 'billing'
+    });
+  } catch (error) {
+    console.error('Error in renderBillingReports:', error);
+    res.status(500).render('error', {
+      message: 'Failed to render billing reports page'
+    });
+  }
+};
+
+// Get all billing records for API (JSON response)
+exports.getAllBillingRecordsApi = async (req, res) => {
+  try {
+    const bills = await Billing.findAll({
+      include: [
+        { model: Patient }
+      ],
+      order: [['billDate', 'DESC']]
+    });
+    
+    res.json(bills);
+  } catch (error) {
+    console.error('Error in getAllBillingRecordsApi:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch billing records'
+    });
   }
 }; 

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
@@ -14,12 +15,29 @@ const cabinRoutes = require('./routes/cabinRoutes');
 const testRoutes = require('./routes/testRoutes');
 const billingRoutes = require('./routes/billingRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const settingRoutes = require('./routes/settingRoutes');
+
+// Import models
+const Setting = require('./models/Setting');
+const FeaturePermission = require('./models/FeaturePermission');
 
 // Initialize express app
 const app = express();
 
-// Connect to database
-connectDB();
+// Connect to database and initialize data
+(async () => {
+  try {
+    // Connect to database first
+    await connectDB();
+    
+    // Then initialize default data after DB is connected and synced
+    console.log('Initializing default data...');
+    await FeaturePermission.initializeDefaults();
+    console.log('Default data initialization complete');
+  } catch (error) {
+    console.error('Error during startup:', error);
+  }
+})();
 
 // Middleware
 app.use(morgan('dev'));
@@ -27,6 +45,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Load settings for all views
+app.use(async (req, res, next) => {
+  try {
+    const settings = await Setting.findOne();
+    if (settings) {
+      res.locals.settings = settings;
+    }
+    next();
+  } catch (error) {
+    console.error('Error loading settings:', error);
+    next();
+  }
+});
 
 // Set view engine
 app.set('views', path.join(__dirname, 'views'));
@@ -41,10 +73,11 @@ app.use('/cabins', cabinRoutes);
 app.use('/tests', testRoutes);
 app.use('/billing', billingRoutes);
 app.use('/reports', reportRoutes);
+app.use('/settings', settingRoutes);
 
 // Redirect root to billing
 app.get('/', (req, res) => {
-  res.redirect('/billing');
+  res.redirect('/reports');
 });
 
 // 404 handler
@@ -66,7 +99,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3005;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

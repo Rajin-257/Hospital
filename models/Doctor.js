@@ -25,10 +25,7 @@ const Doctor = sequelize.define('Doctor', {
   },
   email: {
     type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-      isEmail: true
-    }
+    allowNull: true
   },
   consultationFee: {
     type: DataTypes.DECIMAL(10, 2),

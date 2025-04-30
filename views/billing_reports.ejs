@@ -15,6 +15,10 @@
           <% } else if (reportType === 'daily') { %>
             <i class="fas fa-calendar-day me-2 text-primary"></i>Daily Billing Report
             <small class="text-muted ms-2">(<%= new Date().toLocaleDateString() %>)</small>
+          <% } else if (reportType === 'all-payment-types') { %>
+            <i class="fas fa-money-check-alt me-2 text-info"></i>All Payment Types Report
+          <% } else { %>
+            <i class="fas fa-file-invoice-dollar me-2 text-primary"></i>All Billing Reports
           <% } %>
         </h2>
         <div>
@@ -29,35 +33,89 @@
     </div>
   </div>
 
-  <% if (reportType === 'daily' && summary) { %>
+  <!-- Filter Section -->
   <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Filter Reports</h5>
+        </div>
+        <div class="card-body">
+          <form id="filterForm" method="GET" class="row g-3">
+            <div class="col-md-3">
+              <label for="startDate" class="form-label">From Date</label>
+              <input type="date" class="form-control" id="startDate" name="startDate" value="<%= locals.startDate || '' %>">
+            </div>
+            <div class="col-md-3">
+              <label for="endDate" class="form-label">To Date</label>
+              <input type="date" class="form-control" id="endDate" name="endDate" value="<%= locals.endDate || '' %>">
+            </div>
+            <div class="col-md-3">
+              <label for="searchType" class="form-label">Search By</label>
+              <select class="form-select" id="searchType" name="searchType">
+                <option value="all" selected>All</option>
+                <option value="billNumber">Bill Number</option>
+                <option value="patientId">Patient ID</option>
+                <option value="patientName">Patient Name</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label for="searchQuery" class="form-label">Search Term</label>
+              <input type="text" class="form-control" id="searchQuery" name="searchQuery" value="<%= locals.searchQuery || '' %>" placeholder="Enter search term...">
+            </div>
+            <div class="col-12 text-end">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-filter me-1"></i> Apply Filters
+              </button>
+              <button type="reset" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-redo me-1"></i> Reset
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Section - Show for all report types -->
+  <div class="row mb-4 screen-only">
     <div class="col">
       <div class="card bg-light">
         <div class="card-body">
-          <h5 class="card-title">Today's Summary</h5>
+          <h5 class="card-title">
+            <% if (reportType === 'daily') { %>
+              Today's Summary
+            <% } else { %>
+              <% if (locals.startDate && locals.endDate) { %>
+                Summary (<%= new Date(locals.startDate).toLocaleDateString() %> to <%= new Date(locals.endDate).toLocaleDateString() %>)
+              <% } else { %>
+                Current Summary
+              <% } %>
+            <% } %>
+          </h5>
           <div class="row">
             <div class="col-md-3">
               <div class="mb-2">
                 <small class="text-muted">Total Bills</small>
-                <h4><%= summary.billCount %></h4>
+                <h4><%= bills ? bills.length : 0 %></h4>
               </div>
             </div>
             <div class="col-md-3">
               <div class="mb-2">
                 <small class="text-muted">Total Amount</small>
-                <h4>₹<%= summary.totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
+                <h4>Tk <%= (bills ? bills.reduce((sum, bill) => sum + parseFloat(bill.totalAmount || 0), 0) : 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
               </div>
             </div>
             <div class="col-md-3">
               <div class="mb-2">
                 <small class="text-muted">Total Paid</small>
-                <h4 class="text-success">₹<%= summary.totalPaid.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
+                <h4 class="text-success">Tk <%= (bills ? bills.reduce((sum, bill) => sum + parseFloat(bill.paidAmount || 0), 0) : 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
               </div>
             </div>
             <div class="col-md-3">
               <div class="mb-2">
                 <small class="text-muted">Total Due</small>
-                <h4 class="text-danger">₹<%= summary.totalDue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
+                <h4 class="text-danger">Tk <%= (bills ? bills.reduce((sum, bill) => sum + parseFloat(bill.dueAmount || 0), 0) : 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
               </div>
             </div>
           </div>
@@ -65,57 +123,62 @@
       </div>
     </div>
   </div>
-  <% } %>
 
   <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0">Billing Records</h5>
       <div>
-        <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search records...">
+        <input type="text" id="table-search" class="form-control form-control-sm" placeholder="Quick search in results...">
       </div>
     </div>
     <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-hover" id="billings-table">
+      <div class="table-responsive print-friendly">
+        <table class="table table-hover" id="billingTable">
           <thead class="table-light">
             <tr>
               <th>Bill #</th>
               <th>Date</th>
+              <th>Patient ID</th>
               <th>Patient</th>
-              <th>Items</th>
-              <th>Sub Total</th>
-              <th>Discount</th>
               <th>Total</th>
+              <th>Discount</th>
+              <th>Net</th>
               <th>Paid</th>
               <th>Due</th>
-              <th class="no-print">Action</th>
+              <th>Status</th>
+              <th class="no-print">Actions</th>
             </tr>
           </thead>
-          <tbody id="billings-list">
-            <% if (billings && billings.length > 0) { %>
-              <% billings.forEach(bill => { %>
-                <tr>
-                  <td><strong>#<%= bill.billNumber %></strong></td>
-                  <td><%= new Date(bill.createdAt).toLocaleDateString() %></td>
-                  <td><%= bill.Patient.name %></td>
-                  <td><%= bill.items.length %></td>
-                  <td>₹<%= parseFloat(bill.subtotalAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                  <td>₹<%= parseFloat(bill.discountAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                  <td><strong>₹<%= parseFloat(bill.totalAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></strong></td>
-                  <td>₹<%= parseFloat(bill.paidAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                  <td class="<%= parseFloat(bill.dueAmount) > 0 ? 'text-danger' : '' %>">
-                    <%= parseFloat(bill.dueAmount) > 0 ? '₹' + parseFloat(bill.dueAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'Paid' %>
+          <tbody>
+            <% if (bills && bills.length > 0) { %>
+              <% bills.forEach(bill => { %>
+                <tr class="<%= bill.status === 'paid' ? 'table-success' : (bill.status === 'partial' ? 'table-warning' : 'table-danger') %>">
+                  <td><%= bill.billNumber || 'N/A' %></td>
+                  <td><%= bill.billDate ? new Date(bill.billDate).toLocaleDateString() : 'N/A' %></td>
+                  <td><%= bill.Patient ? bill.Patient.patientId : 'N/A' %></td>
+                  <td><%= bill.Patient ? bill.Patient.name : 'Unknown' %></td>
+                  <td>Tk <%= parseFloat(bill.totalAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                  <td>Tk <%= parseFloat(bill.discountAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                  <td>Tk <%= parseFloat(bill.netPayable || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                  <td>Tk <%= parseFloat(bill.paidAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                  <td class="<%= parseFloat(bill.dueAmount || 0) > 0 ? 'text-danger' : '' %>">
+                    <%= parseFloat(bill.dueAmount || 0) > 0 ? 'Tk ' + parseFloat(bill.dueAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'Paid' %>
+                  </td>
+                  <td>
+                    <span class="badge bg-<%= bill.status === 'paid' ? 'success' : (bill.status === 'partial' ? 'warning' : 'danger') %>">
+                      <%= bill.status === 'paid' ? 'Paid' : (bill.status === 'partial' ? 'Partial' : 'Due') %>
+                    </span>
                   </td>
                   <td class="no-print">
-                    <a href="/billing/receipt/<%= bill.id %>" class="btn btn-sm btn-primary">
-                      <i class="fas fa-eye"></i> View
+                    <a href="/billing/receipt/<%= bill.id %>" class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-eye"></i>
                     </a>
                   </td>
                 </tr>
               <% }); %>
             <% } else { %>
               <tr>
-                <td colspan="10" class="text-center">No billing records found</td>
+                <td colspan="11" class="text-center">No billing records found</td>
               </tr>
             <% } %>
           </tbody>
@@ -126,27 +189,213 @@
 </div>
 
 <style>
+  /* Normal view style */
+  .screen-only {
+    display: block;
+  }
+  
+  .print-only {
+    display: none;
+  }
+  
+  .no-print {
+    display: table-cell;
+  }
+  
+  /* Print-friendly table layout */
   @media print {
+    /* Basic layout improvements */
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      color: #000;
+      background: #fff;
+    }
+    
+    /* Hide screen-only elements */
+    .screen-only {
+      display: none !important;
+    }
+    
+    /* Show print-only elements */
+    .print-only {
+      display: block !important;
+    }
+    
+    /* Hide no-print elements */
     .no-print {
       display: none !important;
     }
+    
     .card {
       box-shadow: none !important;
-      border: 1px solid #ddd;
+      border: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
+    
     .container {
       width: 100%;
       max-width: 100%;
+      padding: 0;
+      margin: 0;
     }
+    
+    /* Hide unnecessary elements when printing */
+    #filterForm, .form-control, button, a.btn, .card-header, .row.mb-4:not(.print-only) {
+      display: none !important;
+    }
+    
+    /* Except for the main header */
+    .main-header {
+      display: block !important;
+    }
+    
+    /* Print styling */
+    .print-header {
+      display: block !important;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .print-header h2 {
+      margin-bottom: 5px;
+      font-size: 18px;
+    }
+    
+    .print-header p {
+      margin: 3px 0;
+      font-size: 12px;
+    }
+    
+    .print-header h3 {
+      font-size: 16px;
+      margin: 10px 0;
+    }
+    
+    .print-summary {
+      margin: 15px 0;
+      border: 1px solid #ddd;
+      padding: 10px;
+      page-break-inside: avoid;
+    }
+    
+    /* Table formatting */
+    .print-friendly {
+      margin-top: 20px;
+    }
+    
+    table#billingTable {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+      margin-bottom: 20px;
+      page-break-inside: auto;
+      border: 1px solid #ddd;
+    }
+    
+    table#billingTable thead {
+      display: table-header-group;
+    }
+    
+    table#billingTable th {
+      background-color: #f5f5f5 !important;
+      border: 1px solid #ddd;
+      padding: 5px;
+      font-weight: bold;
+      text-align: left;
+      font-size: 11px;
+    }
+    
+    table#billingTable td {
+      border: 1px solid #ddd;
+      padding: 5px;
+      page-break-inside: avoid;
+      font-size: 10px;
+    }
+    
+    /* Column widths for print */
+    table#billingTable th:nth-child(1),
+    table#billingTable td:nth-child(1) {
+      width: 8%;
+    }
+    
+    table#billingTable th:nth-child(2),
+    table#billingTable td:nth-child(2) {
+      width: 10%;
+    }
+    
+    table#billingTable th:nth-child(3),
+    table#billingTable td:nth-child(3) {
+      width: 10%;
+    }
+    
+    table#billingTable th:nth-child(4),
+    table#billingTable td:nth-child(4) {
+      width: 15%;
+    }
+    
+    table#billingTable th:nth-child(5),
+    table#billingTable td:nth-child(5),
+    table#billingTable th:nth-child(6),
+    table#billingTable td:nth-child(6),
+    table#billingTable th:nth-child(7),
+    table#billingTable td:nth-child(7),
+    table#billingTable th:nth-child(8),
+    table#billingTable td:nth-child(8),
+    table#billingTable th:nth-child(9),
+    table#billingTable td:nth-child(9) {
+      width: 10%;
+      text-align: right;
+    }
+    
+    table#billingTable th:nth-child(10),
+    table#billingTable td:nth-child(10) {
+      width: 7%;
+      text-align: center;
+    }
+    
+    /* Simplify table for printing */
+    table#billingTable tr {
+      page-break-inside: avoid;
+    }
+    
+    .table-danger, .table-warning, .table-success {
+      background-color: transparent !important;
+    }
+    
+    /* Print Status */
+    .badge {
+      border: 1px solid #ddd;
+      padding: 2px 5px;
+      font-weight: normal;
+      color: black !important;
+      background-color: transparent !important;
+    }
+    
+    /* Add page breaks */
+    .page-break-after {
+      page-break-after: always;
+    }
+    
+    /* Footer for each page */
+    @page {
+      margin: 0.5cm;
+    }
+  }
+  
+  /* Hide print header in normal view */
+  .print-header {
+    display: none;
   }
 </style>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // Search functionality
-    document.getElementById('search-input').addEventListener('keyup', function() {
+    // Quick table search functionality
+    document.getElementById('table-search').addEventListener('keyup', function() {
       const searchValue = this.value.toLowerCase();
-      const rows = document.querySelectorAll('#billings-list tr');
+      const rows = document.querySelectorAll('#billingTable tbody tr');
       
       rows.forEach(row => {
         const text = row.textContent.toLowerCase();
@@ -156,8 +405,154 @@
     
     // Print functionality
     document.getElementById('print-report').addEventListener('click', function() {
+      // Create print header that will only be visible when printing
+      const printHeader = document.createElement('div');
+      printHeader.className = 'print-header';
+      
+      // Get the report title based on the type
+      let reportTitle = 'All Billing Reports';
+      const reportType = '<%= reportType %>'; // Get the report type from EJS
+      
+      if (reportType === 'partial') {
+        reportTitle = 'Partial Payment Bills Report';
+      } else if (reportType === 'paid') {
+        reportTitle = 'Fully Paid Bills Report';
+      } else if (reportType === 'due') {
+        reportTitle = 'Due Payment Bills Report';
+      } else if (reportType === 'daily') {
+        reportTitle = 'Daily Billing Report (' + new Date().toLocaleDateString() + ')';
+      } else if (reportType === 'all-payment-types') {
+        reportTitle = 'All Payment Types Report';
+      }
+      
+      // Get summary data
+      const totalBills = document.querySelectorAll('#billingTable tbody tr:not(.no-results)').length;
+      
+      // Calculate totals
+      let totalAmount = 0;
+      let totalDiscount = 0;
+      let totalPaid = 0;
+      let totalDue = 0;
+      
+      document.querySelectorAll('#billingTable tbody tr:not(.no-results)').forEach(row => {
+        // Get the cells containing the values (adjust indices if needed)
+        const amountCell = row.cells[4]; // Total column
+        const discountCell = row.cells[5]; // Discount column
+        const paidCell = row.cells[7]; // Paid column
+        const dueCell = row.cells[8]; // Due column
+        
+        // Extract numeric values (strip "Tk " and commas)
+        if (amountCell) {
+          const amount = parseFloat(amountCell.textContent.replace('Tk ', '').replace(/,/g, '')) || 0;
+          totalAmount += amount;
+        }
+        
+        if (discountCell) {
+          const discount = parseFloat(discountCell.textContent.replace('Tk ', '').replace(/,/g, '')) || 0;
+          totalDiscount += discount;
+        }
+        
+        if (paidCell) {
+          const paid = parseFloat(paidCell.textContent.replace('Tk ', '').replace(/,/g, '')) || 0;
+          totalPaid += paid;
+        }
+        
+        if (dueCell && dueCell.textContent !== 'Paid') {
+          const due = parseFloat(dueCell.textContent.replace('Tk ', '').replace(/,/g, '')) || 0;
+          totalDue += due;
+        }
+      });
+      
+      // Format the currency values
+      const formatCurrency = (value) => {
+        return value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      };
+      
+      printHeader.innerHTML = `
+        <h2>Hospital Management System</h2>
+        <p>123 Medical Center Avenue, Healthcare City</p>
+        <p>Phone: +880 1234-567890 | Email: info@hospital.com</p>
+        <hr>
+        <h3>${reportTitle}</h3>
+        <p>Generated on: ${new Date().toLocaleString()}</p>
+      `;
+      
+      // Create a print-only summary section
+      const printSummary = document.createElement('div');
+      printSummary.className = 'print-only';
+      printSummary.innerHTML = `
+        <div class="row mb-4 print-only">
+          <div class="col">
+            <div class="print-summary" style="margin: 20px 0; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <div style="flex: 1;">
+                  <strong>Total Bills:</strong> ${totalBills}
+                </div>
+                <div style="flex: 1;">
+                  <strong>Total Amount:</strong> Tk ${formatCurrency(totalAmount)}
+                </div>
+                <div style="flex: 1;">
+                  <strong>Total Discount:</strong> Tk ${formatCurrency(totalDiscount)}
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <div style="flex: 1;">
+                  <strong>Total Paid:</strong> Tk ${formatCurrency(totalPaid)}
+                </div>
+                <div style="flex: 1;">
+                  <strong>Total Due:</strong> Tk ${formatCurrency(totalDue)}
+                </div>
+                <div style="flex: 1;">
+                  <strong>Payment Rate:</strong> ${totalAmount > 0 ? Math.round((totalPaid / totalAmount) * 100) : 0}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Insert the print header at the top of the container
+      const container = document.querySelector('.container');
+      container.insertBefore(printHeader, container.firstChild);
+      
+      // Insert the print summary after the header
+      container.insertBefore(printSummary, printHeader.nextSibling);
+      
+      // Clean the table for printing - remove action buttons
+      const actionCells = document.querySelectorAll('#billingTable td:last-child');
+      actionCells.forEach(cell => {
+        cell.setAttribute('data-temp-html', cell.innerHTML);
+        cell.innerHTML = '';
+      });
+      
       window.print();
+      
+      // Restore table cells
+      actionCells.forEach(cell => {
+        cell.innerHTML = cell.getAttribute('data-temp-html');
+        cell.removeAttribute('data-temp-html');
+      });
+      
+      // Remove the print header and summary after printing
+      container.removeChild(printHeader);
+      container.removeChild(printSummary);
     });
+
+    // Reset form and redirect to base URL
+    document.querySelector('button[type="reset"]').addEventListener('click', function(e) {
+      e.preventDefault();
+      window.location.href = window.location.pathname;
+    });
+
+    // Set default dates if not set
+    if (!document.getElementById('startDate').value) {
+      const today = new Date();
+      const lastMonth = new Date();
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      
+      document.getElementById('startDate').value = lastMonth.toISOString().slice(0, 10);
+      document.getElementById('endDate').value = today.toISOString().slice(0, 10);
+    }
   });
 </script>
 

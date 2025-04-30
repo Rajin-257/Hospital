@@ -16,18 +16,56 @@ exports.renderBillingPage = async (req, res) => {
     const tests = await Test.findAll();
     const cabins = await Cabin.findAll();
     
+    // Get feature permissions from request
+    const featurePermissions = req.featurePermissions || {};
+    
+    // Check feature visibility for current user
+    const userRole = req.user.role;
+    
+    // For admin users, all features are visible regardless of permission settings
+    let visibleFeatures;
+    if (userRole === 'admin') {
+      visibleFeatures = {
+        scheduleAppointment: true,
+        cabinAllocation: true,
+        testRequisition: true
+      };
+    } else {
+      visibleFeatures = {
+        scheduleAppointment: isFeatureVisible(featurePermissions, 'Schedule Appointment', userRole),
+        cabinAllocation: isFeatureVisible(featurePermissions, 'Cabin Allocation', userRole),
+        testRequisition: isFeatureVisible(featurePermissions, 'Test Requisition', userRole)
+      };
+    }
+    
     res.render('billing', {
       title: 'Billing',
       patients,
       doctors,
       tests,
-      cabins
+      cabins,
+      visibleFeatures
     });
   } catch (error) {
     console.error(error);
     res.status(500).send('Server Error');
   }
 };
+
+// Helper function to check if a feature is visible to the current user
+function isFeatureVisible(permissionsMap, featureName, userRole) {
+  // If no permissions map is available, default to visible
+  if (!permissionsMap) return true;
+  
+  // Get the permission for the feature
+  const permission = permissionsMap[featureName];
+  
+  // If permission doesn't exist, default to visible
+  if (!permission) return true;
+  
+  // Check if the feature is visible and the user role is allowed
+  return permission.isVisible && permission.roles.includes(userRole);
+}
 
 // Create new billing
 exports.createBilling = async (req, res) => {
@@ -43,7 +81,8 @@ exports.createBilling = async (req, res) => {
       dueAmount,
       items,
       appointmentIds,
-      cabinBookingIds
+      cabinBookingIds,
+      billdelivaridate
     } = req.body;
     
     // Validate total amount
@@ -68,20 +107,19 @@ exports.createBilling = async (req, res) => {
     
     const billNumber = `BILL${dateStr}${sequence.toString().padStart(4, '0')}`;
     
-    // Determine status
+    // Determine status - only 'paid' or 'due'
     let status;
-    if (parseFloat(paidAmount) === 0) {
-      status = 'due';
-    } else if (parseFloat(paidAmount) === parseFloat(netPayable)) {
+    if (parseFloat(paidAmount) >= parseFloat(netPayable)) {
       status = 'paid';
     } else {
-      status = 'partial';
+      status = 'due';
     }
     
     const billing = await Billing.create({
       billNumber,
       PatientId: patientId,
       billDate: today,
+      billdelivaridate: billdelivaridate || null,
       totalAmount,
       discountPercentage,
       discountAmount,
@@ -132,13 +170,29 @@ exports.createBilling = async (req, res) => {
     const testItems = billingItems.filter(item => item.type === 'test');
     
     if (testItems.length > 0) {
-      const testRequests = testItems.map(test => ({
-        PatientId: patientId,
-        TestId: test.id,
-        priority: test.priority || 'Normal',
-        requestDate: today,
-        status: 'Requested'
-      }));
+      const testRequests = testItems.map(test => {
+        // Process delivery date if it exists
+        let deliveryDate = null;
+        if (test.deliveryDate && test.deliveryDate.trim() !== '') {
+          deliveryDate = new Date(test.deliveryDate);
+          
+          // Check if date is valid
+          if (isNaN(deliveryDate.getTime())) {
+            deliveryDate = null;
+          }
+        }
+        
+        return {
+          PatientId: patientId,
+          TestId: test.id,
+          priority: test.priority || 'Normal',
+          requestDate: today,
+          status: 'Requested',
+          billingStatus: 'billed',
+          deliveryOption: test.deliveryOption || 'Not Collected',
+          deliveryDate: deliveryDate
+        };
+      });
       
       await TestRequest.bulkCreate(testRequests);
     }
@@ -218,13 +272,12 @@ exports.processPayment = async (req, res) => {
     const newPaidAmount = parseFloat(billing.paidAmount) + parseFloat(paidAmount);
     const newDueAmount = parseFloat(billing.netPayable) - newPaidAmount;
     
+    // Determine status - only 'paid' or 'due'
     let status;
-    if (newPaidAmount === 0) {
-      status = 'due';
-    } else if (newDueAmount <= 0) {
+    if (newPaidAmount >= parseFloat(billing.netPayable)) {
       status = 'paid';
     } else {
-      status = 'partial';
+      status = 'due';
     }
     
     billing = await billing.update({

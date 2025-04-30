@@ -1,7 +1,13 @@
 <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="/">
-            <i class="fas fa-hospital-alt me-2"></i>Hospital Management System
+            <% if (locals.settings && settings.favicon_path) { %>
+                <img src="<%= settings.favicon_path %>" alt="<%= settings.medical_name %>" style="width: 40px; height: 40px;">
+            <% } else { %>
+                <i class="fas fa-hospital-alt me-2"></i>
+            <% } %>
+            
+            
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
@@ -12,6 +18,10 @@
                     <a class="nav-link <%= title === 'Billing' ? 'active' : '' %>" href="/billing">
                         <i class="fas fa-file-invoice-dollar me-1"></i>Billing
                     </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <%= title === '' ? 'active': '' %>" href="/reports/billing/partial">
+                        <i class="fas fa-file-invoice-dollar me-1"></i>Pay Bill</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <%= title === 'Patients' ? 'active' : '' %>" href="/patients">
@@ -43,6 +53,18 @@
                         <i class="fas fa-chart-line me-1"></i>Reports
                     </a>
                 </li>
+                <% if (user && user.role === 'admin') { %>
+                <li class="nav-item">
+                    <a class="nav-link <%= title === 'Register User' ? 'active' : '' %> " href="/register">
+                        <i class="fas fa-cog me-1"></i>Staff
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <%= title === 'Settings' ? 'active' : '' %>" href="/settings">
+                        <i class="fas fa-cog me-1"></i>Settings
+                    </a>
+                </li>
+                <% } %>
             </ul>
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">

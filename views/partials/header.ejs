@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> | Hospital Management System</title>
+    <title><%= title %> | <%= locals.settings && settings.medical_name ? settings.medical_name : 'Hospital Management System' %></title>
+    <% if (locals.settings && settings.favicon_path) { %>
+    <link rel="icon" href="<%= settings.favicon_path %>" type="image/x-icon">
+    <% } %>
     <!-- jQuery required for Select2 -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap 5 CSS -->

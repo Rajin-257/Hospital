@@ -4,15 +4,16 @@
 <div class="container py-4">
   <div class="row mb-4">
     <div class="col">
-      <h2><i class="fas fa-chart-line me-2"></i>Hospital Reports Dashboard</h2>
+      <h2><i class="fas fa-chart-line me-2"></i>Hospital Records Overview</h2>
       <p class="text-muted">View statistics and reports for hospital operations</p>
     </div>
   </div>
 
   <!-- Entity Count Cards -->
   <div class="row mb-4">
+    <% if (visibleFeatures && visibleFeatures.patientReports) { %>
     <!-- Patient Card -->
-    <div class="col-md-4 col-lg-3 mb-3">
+    <div class="col-md-4 col-lg-3 mb-3" id="patient-card">
       <a href="/patients" class="text-decoration-none">
         <div class="card h-100 shadow-sm hover-card">
           <div class="card-body">
@@ -35,9 +36,11 @@
         </div>
       </a>
     </div>
+    <% } %>
     
+    <% if (visibleFeatures && visibleFeatures.appointmentReports) { %>
     <!-- Doctor Card -->
-    <div class="col-md-4 col-lg-3 mb-3">
+    <div class="col-md-4 col-lg-3 mb-3" id="doctor-card">
       <a href="/doctors" class="text-decoration-none">
         <div class="card h-100 shadow-sm hover-card">
           <div class="card-body">
@@ -58,7 +61,7 @@
     </div>
     
     <!-- Appointment Card -->
-    <div class="col-md-4 col-lg-3 mb-3">
+    <div class="col-md-4 col-lg-3 mb-3" id="appointment-card">
       <div class="card h-100 shadow-sm hover-card appointment-card">
         <div class="card-body">
           <h5 class="card-title text-danger">Appointments</h5>
@@ -81,9 +84,11 @@
         </div>
       </div>
     </div>
+    <% } %>
     
+    <% if (visibleFeatures && visibleFeatures.billingReports) { %>
     <!-- Billing Card -->
-    <div class="col-md-4 col-lg-3 mb-3">
+    <div class="col-md-4 col-lg-3 mb-3" id="billing-card">
       <div class="card h-100 shadow-sm hover-card">
         <div class="card-body">
           <h5 class="card-title text-success">Billing</h5>
@@ -100,7 +105,7 @@
           </div>
         </div>
         <div class="card-footer bg-light text-center">
-          <div class="dropdown">
+          <div class="dropup">
             <button class="btn btn-sm btn-outline-success dropdown-toggle" type="button" id="billingReportsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
               <i class="fas fa-file-alt me-1"></i> Billing Reports
             </button>
@@ -108,16 +113,18 @@
               <li><a class="dropdown-item" href="/reports/billing/partial">Partial Payments</a></li>
               <li><a class="dropdown-item" href="/reports/billing/paid">Fully Paid</a></li>
               <li><a class="dropdown-item" href="/reports/billing/due">Due Payments</a></li>
-              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/reports/billing/all-payment-types">All Payment Types</a></li>
               <li><a class="dropdown-item" href="/reports/billing/daily">Daily Billing Report</a></li>
             </ul>
           </div>
         </div>
       </div>
     </div>
+    <% } %>
     
+    <% if (visibleFeatures && visibleFeatures.testReports) { %>
     <!-- Test Request Card -->
-    <div class="col-md-4 col-lg-3 mb-3">
+    <div class="col-md-4 col-lg-3 mb-3" id="test-card">
       <div class="card h-100 shadow-sm hover-card test-card">
         <div class="card-body">
           <h5 class="card-title text-info">Tests request</h5>
@@ -140,9 +147,11 @@
         </div>
       </div>
     </div>
+    <% } %>
     
+    <% if (visibleFeatures && visibleFeatures.billingReports) { %>
     <!-- Cabin Card -->
-    <div class="col-md-4 col-lg-3 mb-3">
+    <div class="col-md-4 col-lg-3 mb-3" id="cabin-card">
       <a href="/cabins" class="text-decoration-none">
         <div class="card h-100 shadow-sm hover-card">
           <div class="card-body">
@@ -165,9 +174,11 @@
         </div>
       </a>
     </div>
+    <% } %>
   </div>
 
   <!-- Unbilled Appointments Section -->
+  <% if (visibleFeatures && visibleFeatures.appointmentReports) { %>
   <div class="card mt-4 d-none" id="unbilled-appointments-section">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Unbilled Appointments</h5>
@@ -181,7 +192,7 @@
       </div>
     </div>
     <div class="card-body">
-      <div class="table-responsive">
+      <div class="table-responsive print-friendly">
         <table class="table table-hover" id="unbilled-appointments-table">
           <thead class="table-light">
             <tr>
@@ -191,7 +202,7 @@
               <th>Doctor</th>
               <th>Status</th>
               <th>Fee</th>
-              <th>Action</th>
+              <th class="no-print">Action</th>
             </tr>
           </thead>
           <tbody id="unbilled-appointments-list">
@@ -201,11 +212,13 @@
       </div>
     </div>
   </div>
+  <% } %>
 
   <!-- Unbilled Tests Section -->
+  <% if (visibleFeatures && visibleFeatures.testReports) { %>
   <div class="card mt-4 d-none" id="unbilled-tests-section">
     <div class="card-header d-flex justify-content-between align-items-center">
-      <h5 class="mb-0"><i class="fas fa-vial me-2"></i>Unbilled Test Requests</h5>
+      <h5 class="mb-0"><i class="fas fa-vial me-2"></i>Unbilled Tests</h5>
       <div>
         <button class="btn btn-sm btn-outline-secondary me-2" id="print-tests-btn">
           <i class="fas fa-print me-1"></i> Print
@@ -216,17 +229,19 @@
       </div>
     </div>
     <div class="card-body">
-      <div class="table-responsive">
+      <div class="table-responsive print-friendly">
         <table class="table table-hover" id="unbilled-tests-table">
           <thead class="table-light">
             <tr>
               <th>Date</th>
               <th>Patient</th>
-              <th>Test Name</th>
+              <th>Test</th>
               <th>Priority</th>
               <th>Status</th>
-              <th>Fee</th>
-              <th>Action</th>
+              <th>Delivery Option</th>
+              <th>Delivery Date</th>
+              <th>Price</th>
+              <th class="no-print">Action</th>
             </tr>
           </thead>
           <tbody id="unbilled-tests-list">
@@ -236,6 +251,47 @@
       </div>
     </div>
   </div>
+  <% } %>
+
+  <!-- Billing Records Section -->
+  <% if (visibleFeatures && visibleFeatures.billingReports) { %>
+  <div class="card mt-4 d-none" id="billing-records-section">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="fas fa-file-invoice-dollar me-2"></i>Recent Billing Records</h5>
+      <div>
+        <button class="btn btn-sm btn-outline-secondary me-2" id="print-billings-btn">
+          <i class="fas fa-print me-1"></i> Print
+        </button>
+        <button class="btn btn-sm btn-outline-danger" id="close-billings-btn">
+          <i class="fas fa-times me-1"></i> Close
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive print-friendly">
+        <table class="table table-hover" id="billing-records-table">
+          <thead class="table-light">
+            <tr>
+              <th>Bill #</th>
+              <th>Date</th>
+              <th>Patient</th>
+              <th>Items</th>
+              <th>Subtotal</th>
+              <th>Discount</th>
+              <th>Total</th>
+              <th>Paid</th>
+              <th>Due</th>
+              <th class="no-print">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="billing-list">
+            <!-- Billing records will be loaded here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <% } %>
 </div>
 
 <!-- Custom CSS for hover effect -->
@@ -247,17 +303,100 @@
     transform: translateY(-5px);
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
   }
+  
+  .no-print {
+    display: table-cell;
+  }
+  
+  .print-friendly {
+    display: block;
+  }
+  
   @media print {
+    /* Basic layout improvements */
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      color: #000;
+      background: #fff;
+    }
+    
     .no-print {
       display: none !important;
     }
+    
     .card {
       box-shadow: none !important;
-      border: 1px solid #ddd;
+      border: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
+    
     .container {
       width: 100%;
       max-width: 100%;
+      padding: 0;
+      margin: 0;
+    }
+    
+    /* Hide unnecessary elements */
+    button, a.btn, .card-header:not(.print-keep), .hover-card, .dropdown-toggle {
+      display: none !important;
+    }
+    
+    /* Table formatting */
+    .print-friendly {
+      margin-top: 20px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+      margin-bottom: 20px;
+      page-break-inside: auto;
+      border: 1px solid #ddd;
+    }
+    
+    table thead {
+      display: table-header-group;
+    }
+    
+    table th {
+      background-color: #f5f5f5 !important;
+      border: 1px solid #ddd;
+      padding: 5px;
+      font-weight: bold;
+      text-align: left;
+    }
+    
+    table td {
+      border: 1px solid #ddd;
+      padding: 5px;
+      page-break-inside: avoid;
+    }
+    
+    tr {
+      page-break-inside: avoid;
+    }
+    
+    /* Print Status */
+    .badge {
+      border: 1px solid #ddd;
+      padding: 2px 5px;
+      font-weight: normal;
+      color: black !important;
+      background-color: transparent !important;
+    }
+    
+    /* Add page breaks */
+    .page-break-after {
+      page-break-after: always;
+    }
+    
+    /* Footer for each page */
+    @page {
+      margin: 0.5cm;
     }
   }
 </style>
@@ -265,22 +404,122 @@
 <!-- JavaScript for handling the reports -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // Keep track of which data sources have loaded
+    const dataLoaded = {
+      patients: false,
+      doctors: false,
+      appointments: false,
+      tests: false,
+      billings: false,
+      cabins: false
+    };
+    
+    // Function to hide cards with zero values
+    function hideCardsWithZeroValue() {
+      // Helper function to safely parse numeric values
+      function parseValue(elementId) {
+        const element = document.getElementById(elementId);
+        if (!element) return NaN;
+        
+        const text = element.textContent.trim();
+        // If the value is still "-", don't hide the card yet
+        if (text === "-") {
+          return -1; // Special value to indicate data not loaded yet
+        }
+        // Try to parse the value
+        const value = parseInt(text);
+        return isNaN(value) ? 0 : value;
+      }
+      
+      // Check patient card
+      const totalPatients = parseValue('totalPatients');
+      if (totalPatients === 0) {
+        document.getElementById('patient-card').style.display = 'none';
+      } else if (totalPatients > 0) {
+        document.getElementById('patient-card').style.display = 'block';
+      }
+      
+      // Check doctor card
+      const totalDoctors = parseValue('totalDoctors');
+      if (totalDoctors === 0) {
+        document.getElementById('doctor-card').style.display = 'none';
+      } else if (totalDoctors > 0) {
+        document.getElementById('doctor-card').style.display = 'block';
+      }
+      
+      // Check appointment card
+      const totalAppointments = parseValue('totalAppointments');
+      if (totalAppointments === 0) {
+        document.getElementById('appointment-card').style.display = 'none';
+      } else if (totalAppointments > 0) {
+        document.getElementById('appointment-card').style.display = 'block';
+      }
+      
+      // Check test card
+      const totalTests = parseValue('totalTests');
+      if (totalTests === 0) {
+        document.getElementById('test-card').style.display = 'none';
+      } else if (totalTests > 0) {
+        document.getElementById('test-card').style.display = 'block';
+      }
+      
+      // Check billing card
+      const totalBillings = parseValue('totalBillings');
+      if (totalBillings === 0) {
+        document.getElementById('billing-card').style.display = 'none';
+      } else if (totalBillings > 0) {
+        document.getElementById('billing-card').style.display = 'block';
+      }
+      
+      // Check cabin card
+      const totalBookings = parseValue('totalBookings');
+      if (totalBookings === 0) {
+        document.getElementById('cabin-card').style.display = 'none';
+      } else if (totalBookings > 0) {
+        document.getElementById('cabin-card').style.display = 'block';
+      }
+    }
+    
+    // Check if all data is loaded
+    function checkAllDataLoaded() {
+      if (dataLoaded.patients && dataLoaded.doctors && dataLoaded.appointments && 
+          dataLoaded.tests && dataLoaded.billings && dataLoaded.cabins) {
+        // All data has been loaded, now hide cards with zero values
+        hideCardsWithZeroValue();
+      }
+    }
+    
+    // Run an initial check after all data has had a chance to load (3 seconds)
+    setTimeout(hideCardsWithZeroValue, 3000);
+    
     // Fetch patient statistics
     fetch('/reports/patient-stats')
       .then(response => response.json())
       .then(data => {
         document.getElementById('totalPatients').textContent = data.totalPatients;
         document.getElementById('newPatients').textContent = data.newPatients;
+        dataLoaded.patients = true;
+        checkAllDataLoaded();
       })
-      .catch(error => console.error('Error fetching patient stats:', error));
+      .catch(error => {
+        console.error('Error fetching patient stats:', error);
+        dataLoaded.patients = true;
+        checkAllDataLoaded();
+      });
     
     // Fetch doctor statistics
     fetch('/reports/doctor-stats')
       .then(response => response.json())
       .then(data => {
         document.getElementById('totalDoctors').textContent = data.totalDoctors;
+        dataLoaded.doctors = true;
+        checkAllDataLoaded();
       })
-      .catch(error => console.error('Error fetching doctor stats:', error));
+      .catch(error => {
+        console.error('Error fetching doctor stats:', error);
+        dataLoaded.doctors = true;
+        checkAllDataLoaded();
+      });
     
     // Fetch appointment statistics
     fetch('/reports/appointment-stats')
@@ -288,8 +527,14 @@
       .then(data => {
         document.getElementById('totalAppointments').textContent = data.totalAppointments;
         document.getElementById('pendingAppointments').textContent = data.pendingAppointments;
+        dataLoaded.appointments = true;
+        checkAllDataLoaded();
       })
-      .catch(error => console.error('Error fetching appointment stats:', error));
+      .catch(error => {
+        console.error('Error fetching appointment stats:', error);
+        dataLoaded.appointments = true;
+        checkAllDataLoaded();
+      });
     
     // Fetch test statistics
     fetch('/reports/test-stats')
@@ -297,17 +542,29 @@
       .then(data => {
         document.getElementById('totalTests').textContent = data.totalTests;
         document.getElementById('pendingTests').textContent = data.pendingTests;
+        dataLoaded.tests = true;
+        checkAllDataLoaded();
       })
-      .catch(error => console.error('Error fetching test stats:', error));
+      .catch(error => {
+        console.error('Error fetching test stats:', error);
+        dataLoaded.tests = true;
+        checkAllDataLoaded();
+      });
     
     // Fetch billing statistics
     fetch('/reports/billing-stats')
       .then(response => response.json())
       .then(data => {
         document.getElementById('totalBillings').textContent = data.totalBillings;
-        document.getElementById('totalRevenue').textContent = '₹' + data.totalRevenue.toLocaleString();
+        document.getElementById('totalRevenue').textContent = 'Tk ' + data.totalRevenue.toLocaleString();
+        dataLoaded.billings = true;
+        checkAllDataLoaded();
       })
-      .catch(error => console.error('Error fetching billing stats:', error));
+      .catch(error => {
+        console.error('Error fetching billing stats:', error);
+        dataLoaded.billings = true;
+        checkAllDataLoaded();
+      });
     
     // Fetch cabin statistics
     fetch('/reports/cabin-stats')
@@ -315,11 +572,36 @@
       .then(data => {
         document.getElementById('totalBookings').textContent = data.totalBookings;
         document.getElementById('activeBookings').textContent = data.activeBookings;
+        dataLoaded.cabins = true;
+        checkAllDataLoaded();
       })
-      .catch(error => console.error('Error fetching cabin stats:', error));
+      .catch(error => {
+        console.error('Error fetching cabin stats:', error);
+        dataLoaded.cabins = true;
+        checkAllDataLoaded();
+      });
 
     // Load all billing records
     loadBillingRecords();
+
+    // Show billing records section when clicking on the billing card
+    $('.card h5.card-title.text-success').parent().parent().on('click', function(e) {
+      // Prevent triggering this if clicking on the dropdown
+      if ($(e.target).closest('.dropdown').length === 0) {
+        $('#billing-records-section').removeClass('d-none');
+        loadBillingRecords();
+      }
+    });
+    
+    // Close billing records section
+    $('#close-billings-btn').on('click', function() {
+      $('#billing-records-section').addClass('d-none');
+    });
+    
+    // Print billing records
+    $('#print-billings-btn').on('click', function() {
+      printSection('billing-records-section');
+    });
 
     // Function to load all billing records
     function loadBillingRecords() {
@@ -330,27 +612,41 @@
           
           if (data.length > 0) {
             data.forEach(bill => {
-              const date = new Date(bill.createdAt);
+              const date = new Date(bill.billDate || bill.createdAt);
               const formattedDate = date.toLocaleDateString();
               
-              const subTotal = parseFloat(bill.subtotalAmount);
-              const discount = parseFloat(bill.discountAmount);
-              const total = parseFloat(bill.totalAmount);
-              const paid = parseFloat(bill.paidAmount);
-              const due = parseFloat(bill.dueAmount);
+              const subTotal = parseFloat(bill.subtotalAmount || 0);
+              const discount = parseFloat(bill.discountAmount || 0);
+              const total = parseFloat(bill.totalAmount || 0);
+              const paid = parseFloat(bill.paidAmount || 0);
+              const due = parseFloat(bill.dueAmount || 0);
+              
+              // Check if Patient exists before accessing properties
+              const patientName = bill.Patient ? bill.Patient.name : 'Unknown';
+              
+              // Check if items exists and is valid JSON
+              let itemsLength = 0;
+              try {
+                if (bill.items) {
+                  const itemsArray = typeof bill.items === 'string' ? JSON.parse(bill.items) : bill.items;
+                  itemsLength = itemsArray.length;
+                }
+              } catch (e) {
+                console.error('Error parsing items:', e);
+              }
               
               const row = `
                 <tr>
-                  <td><strong>#${bill.billNumber}</strong></td>
+                  <td><strong>#${bill.billNumber || 'N/A'}</strong></td>
                   <td>${formattedDate}</td>
-                  <td>${bill.Patient.name}</td>
-                  <td>${bill.items.length}</td>
-                  <td>₹${subTotal.toFixed(2)}</td>
-                  <td>₹${discount.toFixed(2)}</td>
-                  <td><strong>₹${total.toFixed(2)}</strong></td>
-                  <td>₹${paid.toFixed(2)}</td>
-                  <td class="${due > 0 ? 'text-danger' : ''}">${due > 0 ? '₹' + due.toFixed(2) : 'Paid'}</td>
-                  <td>
+                  <td>${patientName}</td>
+                  <td>${itemsLength}</td>
+                  <td>Tk ${subTotal.toFixed(2)}</td>
+                  <td>Tk ${discount.toFixed(2)}</td>
+                  <td><strong>Tk ${total.toFixed(2)}</strong></td>
+                  <td>Tk ${paid.toFixed(2)}</td>
+                  <td class="${due > 0 ? 'text-danger' : ''}">${due > 0 ? 'Tk ' + due.toFixed(2) : 'Paid'}</td>
+                  <td class="no-print">
                     <a href="/billing/receipt/${bill.id}" class="btn btn-sm btn-primary">
                       <i class="fas fa-eye"></i> View
                     </a>
@@ -424,8 +720,8 @@
                   <td>${appointment.Patient.name}</td>
                   <td>Dr. ${appointment.Doctor.name}</td>
                   <td><span class="badge bg-warning">${appointment.status}</span></td>
-                  <td>₹${fee.toFixed(2)}</td>
-                  <td>
+                  <td>Tk ${fee.toFixed(2)}</td>
+                  <td class="no-print">
                     <a href="/billing?patientId=${appointment.PatientId}" class="btn btn-sm btn-success">
                       <i class="fas fa-file-invoice"></i> Bill Now
                     </a>
@@ -457,6 +753,15 @@
               const requestDate = new Date(test.requestDate);
               const formattedDate = requestDate.toLocaleDateString();
               
+              // Process delivery date
+              let deliveryDate = 'N/A';
+              if (test.deliveryDate) {
+                const dateObj = new Date(test.deliveryDate);
+                if (!isNaN(dateObj.getTime())) {
+                  deliveryDate = dateObj.toLocaleDateString();
+                }
+              }
+              
               const fee = parseFloat(test.Test.price || 0);
               
               const row = `
@@ -466,8 +771,10 @@
                   <td>${test.Test.name}</td>
                   <td><span class="badge ${test.priority === 'Urgent' ? 'bg-danger' : 'bg-info'}">${test.priority}</span></td>
                   <td><span class="badge bg-warning">${test.status}</span></td>
-                  <td>₹${fee.toFixed(2)}</td>
-                  <td>
+                  <td>${test.deliveryOption || 'Not Collected'}</td>
+                  <td>${deliveryDate}</td>
+                  <td>Tk ${fee.toFixed(2)}</td>
+                  <td class="no-print">
                     <a href="/billing?patientId=${test.PatientId}" class="btn btn-sm btn-success">
                       <i class="fas fa-file-invoice"></i> Bill Now
                     </a>
@@ -478,17 +785,23 @@
               $('#unbilled-tests-list').append(row);
             });
           } else {
-            $('#unbilled-tests-list').html('<tr><td colspan="7" class="text-center">No unbilled test requests found</td></tr>');
+            $('#unbilled-tests-list').html('<tr><td colspan="9" class="text-center">No unbilled test requests found</td></tr>');
           }
         })
         .catch(error => {
           console.error('Error loading unbilled tests:', error);
-          $('#unbilled-tests-list').html('<tr><td colspan="7" class="text-center text-danger">Error loading unbilled tests</td></tr>');
+          $('#unbilled-tests-list').html('<tr><td colspan="9" class="text-center text-danger">Error loading unbilled tests</td></tr>');
         });
     }
 
     // Function to print a specific section
     function printSection(sectionId) {
+      // Add print-keep class to the card header
+      const cardHeader = document.getElementById(sectionId).querySelector('.card-header');
+      if (cardHeader) {
+        cardHeader.classList.add('print-keep');
+      }
+      
       const printContents = document.getElementById(sectionId).innerHTML;
       const originalContents = document.body.innerHTML;
 
@@ -497,13 +810,51 @@
           <div class="row mb-4">
             <div class="col text-center">
               <h2>Hospital Management System</h2>
+              <p>123 Medical Center Avenue, Healthcare City</p>
+              <p>Phone: +880 1234-567890 | Email: info@hospital.com</p>
+              <hr>
               <h4>${document.getElementById(sectionId).querySelector('.card-header h5').innerText}</h4>
               <p class="text-muted">Generated on ${new Date().toLocaleString()}</p>
+            </div>
+          </div>
+          <div class="row mb-4">
+            <div class="col">
+              <div class="card bg-light">
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-3">
+                      <div class="mb-2">
+                        <small class="text-muted">Total Records</small>
+                        <h4 id="print-total-records"></h4>
+                      </div>
+                    </div>
+                    <div class="col-3">
+                      <div class="mb-2">
+                        <small class="text-muted">Period</small>
+                        <h4>${new Date().toLocaleDateString()}</h4>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           ${printContents}
         </div>
       `;
+      
+      // Set the total records based on the type of section
+      let totalRecords = 0;
+      if (sectionId === 'unbilled-appointments-section') {
+        totalRecords = document.querySelectorAll('#unbilled-appointments-list tr').length;
+      } else if (sectionId === 'unbilled-tests-section') {
+        totalRecords = document.querySelectorAll('#unbilled-tests-list tr').length;
+      } else if (sectionId === 'billing-records-section') {
+        totalRecords = document.querySelectorAll('#billing-list tr').length;
+      }
+      
+      // Update the total records in the print view
+      document.getElementById('print-total-records').textContent = totalRecords;
 
       window.print();
       document.body.innerHTML = originalContents;

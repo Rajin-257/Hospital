@@ -28,6 +28,14 @@ const TestRequest = sequelize.define('TestRequest', {
   billingStatus: {
     type: DataTypes.ENUM('billed', 'not_billed'),
     defaultValue: 'not_billed'
+  },
+  deliveryOption: {
+    type: DataTypes.ENUM('Not Collected','Collect', 'Email', 'Home Delivery'),
+    defaultValue: 'Not Collected'
+  },
+  deliveryDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
   }
 });
 

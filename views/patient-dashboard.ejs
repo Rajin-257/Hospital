@@ -137,6 +137,9 @@
                 <div class="tab-pane fade" id="tests" role="tabpanel" aria-labelledby="tests-tab">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0">Test Requests</h6>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestTestModal">
+                            <i class="fas fa-plus me-1"></i> Request New Test
+                        </button>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover">
@@ -146,6 +149,8 @@
                                     <th>Test Name</th>
                                     <th>Requested Date</th>
                                     <th>Status</th>
+                                    <th>Delivery Option</th>
+                                    <th>Delivery Date</th>
                                     <th>Result</th>
                                     <th>Actions</th>
                                 </tr>
@@ -162,6 +167,8 @@
                                                     <%= test.status %>
                                                 </span>
                                             </td>
+                                            <td><%= test.deliveryOption || 'Collect' %></td>
+                                            <td><%= test.deliveryDate ? new Date(test.deliveryDate).toLocaleDateString() : 'N/A' %></td>
                                             <td>
                                                 <% if (test.status === 'Completed') { %>
                                                     <a href="/tests/request/<%= test.id %>/result" class="btn btn-sm btn-outline-primary">
@@ -180,7 +187,7 @@
                                     <% }); %>
                                 <% } else { %>
                                     <tr>
-                                        <td colspan="6" class="text-center">No test requests found</td>
+                                        <td colspan="8" class="text-center">No test requests found</td>
                                     </tr>
                                 <% } %>
                             </tbody>
@@ -310,8 +317,8 @@
                                             <td>Medical Bill</td>
                                             <td>$<%= parseFloat(invoice.netPayable || invoice.totalAmount).toFixed(2) %></td>
                                             <td>
-                                                <span class="badge bg-<%= invoice.status === 'paid' ? 'success' : (invoice.status === 'partial' ? 'warning' : 'danger') %>">
-                                                    <%= invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) %>
+                                                <span class="badge bg-<%= invoice.status === 'paid' ? 'success' : 'danger' %>">
+                                                    <%= invoice.status === 'paid' ? 'Paid' : 'Due' %>
                                                 </span>
                                             </td>
                                             <td>
@@ -319,8 +326,8 @@
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                                 <% if (invoice.status !== 'paid') { %>
-                                                    <button class="btn btn-sm btn-success pay-invoice" data-id="<%= invoice.id %>">
-                                                        <i class="fas fa-credit-card"></i>
+                                                    <button class="btn btn-sm btn-outline-success pay-button" data-id="<%= invoice.id %>" data-amount="<%= invoice.dueAmount %>">
+                                                        <i class="fas fa-money-bill-wave"></i>
                                                     </button>
                                                 <% } %>
                                                 <button class="btn btn-sm btn-secondary print-invoice" data-id="<%= invoice.id %>">
@@ -343,8 +350,105 @@
     </div>
 </div>
 
+<%- include('partials/footer') %> 
+
+<!-- Test Request Modal -->
+<div class="modal fade" id="requestTestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-vial me-2"></i>Request New Test</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="request-test-form">
+                <input type="hidden" name="patientId" value="<%= patient.id %>">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label required-label">Test</label>
+                        <select class="form-select select2" name="testId" required>
+                            <option value="">Select a test</option>
+                            <!-- Tests will be loaded here via AJAX -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Priority</label>
+                        <select class="form-select" name="priority">
+                            <option value="Normal">Normal</option>
+                            <option value="Urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Delivery Option</label>
+                        <select class="form-select" name="deliveryOption">
+                            <option value="Not Collected">Not Collected Yet</option>
+                            <option value="Collect">Collect in Person</option>
+                            <option value="Email">Email Results</option>
+                            <option value="Home Delivery">Home Delivery</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Delivery Date (if applicable)</label>
+                        <input type="date" class="form-control" name="deliveryDate">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     $(document).ready(function() {
+        // Set default delivery date as 7 days from today
+        const deliveryDefaultDate = new Date();
+        deliveryDefaultDate.setDate(deliveryDefaultDate.getDate() + 7);
+        $('input[name="deliveryDate"]').val(deliveryDefaultDate.toISOString().split('T')[0]);
+        
+        // Load tests for the dropdown
+        $.ajax({
+            url: '/tests',
+            type: 'GET',
+            success: function(tests) {
+                const select = $('select[name="testId"]');
+                tests.forEach(test => {
+                    select.append(`<option value="${test.id}">${test.name} - ${test.code} (Tk ${test.price})</option>`);
+                });
+                
+                // Initialize select2 for test dropdown
+                $('.select2').select2({
+                    dropdownParent: $('#requestTestModal'),
+                    width: '100%'
+                });
+            },
+            error: function(error) {
+                showToast('Error loading tests', 'error');
+            }
+        });
+        
+        // Submit test request
+        $('#request-test-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            $.ajax({
+                url: '/tests/request',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    $('#requestTestModal').modal('hide');
+                    showToast('Test request submitted successfully');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                },
+                error: function(error) {
+                    showToast('Error submitting test request: ' + (error.responseJSON?.message || 'Unknown error'), 'error');
+                }
+            });
+        });
+        
         // Edit patient button click
         $('.edit-patient-btn').on('click', function() {
             const patientId = $(this).data('id');
@@ -370,9 +474,10 @@
         });
         
         // Pay invoice
-        $(document).on('click', '.pay-invoice', function() {
+        $(document).on('click', '.pay-button', function() {
             const invoiceId = $(this).data('id');
-            window.location.href = `/billing/payment/${invoiceId}`;
+            const amount = $(this).data('amount');
+            window.location.href = `/billing/payment/${invoiceId}?amount=${amount}`;
         });
         
         // Print invoice
@@ -381,6 +486,4 @@
             window.open(`/billing/print/${invoiceId}`, '_blank');
         });
     });
-</script>
-
-<%- include('partials/footer') %> 
+</script> 

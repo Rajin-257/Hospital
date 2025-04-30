@@ -3,6 +3,7 @@
 
 <div class="container-fluid py-4">
     <!-- Patient Appointment -->
+    <% if (visibleFeatures && visibleFeatures.scheduleAppointment) { %>
     <div class="card">
         <div class="card-header">
             <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Schedule Appointment</h5>
@@ -55,8 +56,10 @@
             </form>
         </div>
     </div>
+    <% } %>
 
     <!-- Cabin Selection -->
+    <% if (visibleFeatures && visibleFeatures.cabinAllocation) { %>
     <div class="card mt-4">
         <div class="card-header">
             <h5 class="mb-0"><i class="fas fa-bed me-2"></i>Cabin Allocation</h5>
@@ -95,11 +98,13 @@
             </form>
         </div>
     </div>
+    <% } %>
 
     <div class="row mt-4">
         <!-- Test Information -->
         <div class="col-md-8">
             <!-- Unbilled Appointments Section -->
+            <% if (visibleFeatures && visibleFeatures.scheduleAppointment) { %>
             <div class="card mb-4" id="unbilled-appointments-card" style="display: none;">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Unbilled Appointments</h5>
@@ -128,8 +133,10 @@
                     </div>
                 </div>
             </div>
+            <% } %>
 
             <!-- Unbilled Cabin Bookings Section -->
+            <% if (visibleFeatures && visibleFeatures.cabinAllocation) { %>
             <div class="card mb-4" id="unbilled-cabins-card" style="display: none;">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-bed me-2"></i>Unbilled Cabin Bookings</h5>
@@ -160,28 +167,31 @@
                     </div>
                 </div>
             </div>
+            <% } %>
 
+            <!-- Test Requisition -->
+            <% if (visibleFeatures && visibleFeatures.testRequisition) { %>
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fas fa-vial me-2"></i>Test Requisition</h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-3 mb-3">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">Priority</label>
                             <select class="form-select" id="test-priority">
                                 <option value="Normal">Normal</option>
                                 <option value="Urgent">Urgent</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">Extra Charge</label>
                             <div class="input-group">
-                                <span class="input-group-text">$</span>
+                                <span class="input-group-text">Tk</span>
                                 <input type="number" class="form-control" id="test-extra-charge" min="0" step="0.01" value="0">
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label required-label">Test</label>
                             <div class="input-group">
                                 <select class="form-select" id="test-select" name="testId">
@@ -195,7 +205,14 @@
                                 </button>
                             </div>
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Delivery Date (if applicable)</label>
+                            <input type="date" class="form-control" id="test-delivery-date">
+                        </div>
                     </div>
+                    
+                    
+                    
                     
                     <div class="table-responsive">
                         <table class="table table-hover">
@@ -203,8 +220,9 @@
                                 <tr>
                                     <th>Test Name</th>
                                     <th>Code</th>
-                                    <th>Price ($)</th>
+                                    <th>Price (Tk)</th>
                                     <th>Priority</th>
+                                    <th>Delivery Date</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -215,6 +233,7 @@
                     </div>
                 </div>
             </div>
+            <% } %>
         </div>
         
         <!-- Billing Summary -->
@@ -230,32 +249,49 @@
                         <input type="hidden" id="billing-appointment-ids" name="appointmentIds" value="[]">
                         <input type="hidden" id="billing-cabin-booking-ids" name="cabinBookingIds" value="[]">
                         <div class="mb-3">
-                            <div class="row mb-2">
+                            <div class="row mb-3">
                                 <div class="col-7 fw-bold">Total Amount:</div>
-                                <div class="col-5 text-end" id="total-amount">$0.00</div>
-                                <input type="hidden" id="total-amount-input" name="totalAmount" value="0">
+                                <div class="col-5">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">Tk</span>
+                                        <!-- <div class="col-5 text-end" id="total-amount">Tk 0.00</div> -->
+                                        <input type="number" class="form-control" id="total-amount-input" name="totalAmount" value="0">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" id="reset-total-btn" title="Reset to calculated total">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <div class="row mb-2">
                                 <div class="col-7 fw-bold">Discount (%):</div>
                                 <div class="col-5">
-                                    <input type="number" class="form-control form-control-sm text-end" id="discount" name="discountPercentage" value="0" min="0" max="100">
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control" id="discount-percentage" name="discountPercentage" min="0" max="100" value="0">
+                                        <span class="input-group-text">%</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-7 fw-bold">Discount Amount:</div>
-                                <div class="col-5 text-end" id="discount-amount">$0.00</div>
+                                <div class="col-5 text-end" id="discount-amount">Tk 0.00</div>
                                 <input type="hidden" id="discount-amount-input" name="discountAmount" value="0">
                             </div>
                             <hr>
                             <div class="row mb-3">
                                 <div class="col-7 fw-bold fs-5">Net Payable:</div>
-                                <div class="col-5 text-end fw-bold fs-5 text-primary" id="net-payable">$0.00</div>
+                                <div class="col-5 text-end fw-bold fs-5 text-primary" id="net-payable">Tk 0.00</div>
                                 <input type="hidden" id="net-payable-input" name="netPayable" value="0">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-7 fw-bold">Delivery Date:</div>
+                                <div class="col-5">
+                                    <input type="date" class="form-control form-control-sm" id="bill-delivaridate" name="billdelivaridate">
+                                </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-7 fw-bold">Payment Method:</div>
                                 <div class="col-5">
-                                    <select class="form-select form-select-sm" id="payment-method" name="paymentMethod">
+                                    <select class="form-select" id="payment-method" name="paymentMethod">
                                         <option value="cash">Cash</option>
                                         <option value="card">Credit Card</option>
                                         <option value="insurance">Insurance</option>
@@ -265,13 +301,22 @@
                             <div class="row mb-3">
                                 <div class="col-7 fw-bold">Paid Amount:</div>
                                 <div class="col-5">
-                                    <input type="number" class="form-control form-control-sm text-end" id="paid-amount" name="paidAmount" value="0" min="0">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">Tk</span>
+                                        <input type="number" class="form-control" id="paid-amount" name="paidAmount" min="0" value="0" step="0.01">
+                                    </div>
                                 </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-7 fw-bold">Due Amount:</div>
-                                <div class="col-5 text-end fw-bold text-danger" id="due-amount">$0.00</div>
+                                <div class="col-5 text-end fw-bold text-danger" id="due-amount">Tk0.00</div>
                                 <input type="hidden" id="due-amount-input" name="dueAmount" value="0">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-7 fw-bold">Status:</div>
+                                <div class="col-5 text-end" id="payment-status">
+                                    <span class="badge bg-danger">Due</span>
+                                </div>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 btn-save">
@@ -382,13 +427,13 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label required-label">Email</label>
-                            <input type="email" class="form-control" name="email" required>
+                            <input type="email" class="form-control" name="email" >
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label required-label">Consultation Fee</label>
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
+                            <span class="input-group-text">Tk</span>
                             <input type="number" class="form-control" name="consultationFee" min="0" step="0.01" required>
                         </div>
                     </div>
@@ -428,7 +473,7 @@
                     <div class="mb-3">
                         <label class="form-label required-label">Price Per Day</label>
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
+                            <span class="input-group-text">Tk</span>
                             <input type="number" class="form-control" name="pricePerDay" min="0" step="0.01" required>
                         </div>
                     </div>
@@ -467,7 +512,7 @@
                     <div class="mb-3">
                         <label class="form-label required-label">Price</label>
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
+                            <span class="input-group-text">Tk</span>
                             <input type="number" class="form-control" name="price" min="0" step="0.01" required>
                         </div>
                     </div>
@@ -486,6 +531,55 @@
 </div>
 
 <%- include('partials/footer') %>
+
+<style>
+    /* Priority and Payment Method Dropdown Styles */
+    .priority-dropdown .select2-results__option,
+    .payment-dropdown .select2-results__option {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .priority-dropdown .select2-results__option--highlighted,
+    .payment-dropdown .select2-results__option--highlighted {
+        background-color: #e9ecef;
+        color: #212529;
+    }
+
+    .priority-dropdown .select2-results__option--selected,
+    .payment-dropdown .select2-results__option--selected {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection {
+        min-height: 38px;
+        padding: 4px 8px;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection--single {
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Manual input indicator */
+    .manual-input {
+        background-color: #fffde7 !important;
+        font-weight: bold;
+        color: #ff6f00;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .select2-container--bootstrap-5 {
+            width: 100% !important;
+        }
+        
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: 42px;
+        }
+    }
+</style>
 
 <script>
     $(document).ready(function() {
@@ -516,12 +610,16 @@
         
         $('#test-priority').select2({
             theme: 'bootstrap-5',
-            minimumResultsForSearch: Infinity // Hide search for this dropdown
+            minimumResultsForSearch: Infinity,
+            width: '100%',
+            dropdownCssClass: 'priority-dropdown'
         });
         
         $('#payment-method').select2({
             theme: 'bootstrap-5',
-            minimumResultsForSearch: Infinity // Hide search for this dropdown
+            minimumResultsForSearch: Infinity,
+            width: '100%',
+            dropdownCssClass: 'payment-dropdown'
         });
         
         // Initialize tooltips
@@ -532,14 +630,14 @@
         
         // Add test automatically when selected from dropdown
         $('#test-select').on('change', function() {
+            const testId = $(this).val();
+            
+            if (!testId) return;
+            
             const testSelect = $(this);
-            const testId = testSelect.val();
             const testPriority = $('#test-priority').val();
             const extraCharge = parseFloat($('#test-extra-charge').val()) || 0;
-            
-            if (!testId) {
-                return;
-            }
+            const deliveryDate = $('#test-delivery-date').val();
             
             const testName = testSelect.find('option:selected').text();
             const testCode = testSelect.find('option:selected').data('code');
@@ -562,12 +660,18 @@
             const extraChargeDisplay = extraCharge > 0 ? 
                 ` <small class="text-muted">(+$${extraCharge.toFixed(2)} extra)</small>` : '';
             
+            // Format delivery date for display and storage
+            const displayDeliveryDate = deliveryDate ? new Date(deliveryDate).toLocaleDateString() : 'N/A';
+            
             const newRow = `
-                <tr id="test-row-${testId}" data-id="${testId}" data-name="${testName}" data-code="${testCode}" data-price="${totalPrice}" data-priority="${testPriority}">
+                <tr id="test-row-${testId}" data-id="${testId}" data-name="${testName}" data-code="${testCode}" 
+                    data-price="${totalPrice}" data-priority="${testPriority}" 
+                    data-delivery-date="${deliveryDate || ''}">
                     <td>${testName}</td>
                     <td>${testCode}</td>
                     <td>$${totalPrice.toFixed(2)}${extraChargeDisplay}</td>
                     <td>${priorityLabel}</td>
+                    <td>${displayDeliveryDate}</td>
                     <td>
                         <button type="button" class="btn btn-sm btn-outline-danger delete-test">
                             <i class="fas fa-trash-alt"></i>
@@ -581,6 +685,7 @@
             // Reset selection and extra charge
             testSelect.val(null).trigger('change');
             $('#test-extra-charge').val(0);
+            // Don't reset delivery options to allow for faster consecutive entries
             
             // Update all billing items
             updateAllBillingItems();
@@ -615,6 +720,7 @@
         const today = new Date();
         $('#appointment-date').val(today.toISOString().split('T')[0]);
         $('#admission-date').val(today.toISOString().split('T')[0]);
+        
         
         // Load unbilled appointments for patient
         function loadUnbilledAppointments(patientId) {
@@ -823,13 +929,17 @@
             // Get test items
             const testItems = [];
             $('#test-list tr').each(function() {
+                const $row = $(this);
+                const deliveryDate = $row[0].getAttribute('data-delivery-date') || '';
+                
                 testItems.push({
-                    id: $(this).data('id'),
+                    id: $row.data('id'),
                     type: 'test',
-                    name: $(this).data('name'),
-                    code: $(this).data('code'),
-                    price: parseFloat($(this).data('price')),
-                    priority: $(this).data('priority')
+                    name: $row.data('name'),
+                    code: $row.data('code'),
+                    price: parseFloat($row.data('price')),
+                    priority: $row.data('priority'),
+                    deliveryDate: deliveryDate
                 });
             });
             
@@ -845,36 +955,47 @@
         function updateBillingSummary() {
             let totalAmount = 0;
             
-            // Calculate total amount from tests
-            $('#test-list tr').each(function() {
-                totalAmount += parseFloat($(this).data('price'));
-            });
+            // Get current manual total amount if it was manually modified
+            const currentManualTotal = parseFloat($('#total-amount-input').val()) || 0;
+            const wasManuallySet = $('#total-amount-input').data('manual') === true;
             
-            // Add fees from selected appointments
-            $('.appointment-checkbox:checked').each(function() {
-                const fee = parseFloat($(this).closest('tr').data('fee'));
-                totalAmount += fee;
-            });
-            
-            // Add fees from selected cabin bookings
-            $('.cabin-checkbox:checked').each(function() {
-                const amount = parseFloat($(this).closest('tr').data('amount'));
-                totalAmount += amount;
-            });
+            // If not manually modified, calculate from items
+            if (!wasManuallySet) {
+                // Calculate total amount from tests
+                $('#test-list tr').each(function() {
+                    totalAmount += parseFloat($(this).data('price'));
+                });
+                
+                // Add fees from selected appointments
+                $('.appointment-checkbox:checked').each(function() {
+                    const fee = parseFloat($(this).closest('tr').data('fee'));
+                    totalAmount += fee;
+                });
+                
+                // Add fees from selected cabin bookings
+                $('.cabin-checkbox:checked').each(function() {
+                    const amount = parseFloat($(this).closest('tr').data('amount'));
+                    totalAmount += amount;
+                });
+                
+                // Update displayed values
+                $('#total-amount').text('Tk ' + totalAmount.toFixed(2));
+                $('#total-amount-input').val(totalAmount.toFixed(2));
+            } else {
+                // Use the manually entered amount
+                totalAmount = currentManualTotal;
+            }
             
             // Calculate discount
-            const discountPercent = parseFloat($('#discount').val()) || 0;
+            const discountPercent = parseFloat($('#discount-percentage').val()) || 0;
             const discountAmount = (totalAmount * discountPercent / 100);
             const netPayable = totalAmount - discountAmount;
             
-            // Update displayed values
-            $('#total-amount').text('$' + totalAmount.toFixed(2));
-            $('#total-amount-input').val(totalAmount.toFixed(2));
-            
-            $('#discount-amount').text('$' + discountAmount.toFixed(2));
+            // Update discount and net payable
+            $('#discount-amount').text('Tk ' + discountAmount.toFixed(2));
             $('#discount-amount-input').val(discountAmount.toFixed(2));
             
-            $('#net-payable').text('$' + netPayable.toFixed(2));
+            $('#net-payable').text('Tk ' + netPayable.toFixed(2));
             $('#net-payable-input').val(netPayable.toFixed(2));
             
             // Also update paid amount max value
@@ -888,6 +1009,58 @@
             updateDueAmount();
         });
         
+        // Handle reset button click
+        $('#reset-total-btn').on('click', function() {
+            // Remove manual flag
+            $('#total-amount-input').data('manual', false);
+            
+            // Remove visual indicator
+            $('#total-amount-input').removeClass('manual-input');
+            
+            // Recalculate all billing items based on selections
+            updateAllBillingItems();
+        });
+        
+        // Handle manual changes to total amount
+        $('#total-amount-input').on('input', function() {
+            // Mark as manually modified
+            $(this).data('manual', true);
+            
+            // Add visual indicator that the value is manually set
+            $(this).addClass('manual-input');
+            
+            // Recalculate discount and net payable based on manually entered amount
+            recalculateBillingFromManualInput();
+        });
+        
+        // Handle changes to discount percentage
+        $('#discount-percentage').on('input', function() {
+            // Recalculate discount and net payable
+            recalculateBillingFromManualInput();
+        });
+        
+        // Recalculate billing based on manual input
+        function recalculateBillingFromManualInput() {
+            const manualTotalAmount = parseFloat($('#total-amount-input').val()) || 0;
+            const discountPercent = parseFloat($('#discount-percentage').val()) || 0;
+            
+            // Calculate discount amount based on manual total
+            const discountAmount = (manualTotalAmount * discountPercent / 100);
+            const netPayable = manualTotalAmount - discountAmount;
+            
+            // Update displayed values
+            $('#discount-amount').text('Tk ' + discountAmount.toFixed(2));
+            $('#discount-amount-input').val(discountAmount.toFixed(2));
+            
+            $('#net-payable').text('Tk ' + netPayable.toFixed(2));
+            $('#net-payable-input').val(netPayable.toFixed(2));
+            
+            // Update paid amount max value
+            $('#paid-amount').attr('max', netPayable.toFixed(2));
+            
+            updateDueAmount();
+        }
+        
         // Delete test from the list
         $(document).on('click', '.delete-test', function() {
             $(this).closest('tr').remove();
@@ -898,10 +1071,18 @@
         function updateDueAmount() {
             const netPayable = parseFloat($('#net-payable-input').val()) || 0;
             const paidAmount = parseFloat($('#paid-amount').val()) || 0;
+            
             const dueAmount = netPayable - paidAmount;
             
-            $('#due-amount').text('$' + dueAmount.toFixed(2));
+            $('#due-amount').text('Tk ' + dueAmount.toFixed(2));
             $('#due-amount-input').val(dueAmount.toFixed(2));
+            
+            // Update status indicator based on payment status
+            if (paidAmount >= netPayable) {
+                $('#payment-status').html('<span class="badge bg-success">Paid</span>');
+            } else {
+                $('#payment-status').html('<span class="badge bg-danger">Due</span>');
+            }
         }
         
         // Submit appointment form

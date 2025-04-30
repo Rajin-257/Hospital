@@ -25,7 +25,7 @@
                             <tr>
                                 <td><%= test.name %></td>
                                 <td><%= test.code %></td>
-                                <td>$<%= parseFloat(test.price).toFixed(2) %></td>
+                                <td>Tk <%= parseFloat(test.price).toFixed(2) %></td>
                                 <td>
                                     <button class="btn btn-sm btn-info view-test" data-id="<%= test.id %>">
                                         <i class="fas fa-eye"></i>
@@ -67,7 +67,7 @@
                     <div class="mb-3">
                         <label class="form-label required-label">Price</label>
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
+                            <span class="input-group-text">Tk</span>
                             <input type="number" class="form-control" name="price" min="0" step="0.01" required>
                         </div>
                     </div>
@@ -107,7 +107,7 @@
                     <div class="mb-3">
                         <label class="form-label required-label">Price</label>
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
+                            <span class="input-group-text">Tk</span>
                             <input type="number" class="form-control" id="edit-test-price" name="price" min="0" step="0.01" required>
                         </div>
                     </div>

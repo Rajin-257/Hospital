@@ -106,13 +106,26 @@ exports.deleteTest = async (req, res) => {
 // Create test request
 exports.createTestRequest = async (req, res) => {
   try {
-    const { patientId, testId, priority } = req.body;
+    const { patientId, testId, priority, deliveryOption, deliveryDate } = req.body;
+    
+    // Process delivery date if it exists
+    let processedDeliveryDate = null;
+    if (deliveryDate && deliveryDate.trim() !== '') {
+      processedDeliveryDate = new Date(deliveryDate);
+      
+      // Check if date is valid
+      if (isNaN(processedDeliveryDate.getTime())) {
+        processedDeliveryDate = null;
+      }
+    }
     
     const testRequest = await TestRequest.create({
       PatientId: patientId,
       TestId: testId,
       priority: priority || 'Normal',
-      requestDate: new Date()
+      requestDate: new Date(),
+      deliveryOption: deliveryOption || 'Not Collected',
+      deliveryDate: processedDeliveryDate
     });
     
     const fullTestRequest = await TestRequest.findByPk(testRequest.id, {

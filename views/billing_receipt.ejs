@@ -3,22 +3,109 @@
 
 <style>
     @media print {
-        .navbar, .btn, footer, .no-print {
-            display: none !important;
-        }
-        body {
-            background-color: white;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
-            margin: 0;
-            padding: 0;
-        }
-        .print-invoice {
-            padding: 30px;
-            max-width: 100%;
-        }
+    /* Basic print settings */
+    body {
+        margin: 0;
+        padding: 0;
     }
+    
+    .print-invoice {
+        padding: 10px;
+        max-width: 100%;
+        box-sizing: border-box;
+        font-size: 11px; /* Increased base font size */
+    }
+    
+    /* Header elements */
+    .invoice-title {
+        font-size: 18px !important;
+        margin: 3px 0 !important;
+    }
+    
+    .invoice-subtitle {
+        font-size: 11px !important;
+        margin: 1px 0 !important;
+    }
+    
+    /* Information table */
+    .invoice-info-table {
+        font-size: 11px !important;
+        margin-bottom: 6px !important;
+    }
+    
+    .invoice-info-table td {
+        padding: 5px !important;
+    }
+    
+    .info-label {
+        font-size: 10px !important;
+        padding: 1px 0 !important;
+    }
+    
+    .info-value {
+        font-size: 11px !important;
+        margin-bottom: 0 !important;
+    }
+    
+    /* Section titles and table elements */
+    .section-title {
+        font-size: 12px !important;
+        margin: 5px 0 2px 0 !important;
+    }
+    
+    .invoice-table th, .invoice-table td {
+        padding: 3px 5px !important;
+        font-size: 10px !important;
+    }
+    
+    .invoice-table {
+        margin-bottom: 6px !important;
+    }
+    
+    /* Totals section */
+    .invoice-total-section {
+        margin-top: 6px !important;
+        padding-top: 6px !important;
+    }
+    
+    .seal-container {
+        width: 85px !important;
+        height: 85px !important;
+    }
+    
+    .seal-status {
+        font-size: 16px !important;
+        margin-bottom: 3px !important;
+    }
+    
+    .seal-amount {
+        font-size: 14px !important;
+    }
+    
+    .invoice-total-label, .invoice-total-value {
+        font-size: 11px !important;
+    }
+    
+    .invoice-grand-total {
+        font-size: 12px !important;
+        padding-top: 3px !important;
+    }
+    
+    /* Page size settings */
+    @page {
+        size: 5.5in 7.5in;
+        margin: 0;
+    }
+    
+    /* Force content to fit */
+    .print-invoice {
+        transform-origin: top left;
+        transform: scale(var(--scale-factor, 0.95));
+        width: 5.5in;
+        height: 7.5in;
+        overflow: hidden;
+    }
+}
     
     .print-invoice {
         background-color: white;
@@ -31,49 +118,52 @@
     
     .invoice-header {
         border-bottom: 1px solid #f0f0f0;
-        padding-bottom: 10px;
-        margin-bottom: 10px;
+        text-align: center; /* Added to center the header */
     }
     
     .invoice-title {
         font-size: 28px;
-        color: #2c3e50;
-        margin-bottom: 5px;
+        color: #000000;
         font-weight: 300;
     }
     
     .invoice-subtitle {
-        color: #7f8c8d;
+        color: #000000;
         font-weight: 300;
         margin-bottom: 0;
     }
     
-    .invoice-info {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 30px;
+    .invoice-info-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        border: 1px solid #000;
     }
     
-    .invoice-info-block {
-        flex: 1;
+    .invoice-info-table td {
+        padding: 10px;
+        border: 1px solid #000;
+        vertical-align: top;
+        background-color: #f9f9f9;
     }
     
     .info-label {
         font-size: 12px;
         text-transform: uppercase;
-        color: #95a5a6;
-        margin-bottom: 5px;
+        color: #000000;
+        padding: 5px 0;
+        font-weight: bold;
     }
     
     .info-value {
         font-size: 16px;
+        margin-bottom: 3px;
     }
     
     .section-title {
         font-size: 14px;
         text-transform: uppercase;
-        color: #2c3e50;
-        margin-bottom: 15px;
+        color: #000000;
         font-weight: 600;
         letter-spacing: 1px;
     }
@@ -81,21 +171,22 @@
     .invoice-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 25px;
+        border: 1px solid #000;
     }
     
     .invoice-table th {
         background-color: #f9f9f9;
-        padding: 10px;
+        padding: 8px;
         text-align: left;
         font-weight: 500;
-        color: #2c3e50;
+        color: #000000;
         font-size: 14px;
+        border: 1px solid #000;
     }
     
     .invoice-table td {
-        padding: 12px 10px;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 8px;
+        border: 1px solid #000;
         font-size: 14px;
     }
     
@@ -103,14 +194,117 @@
         text-align: right;
     }
     
+    .text-center {
+        text-align: center;
+    }
+    
     .invoice-total-section {
-        margin-top: 30px;
+        margin-top: 10px;
         border-top: 1px solid #f0f0f0;
-        padding-top: 20px;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .invoice-status-seal {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+    
+    .seal-container {
+        position: relative;
+        width: 160px;
+        height: 160px;
+        margin-bottom: 10px;
+        transform: rotate(-15deg);
+    }
+    
+    .seal-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%; /* Changed to make it circular */
+        border: 3px solid #000;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        overflow: hidden;
+    }
+    
+    .seal-background::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(0,0,0,0.03) 10px,
+            rgba(0,0,0,0.03) 20px
+        );
+        z-index: -1;
+    }
+    
+    .paid-seal {
+        background-color: #f2f2f2;
+        border-color: #000000;
+    }
+    
+    .partial-seal {
+        background-color: #f2f2f2;
+        border-color: #000000;
+    }
+    
+    .unpaid-seal {
+        background-color: #f2f2f2;
+        border-color: #000000;
+    }
+    
+    .seal-status {
+        font-size: 28px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+    }
+    
+    .paid-text {
+        color: #000000;
+    }
+    
+    .partial-text {
+        color: #000000;
+    }
+    
+    .unpaid-text {
+        color: #000000;
+    }
+    
+    .seal-amount {
+        font-size: 24px;
+        font-weight: bold;
+        color: #000000;
+    }
+    
+    .seal-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        margin-top: 5px;
+        color: #000000;
     }
     
     .invoice-total {
-        width: 100%;
+        flex: 1;
         max-width: 300px;
         margin-left: auto;
     }
@@ -118,11 +312,10 @@
     .invoice-total-row {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 10px;
     }
     
     .invoice-total-label {
-        color: #7f8c8d;
+        color: #000000;
     }
     
     .invoice-total-value {
@@ -134,8 +327,7 @@
     .invoice-grand-total {
         font-size: 18px;
         font-weight: 600;
-        color: #2c3e50;
-        margin-top: 10px;
+        color: #000000;
         padding-top: 10px;
         border-top: 1px solid #f0f0f0;
     }
@@ -154,21 +346,58 @@
         color: #388e3c;
     }
     
-    .status-partial {
-        background-color: #fff8e1;
-        color: #f57c00;
-    }
-    
     .status-unpaid {
         background-color: #ffebee;
         color: #d32f2f;
     }
     
     .invoice-footer {
-        margin-top: 50px;
+        margin-top: 20px;
         text-align: center;
-        color: #95a5a6;
+        color: #000000;
         font-size: 12px;
+    }
+    
+    .signature-section {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        padding-top: 20px;
+    }
+    
+    .signature-box {
+        flex: 1;
+        text-align: center;
+        padding: 0 15px;
+        position: relative;
+    }
+    
+    .signature-box:not(:last-child):after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        border-right: 1px dashed #ddd;
+    }
+    
+    .signature-line {
+        border-top: 1px solid #333;
+        margin-bottom: 5px;
+        width: 80%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .signature-title {
+        font-weight: bold;
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+    
+    .signature-subtitle {
+        font-size: 12px;
+        color: #666;
     }
 </style>
 
@@ -188,51 +417,69 @@ const items = JSON.parse(billing.items);
 const appointments = items.filter(item => item.type === 'appointment');
 const cabins = items.filter(item => item.type === 'cabin');
 const tests = items.filter(item => item.type === 'test');
+
+// Calculate age from date of birth
+function calculateAge(dateOfBirth) {
+    const dob = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    return age;
+}
+
+// Get today's date for print date
+const today = new Date();
+const printDate = today.toLocaleDateString();
 %>
 
 <div class="print-invoice">
     <div class="invoice-header">
-        <h1 class="invoice-title">Invoice</h1>
-        <p class="invoice-subtitle">Medical Services</p>
+        <h1 class="invoice-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'Hospital Management System' %></h1>
+        <p class="invoice-subtitle"><%= locals.settings && settings.address ? settings.address : 'No Address' %></p>
+        <p class="invoice-subtitle"><%= locals.settings && settings.phone ? settings.phone : 'No phone' %></p>
     </div>
     
-    <div class="invoice-info">
-        <div class="invoice-info-block">
-            <div class="info-label">Bill To</div>
-            <div class="info-value"><strong><%= billing.Patient.name %></strong></div>
-            <div class="info-value">Patient ID: <%= billing.Patient.patientId %></div>
-        </div>
-        
-        <div class="invoice-info-block">
-            <div class="info-label">Invoice Details</div>
-            <div class="info-value">Invoice #: <%= billing.billNumber %></div>
-            <div class="info-value">Date: <%= new Date(billing.billDate).toLocaleDateString() %></div>
-            <div class="info-value">
-                Status:
-                <% if (billing.status === 'paid') { %>
-                    <span class="status-badge status-paid">Paid</span>
-                <% } else if (billing.status === 'partial') { %>
-                    <span class="status-badge status-partial">Partial</span>
-                <% } else { %>
-                    <span class="status-badge status-unpaid">Unpaid</span>
+    <!-- Invoice Info Table -->
+    <table class="invoice-info-table">
+        <h1 class="invoice-title text-center">Money Receipt</h1>
+        <tr>
+            <td style="width: 50%;">
+                <div class="info-label">Bill To</div>
+                <div class="info-value"><strong><%= billing.Patient.name %></strong></div>
+                <div class="info-value">Patient ID: <%= billing.Patient.patientId %></div>
+                <div class="info-value">Age: <%= calculateAge(billing.Patient.dateOfBirth) %>, Gender: <%= billing.Patient.gender %> </div>
+                <div class="info-value">Mobile: <%= billing.Patient.phone %></div>
+            </td>
+            <td style="width: 50%;">
+                <div class="info-label">Invoice Details</div>
+                <div class="info-value">Invoice #: <%= billing.billNumber %></div>
+                <div class="info-value">Date: <%= new Date(billing.billDate).toLocaleDateString() %></div>
+                <% if (billing.billdelivaridate) { %>
+                <div class="info-value">Delivery Date: <%= new Date(billing.billdelivaridate).toLocaleDateString() %></div>
                 <% } %>
-            </div>
-        </div>
-    </div>
+                <div class="info-value">Print-Date: <%= printDate %></div>
+            </td>
+        </tr>
+    </table>
     
     <% if (appointments.length > 0) { %>
-    <div class="section-title">Consultations</div>
+    <div class="section-title text-center">Consultations</div>
     <table class="invoice-table">
         <thead>
             <tr>
-                <th>Doctor</th>
-                <th>Service</th>
-                <th class="text-right">Amount</th>
+                <th class="text-center" style="width: 5%;">S.No</th>
+                <th class="text-center">Doctor</th>
+                <th class="text-center">Service</th>
+                <th class="text-center">Basic Amount</th>
             </tr>
         </thead>
         <tbody>
-            <% appointments.forEach(item => { %>
+            <% appointments.forEach((item, index) => { %>
                 <tr>
+                    <td class="text-center"><%= index + 1 %></td>
                     <td><%= item.name.replace('Consultation with Dr. ', 'Dr. ') %></td>
                     <td>Medical Consultation</td>
                     <td class="text-right">$<%= parseFloat(item.price).toFixed(2) %></td>
@@ -243,18 +490,20 @@ const tests = items.filter(item => item.type === 'test');
     <% } %>
     
     <% if (cabins.length > 0) { %>
-    <div class="section-title">Accommodation</div>
+    <div class="section-title text-center">Accommodation</div>
     <table class="invoice-table">
         <thead>
             <tr>
-                <th>Room Details</th>
-                <th>Service Type</th>
-                <th class="text-right">Amount</th>
+                <th class="text-center" style="width: 5%;">S.No</th>
+                <th class="text-center">Room Details</th>
+                <th class="text-center">Service Type</th>
+                <th class="text-center">Basic Amount</th>
             </tr>
         </thead>
         <tbody>
-            <% cabins.forEach(item => { %>
+            <% cabins.forEach((item, index) => { %>
                 <tr>
+                    <td class="text-center"><%= index + 1 %></td>
                     <td><%= item.name %></td>
                     <td>Room Charges</td>
                     <td class="text-right">$<%= parseFloat(item.price).toFixed(2) %></td>
@@ -265,30 +514,104 @@ const tests = items.filter(item => item.type === 'test');
     <% } %>
     
     <% if (tests.length > 0) { %>
-    <div class="section-title">Laboratory Tests</div>
+    <div class="section-title text-center">Laboratory Tests</div>
     <table class="invoice-table">
         <thead>
             <tr>
-                <th>Test</th>
-                <th>Test Code</th>
-                <th>Priority</th>
-                <th class="text-right">Amount</th>
+                <th class="text-center" style="width: 5%;">S.No</th>
+                <th class="text-center">Test</th>
+                <% if (!billing.billdelivaridate) { %>
+                <th class="text-center">Delivery Date</th>
+                <% } %>
+                <th class="text-center">Basic Amount</th>
             </tr>
         </thead>
         <tbody>
-            <% tests.forEach(item => { %>
+            <% tests.forEach((item, index) => { %>
                 <tr>
+                    <td class="text-center"><%= index + 1 %></td>
                     <td><%= item.name %></td>
-                    <td><%= item.code %></td>
-                    <td><%= item.priority %></td>
+                    <% if (!billing.billdelivaridate) { %>
+                        <td>
+                            <% if (item.deliveryDate && item.deliveryDate.trim() !== '') { 
+                                try {
+                                    const deliveryDate = new Date(item.deliveryDate);
+                                    if (!isNaN(deliveryDate.getTime())) { %>
+                                        <%= deliveryDate.toLocaleDateString() %>
+                                    <% } else { %>
+                                        N/A
+                                    <% }
+                                } catch(e) { %>
+                                    N/A
+                                <% }
+                               } else { %>
+                                N/A
+                            <% } %>
+                        </td>
+                    <% } %>
                     <td class="text-right">$<%= parseFloat(item.price).toFixed(2) %></td>
                 </tr>
             <% }) %>
         </tbody>
     </table>
+    
+    <% 
+    // Check if any tests have delivery options other than 'Not Collected'
+    const specialDeliveryTests = tests.filter(item => 
+        item.deliveryOption && item.deliveryOption !== 'Not Collected'
+    );
+    
+    if (specialDeliveryTests.length > 0) { 
+    %>
+    <div style="margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #4a6fdc; border-radius: 4px;">
+        <h6 style="color: #4a6fdc; margin-bottom: 10px;"><i class="fas fa-info-circle me-2"></i>Special Delivery Information</h6>
+        <ul style="margin-bottom: 0; padding-left: 20px;">
+            <% specialDeliveryTests.forEach(test => { %>
+                <li style="margin-bottom: 5px;">
+                    <strong><%= test.name %></strong>: <%= test.deliveryOption %>
+                    <% if (test.deliveryOption === 'Home Delivery' && test.deliveryDate && test.deliveryDate.trim() !== '') {
+                        try {
+                            const deliveryDate = new Date(test.deliveryDate);
+                            if (!isNaN(deliveryDate.getTime())) { %>
+                                - Expected delivery on <%= deliveryDate.toLocaleDateString() %>
+                            <% }
+                        } catch(e) { /* Ignore date errors */ }
+                    } %>
+                </li>
+            <% }) %>
+        </ul>
+        <% if (specialDeliveryTests.some(test => test.deliveryOption === 'Email')) { %>
+            <p style="margin-top: 10px; margin-bottom: 0;"><small>* Email results will be sent to <strong><%= billing.Patient.email || 'the email on file' %></strong></small></p>
+        <% } %>
+        <% if (specialDeliveryTests.some(test => test.deliveryOption === 'Home Delivery')) { %>
+            <p style="margin-top: 5px; margin-bottom: 0;"><small>* Home delivery will be made to <strong><%= billing.Patient.address || 'the address on file' %></strong></small></p>
+        <% } %>
+    </div>
+    <% } %>
     <% } %>
     
     <div class="invoice-total-section">
+        <div class="invoice-status-seal">
+            <div class="seal-container">
+                <div class="seal-background <%= billing.status === 'paid' ? 'paid-seal' : 'unpaid-seal' %>">
+                    <div class="seal-status <%= billing.status === 'paid' ? 'paid-text' : 'unpaid-text' %>">
+                        <% if (billing.status === 'paid') { %>
+                            PAID
+                        <% } else { %>
+                            DUE
+                        <% } %>
+                    </div>
+                    <div class="seal-amount">
+                        <% if (billing.status === 'paid') { %>
+                            $<%= parseFloat(billing.paidAmount).toFixed(2) %>
+                        <% } else { %>
+                            $<%= parseFloat(billing.dueAmount).toFixed(2) %>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="invoice-total">
             <div class="invoice-total-row">
                 <div class="invoice-total-label">Subtotal:</div>
@@ -315,9 +638,137 @@ const tests = items.filter(item => item.type === 'test');
         </div>
     </div>
     
+    <!-- Signature Section -->
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-subtitle"><%- user.username %></div>
+            <div class="signature-line"></div>
+            <div class="signature-title">Prepared By</div>
+        </div>
+        <div class="signature-box">
+            <span>&nbsp</span>
+            <div class="signature-line"></div>
+            <div class="signature-title">Checked By</div>
+        </div>
+        <div class="signature-box">
+            <span>&nbsp</span>
+            <div class="signature-line"></div>
+            <div class="signature-title">Accounts</div>
+        </div>
+    </div>
+    
     <div class="invoice-footer">
         Thank you for choosing our services
     </div>
 </div>
+
+<% if (billing.status !== 'paid') { %>
+<div class="container no-print mb-4">
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Process Payment</h5>
+        </div>
+        <div class="card-body">
+            <form id="payment-form">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Payment Method</label>
+                        <select class="form-select" id="payment-method" name="paymentMethod" required>
+                            <option value="cash">Cash</option>
+                            <option value="card">Card</option>
+                            <option value="insurance">Insurance</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="payment-amount" name="paidAmount" value="<%= parseFloat(billing.dueAmount).toFixed(2) %>" max="<%= parseFloat(billing.dueAmount).toFixed(2) %>" min="0.01" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-check-circle me-1"></i> Process Payment
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-scaling function to ensure content fits on a single 6x8 inch page
+    function scaleToFit() {
+        if (window.matchMedia('print').matches) {
+            const content = document.querySelector('.print-invoice');
+            if (!content) return;
+
+            // Remove any previous scaling for measurement
+            document.documentElement.style.setProperty('--scale-factor', 1);
+
+            // Get actual content height vs target container height
+            const contentHeight = content.scrollHeight;
+            const targetHeight = 7.5 * 96; // 7.5 inches in pixels
+
+            // Calculate scale factor to fit content into target height
+            let scaleFactor = Math.min(0.98, targetHeight / contentHeight);
+
+            // Set minimum scale to ensure readability
+            scaleFactor = Math.max(scaleFactor, 0.8);
+
+            console.log('Content height:', contentHeight, 'Target height:', targetHeight, 'Scale:', scaleFactor);
+
+            // Apply the scale factor as a CSS variable
+            document.documentElement.style.setProperty('--scale-factor', scaleFactor);
+        }
+    }
+    
+    // Run before printing and on load to prepare
+    window.addEventListener('beforeprint', scaleToFit);
+    window.addEventListener('load', function() {
+        // Dynamically add ultra-compact styles if needed
+        const style = document.createElement('style');
+        style.textContent = `
+            @media print {
+                .ultra-compact .invoice-table td, .ultra-compact .invoice-table th {
+                    padding: 0px 2px !important;
+                    line-height: 1.1 !important;
+                }
+                .ultra-compact .seal-container {
+                    width: 70px !important;
+                    height: 70px !important;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    });
+    
+    // For payment form
+    $(document).ready(function() {
+        $('#payment-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const paymentData = {
+                paidAmount: $('#payment-amount').val(),
+                paymentMethod: $('#payment-method').val()
+            };
+            
+            $.ajax({
+                url: '/billing/<%= billing.id %>/payment',
+                type: 'PUT',
+                data: paymentData,
+                success: function(response) {
+                    location.reload();
+                },
+                error: function(error) {
+                    alert('Error processing payment. Please try again.');
+                    console.error(error);
+                }
+            });
+        });
+    });
+</script>
+<% } %>
 
 <%- include('partials/footer') %>
