@@ -10,72 +10,67 @@
     }
     
     .print-invoice {
-        padding: 10px;
+        padding: 5px;
         max-width: 100%;
         box-sizing: border-box;
-        font-size: 11px; /* Increased base font size */
+        font-size: 13px;
     }
     
     /* Header elements */
     .invoice-title {
-        font-size: 18px !important;
-        margin: 3px 0 !important;
+        font-size: 22px !important;
     }
     
     .invoice-subtitle {
-        font-size: 11px !important;
-        margin: 1px 0 !important;
+        font-size: 14px !important;
     }
     
     /* Information table */
     .invoice-info-table {
-        font-size: 11px !important;
-        margin-bottom: 6px !important;
+        font-size: 13px !important;
     }
     
     .invoice-info-table td {
-        padding: 5px !important;
+        padding: 1px !important;
     }
     
     .info-label {
-        font-size: 10px !important;
-        padding: 1px 0 !important;
+        font-size: 12px !important;
     }
     
     .info-value {
-        font-size: 11px !important;
+        font-size: 13px !important;
         margin-bottom: 0 !important;
     }
     
     /* Section titles and table elements */
     .section-title {
-        font-size: 12px !important;
-        margin: 5px 0 2px 0 !important;
+        font-size: 16px !important;
     }
     
     .invoice-table th, .invoice-table td {
-        padding: 3px 5px !important;
-        font-size: 10px !important;
+        padding: 2px !important;
+        font-size: 12px !important;
     }
     
     .invoice-table {
-        margin-bottom: 6px !important;
+        margin-bottom: 2px !important;
     }
     
     /* Totals section */
     .invoice-total-section {
-        margin-top: 6px !important;
-        padding-top: 6px !important;
+        margin-top: 2px !important;
+        padding-top: 2px !important;
     }
     
     .seal-container {
-        width: 85px !important;
-        height: 85px !important;
+        width: 70px !important;
+        height: 70px !important;
     }
     
     .seal-status {
         font-size: 16px !important;
-        margin-bottom: 3px !important;
+        margin-bottom: 0 !important;
     }
     
     .seal-amount {
@@ -83,12 +78,17 @@
     }
     
     .invoice-total-label, .invoice-total-value {
-        font-size: 11px !important;
+        font-size: 13px !important;
     }
     
     .invoice-grand-total {
-        font-size: 12px !important;
-        padding-top: 3px !important;
+        font-size: 16px !important;
+        padding-top: 2px !important;
+    }
+    
+    .barcode-container {
+        width: 220px !important;
+        margin-bottom: 0 !important;
     }
     
     /* Page size settings */
@@ -110,84 +110,99 @@
     .print-invoice {
         background-color: white;
         color: #333;
-        padding: 40px;
+        padding: 10px;
         max-width: 800px;
         margin: 0 auto;
         font-family: 'Helvetica Neue', Arial, sans-serif;
+        font-size: 15px;
     }
     
     .invoice-header {
         border-bottom: 1px solid #f0f0f0;
-        text-align: center; /* Added to center the header */
+        text-align: center;
+        padding: 0;
+        margin: 0;
     }
     
     .invoice-title {
-        font-size: 28px;
+        font-size: 32px;
         color: #000000;
         font-weight: 300;
+        margin: 0;
+        line-height: 1;
     }
     
     .invoice-subtitle {
         color: #000000;
         font-weight: 300;
-        margin-bottom: 0;
+        margin: 0;
+        font-size: 18px;
+        line-height: 1;
     }
     
     .invoice-info-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 20px;
+        margin: 0;
         border: 1px solid #000;
     }
     
     .invoice-info-table td {
-        padding: 10px;
+        padding: 2px;
         border: 1px solid #000;
         vertical-align: top;
         background-color: #f9f9f9;
     }
     
     .info-label {
-        font-size: 12px;
+        font-size: 14px;
         text-transform: uppercase;
         color: #000000;
-        padding: 5px 0;
+        padding: 0;
+        margin: 0;
         font-weight: bold;
+        line-height: 1;
     }
     
     .info-value {
-        font-size: 16px;
-        margin-bottom: 3px;
+        font-size: 18px;
+        margin: 0 0 2px 0;
+        line-height: 1.1;
     }
     
     .section-title {
-        font-size: 14px;
+        font-size: 18px;
         text-transform: uppercase;
         color: #000000;
         font-weight: 600;
         letter-spacing: 1px;
+        margin: 2px 0;
+        line-height: 1;
     }
     
     .invoice-table {
         width: 100%;
         border-collapse: collapse;
         border: 1px solid #000;
+        margin: 2px 0;
     }
     
     .invoice-table th {
         background-color: #f9f9f9;
-        padding: 8px;
+        padding: 2px;
         text-align: left;
         font-weight: 500;
         color: #000000;
-        font-size: 14px;
+        font-size: 16px;
         border: 1px solid #000;
+        line-height: 1;
     }
     
     .invoice-table td {
-        padding: 8px;
+        padding: 2px;
         border: 1px solid #000;
-        font-size: 14px;
+        font-size: 16px;
+        line-height: 1;
     }
     
     .text-right {
@@ -199,7 +214,8 @@
     }
     
     .invoice-total-section {
-        margin-top: 10px;
+        margin-top: 2px;
+        padding-top: 2px;
         border-top: 1px solid #f0f0f0;
         display: flex;
         justify-content: space-between;
@@ -216,9 +232,9 @@
     
     .seal-container {
         position: relative;
-        width: 160px;
-        height: 160px;
-        margin-bottom: 10px;
+        width: 120px;
+        height: 120px;
+        margin-bottom: 0;
         transform: rotate(-15deg);
     }
     
@@ -228,7 +244,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        border-radius: 50%; /* Changed to make it circular */
+        border-radius: 50%;
         border: 3px solid #000;
         display: flex;
         flex-direction: column;
@@ -271,11 +287,12 @@
     }
     
     .seal-status {
-        font-size: 28px;
+        font-size: 30px;
         font-weight: bold;
         text-transform: uppercase;
         letter-spacing: 2px;
-        margin-bottom: 10px;
+        margin: 0;
+        line-height: 1;
     }
     
     .paid-text {
@@ -291,15 +308,17 @@
     }
     
     .seal-amount {
-        font-size: 24px;
+        font-size: 26px;
         font-weight: bold;
         color: #000000;
+        margin: 0;
+        line-height: 1.1;
     }
     
     .seal-label {
-        font-size: 12px;
+        font-size: 13px;
         text-transform: uppercase;
-        margin-top: 5px;
+        margin-top: 2px;
         color: #000000;
     }
     
@@ -312,31 +331,37 @@
     .invoice-total-row {
         display: flex;
         justify-content: space-between;
+        margin: 0 0 2px 0;
+        line-height: 1;
     }
     
     .invoice-total-label {
         color: #000000;
+        font-size: 16px;
     }
     
     .invoice-total-value {
         font-weight: 500;
         text-align: right;
         min-width: 100px;
+        font-size: 16px;
     }
     
     .invoice-grand-total {
-        font-size: 18px;
+        font-size: 22px;
         font-weight: 600;
         color: #000000;
-        padding-top: 10px;
+        padding-top: 2px;
+        margin-top: 2px;
         border-top: 1px solid #f0f0f0;
+        line-height: 1;
     }
     
     .status-badge {
         display: inline-block;
-        padding: 4px 10px;
+        padding: 2px 5px;
         border-radius: 30px;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 600;
         text-transform: uppercase;
     }
@@ -352,23 +377,23 @@
     }
     
     .invoice-footer {
-        margin-top: 20px;
+        margin-top: 10px;
         text-align: center;
         color: #000000;
-        font-size: 12px;
+        font-size: 15px;
     }
     
     .signature-section {
         display: flex;
         justify-content: space-between;
-        margin-top: 10px;
-        padding-top: 20px;
+        margin-top: 2px;
+        padding-top: 2px;
     }
     
     .signature-box {
         flex: 1;
         text-align: center;
-        padding: 0 15px;
+        padding: 0 5px;
         position: relative;
     }
     
@@ -383,7 +408,7 @@
     
     .signature-line {
         border-top: 1px solid #333;
-        margin-bottom: 5px;
+        margin-bottom: 2px;
         width: 80%;
         margin-left: auto;
         margin-right: auto;
@@ -391,13 +416,97 @@
     
     .signature-title {
         font-weight: bold;
-        font-size: 14px;
-        margin-bottom: 5px;
+        font-size: 16px;
+        margin: 0 0 2px 0;
+        line-height: 1;
     }
     
     .signature-subtitle {
-        font-size: 12px;
+        font-size: 14px;
         color: #666;
+        margin: 0;
+        line-height: 1;
+    }
+    
+    /* Barcode container styles */
+    .receipt-header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .barcode-container {
+        width: 280px;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .invoice-memo-text {
+        font-size: 24px;
+        font-weight: 500;
+        text-align: center;
+        width: 100%;
+        position: absolute;
+        left: 0;
+        right: 0;
+        margin-top: -12px;
+    }
+    
+    .mobile-info {
+        font-size: 16px;
+        color: #333;
+        margin: 0;
+        line-height: 1;
+    }
+    
+    .diagnostic-header {
+        text-align: center;
+        margin: 0;
+        padding: 0;
+        line-height: 1;
+    }
+    
+    .diagnostic-title {
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+        margin: 0 0 2px 0;
+        line-height: 1;
+    }
+    
+    .diagnostic-address {
+        font-size: 14px;
+        color: #333;
+        margin: 0 0 2px 0;
+        line-height: 1;
+    }
+    
+    .diagnostic-mobile {
+        font-size: 14px;
+        color: #333;
+        margin: 0 0 2px 0;
+        line-height: 1;
+    }
+    
+    .invoice-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        margin: 0 0 2px 0;
+        padding: 0;
+    }
+    
+    .invoice-info-table {
+        margin: 2px 0;
+    }
+    
+    .duplicate-tag {
+        font-size: 18px;
+        color: #666;
+        margin-left: auto;
     }
 </style>
 
@@ -436,15 +545,64 @@ const printDate = today.toLocaleDateString();
 %>
 
 <div class="print-invoice">
-    <div class="invoice-header">
-        <h1 class="invoice-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'Hospital Management System' %></h1>
-        <p class="invoice-subtitle"><%= locals.settings && settings.address ? settings.address : 'No Address' %></p>
-        <p class="invoice-subtitle"><%= locals.settings && settings.phone ? settings.phone : 'No phone' %></p>
+    <div class="diagnostic-header">
+        <div class="diagnostic-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'HOSPITAL MANAGEMENT SYSTEM' %></div>
+        <div class="diagnostic-address">Address: <%= locals.settings && settings.address ? settings.address : 'No Address' %></div>
+        <div class="diagnostic-mobile">Mobile: <%= locals.settings && settings.phone ? settings.phone : 'No Phone' %></div>
     </div>
     
-    <!-- Invoice Info Table -->
+    <div class="invoice-info-row">
+        <div class="barcode-container">
+            <svg width="100%" height="40px" viewBox="0 0 280 50">
+                <!-- Linear barcode mimicking standard UPC/EAN style -->
+                <rect x="10" y="5" width="2" height="30" fill="black"/>
+                <rect x="13" y="5" width="1" height="30" fill="black"/>
+                <rect x="16" y="5" width="3" height="30" fill="black"/>
+                <rect x="21" y="5" width="2" height="30" fill="black"/>
+                <rect x="25" y="5" width="4" height="30" fill="black"/>
+                <rect x="30" y="5" width="2" height="30" fill="black"/>
+                <rect x="34" y="5" width="1" height="30" fill="black"/>
+                <rect x="37" y="5" width="3" height="30" fill="black"/>
+                <rect x="42" y="5" width="2" height="30" fill="black"/>
+                <rect x="46" y="5" width="1" height="30" fill="black"/>
+                <rect x="49" y="5" width="3" height="30" fill="black"/>
+                <rect x="55" y="5" width="2" height="30" fill="black"/>
+                <rect x="59" y="5" width="1" height="30" fill="black"/>
+                <rect x="62" y="5" width="3" height="30" fill="black"/>
+                <rect x="67" y="5" width="2" height="30" fill="black"/>
+                <rect x="71" y="5" width="1" height="30" fill="black"/>
+                <rect x="74" y="5" width="3" height="30" fill="black"/>
+                <rect x="79" y="5" width="2" height="30" fill="black"/>
+                <rect x="83" y="5" width="1" height="30" fill="black"/>
+                <rect x="86" y="5" width="3" height="30" fill="black"/>
+                <rect x="91" y="5" width="2" height="30" fill="black"/>
+                <rect x="94" y="5" width="2" height="30" fill="black"/>
+                <rect x="97" y="5" width="1" height="30" fill="black"/>
+                <rect x="100" y="5" width="3" height="30" fill="black"/>
+                <rect x="105" y="5" width="2" height="30" fill="black"/>
+                <rect x="109" y="5" width="4" height="30" fill="black"/>
+                <rect x="115" y="5" width="2" height="30" fill="black"/>
+                <rect x="119" y="5" width="1" height="30" fill="black"/>
+                <rect x="122" y="5" width="3" height="30" fill="black"/>
+                <rect x="127" y="5" width="2" height="30" fill="black"/>
+                <rect x="131" y="5" width="1" height="30" fill="black"/>
+                <rect x="134" y="5" width="3" height="30" fill="black"/>
+                <rect x="139" y="5" width="2" height="30" fill="black"/>
+                <rect x="143" y="5" width="1" height="30" fill="black"/>
+                <rect x="146" y="5" width="3" height="30" fill="black"/>
+                <rect x="151" y="5" width="2" height="30" fill="black"/>
+                <rect x="155" y="5" width="1" height="30" fill="black"/>
+                <rect x="158" y="5" width="3" height="30" fill="black"/>
+                <rect x="163" y="5" width="2" height="30" fill="black"/>
+                <rect x="167" y="5" width="1" height="30" fill="black"/>
+                <rect x="170" y="5" width="3" height="30" fill="black"/>
+                <rect x="175" y="5" width="2" height="30" fill="black"/>
+            </svg>
+        </div>
+        <div class="invoice-memo-text">Invoice/Memo</div>
+    </div>
+
     <table class="invoice-info-table">
-        <h1 class="invoice-title text-center">Money Receipt</h1>
         <tr>
             <td style="width: 50%;">
                 <div class="info-label">Bill To</div>
@@ -460,7 +618,6 @@ const printDate = today.toLocaleDateString();
                 <% if (billing.billdelivaridate) { %>
                 <div class="info-value">Delivery Date: <%= new Date(billing.billdelivaridate).toLocaleDateString() %></div>
                 <% } %>
-                <div class="info-value">Print-Date: <%= printDate %></div>
             </td>
         </tr>
     </table>

@@ -346,3 +346,162 @@ exports.updateAppointmentBillingStatus = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+
+// Edit billing page
+exports.editBillingPage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find the billing with all related data
+    const billing = await Billing.findByPk(id, {
+      include: [
+        { model: Patient }
+      ]
+    });
+    
+    if (!billing) {
+      return res.status(404).render('error', {
+        title: 'Error',
+        message: 'Billing record not found'
+      });
+    }
+    
+    // Parse items if it's a string
+    if (typeof billing.items === 'string') {
+      billing.items = JSON.parse(billing.items);
+    }
+    
+    // Get data needed for the billing page
+    const patients = await Patient.findAll();
+    const doctors = await Doctor.findAll();
+    const tests = await Test.findAll();
+    const cabins = await Cabin.findAll();
+    
+    // Get feature permissions from request
+    const featurePermissions = req.featurePermissions || {};
+    
+    // Check feature visibility for current user
+    const userRole = req.user.role;
+    
+    // For admin users, all features are visible regardless of permission settings
+    let visibleFeatures;
+    if (userRole === 'admin') {
+      visibleFeatures = {
+        scheduleAppointment: true,
+        cabinAllocation: true,
+        testRequisition: true
+      };
+    } else {
+      visibleFeatures = {
+        scheduleAppointment: isFeatureVisible(featurePermissions, 'Schedule Appointment', userRole),
+        cabinAllocation: isFeatureVisible(featurePermissions, 'Cabin Allocation', userRole),
+        testRequisition: isFeatureVisible(featurePermissions, 'Test Requisition', userRole)
+      };
+    }
+    
+    res.render('billing_edit', {
+      title: 'Edit Billing',
+      billing,
+      patients,
+      doctors,
+      tests,
+      cabins,
+      visibleFeatures,
+      existingItems: billing.items || []
+    });
+  } catch (error) {
+    console.error('Error in editBillingPage:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to load billing edit page: ' + error.message
+    });
+  }
+};
+
+// Update billing
+exports.updateBilling = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      patientId, 
+      totalAmount, 
+      discountPercentage, 
+      discountAmount, 
+      netPayable, 
+      paymentMethod, 
+      paidAmount, 
+      dueAmount,
+      items,
+      billdelivaridate
+    } = req.body;
+    
+    // Find the billing
+    const billing = await Billing.findByPk(id);
+    
+    if (!billing) {
+      return res.status(404).json({ message: 'Billing record not found' });
+    }
+    
+    // Validate total amount
+    if (parseFloat(totalAmount) <= 0) {
+      return res.status(400).json({ message: "Cannot update a bill with zero or negative amount" });
+    }
+    
+    // Determine status - only 'paid' or 'due'
+    let status;
+    if (parseFloat(paidAmount) >= parseFloat(netPayable)) {
+      status = 'paid';
+    } else if (parseFloat(paidAmount) > 0) {
+      status = 'partial';
+    } else {
+      status = 'due';
+    }
+    
+    // Update the billing
+    await billing.update({
+      PatientId: patientId,
+      billdelivaridate: billdelivaridate || null,
+      totalAmount,
+      discountPercentage,
+      discountAmount,
+      netPayable,
+      paymentMethod,
+      paidAmount,
+      dueAmount,
+      status,
+      items: JSON.parse(items)
+    });
+    
+    res.status(200).json({ 
+      message: 'Billing updated successfully',
+      billing: billing
+    });
+  } catch (error) {
+    console.error('Error in updateBilling:', error);
+    res.status(500).json({ message: 'Failed to update billing' });
+  }
+};
+
+// Delete billing
+exports.deleteBilling = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find the billing
+    const billing = await Billing.findByPk(id);
+    
+    if (!billing) {
+      return res.status(404).json({ message: 'Billing record not found' });
+    }
+    
+    // Delete the billing
+    await billing.destroy();
+    
+    res.status(200).json({ message: 'Billing deleted successfully' });
+  } catch (error) {
+    console.error('Error in deleteBilling:', error);
+    res.status(500).json({ message: 'Failed to delete billing' });
+  }
+};
+
+module.exports = exports;

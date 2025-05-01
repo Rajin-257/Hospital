@@ -15,7 +15,6 @@
                     <thead class="table-light">
                         <tr>
                             <th>Name</th>
-                            <th>Code</th>
                             <th>Price</th>
                             <th>Actions</th>
                         </tr>
@@ -24,7 +23,6 @@
                         <% tests.forEach(test => { %>
                             <tr>
                                 <td><%= test.name %></td>
-                                <td><%= test.code %></td>
                                 <td>Tk <%= parseFloat(test.price).toFixed(2) %></td>
                                 <td>
                                     <button class="btn btn-sm btn-info view-test" data-id="<%= test.id %>">
@@ -59,10 +57,6 @@
                     <div class="mb-3">
                         <label class="form-label required-label">Test Name</label>
                         <input type="text" class="form-control" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label required-label">Test Code</label>
-                        <input type="text" class="form-control" name="code" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label required-label">Price</label>
@@ -101,10 +95,6 @@
                         <input type="text" class="form-control" id="edit-test-name" name="name" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Test Code</label>
-                        <input type="text" class="form-control" id="edit-test-code" name="code" readonly>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label required-label">Price</label>
                         <div class="input-group">
                             <span class="input-group-text">Tk</span>
@@ -138,10 +128,6 @@
                     <div class="col-md-6">
                         <p class="mb-1 fw-bold">Test Name:</p>
                         <p id="view-test-name"></p>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="mb-1 fw-bold">Test Code:</p>
-                        <p id="view-test-code"></p>
                     </div>
                 </div>
                 <div class="mb-3">
@@ -196,7 +182,6 @@
                 success: function(test) {
                     $('#edit-test-id').val(test.id);
                     $('#edit-test-name').val(test.name);
-                    $('#edit-test-code').val(test.code);
                     $('#edit-test-price').val(test.price);
                     $('#edit-test-desc').val(test.description);
                     
@@ -240,7 +225,6 @@
                 type: 'GET',
                 success: function(test) {
                     $('#view-test-name').text(test.name);
-                    $('#view-test-code').text(test.code);
                     $('#view-test-price').text('$' + parseFloat(test.price).toFixed(2));
                     $('#view-test-desc').text(test.description || 'No description available');
                     

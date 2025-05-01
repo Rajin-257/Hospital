@@ -1,0 +1,779 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container py-4">
+    <!-- Header -->
+    <div class="card mb-3">
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Bill #<%= billing.billNumber %></h4>
+            <div>
+                <a href="/billing/receipt/<%= billing.id %>" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eye me-1"></i> View Receipt
+                </a>
+                <a href="/reports/billing/due" class="btn btn-sm btn-outline-secondary ms-2">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Bills
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Patient & Bill Details -->
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Bill Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Patient</label>
+                        <select class="form-select" id="patient-select">
+                            <option value="">Select Patient</option>
+                            <% patients.forEach(patient => { %>
+                                <option value="<%= patient.id %>" <%= billing.PatientId == patient.id ? 'selected' : '' %>>
+                                    <%= patient.name %> (<%= patient.patientId %>)
+                                </option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Bill Date</label>
+                        <input type="text" class="form-control bg-light" value="<%= new Date(billing.billDate).toLocaleDateString() %>" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Bill Number</label>
+                        <input type="text" class="form-control bg-light" value="<%= billing.billNumber %>" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Delivery Date</label>
+                        <input type="date" class="form-control" id="bill-delivari-date" 
+                            value="<%= billing.billdelivaridate ? new Date(billing.billdelivaridate).toISOString().split('T')[0] : '' %>">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bill Summary -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Bill Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-bold">Subtotal:</span>
+                        <span>Tk <span id="subtotal"><%= parseFloat(billing.totalAmount || 0).toFixed(2) %></span></span>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">Discount</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" class="form-control" id="discount-percent" min="0" max="100" step="0.1" 
+                                value="<%= parseFloat(billing.discountPercentage || 0).toFixed(1) %>">
+                            <span class="input-group-text">%</span>
+                            <span class="input-group-text">Tk</span>
+                            <input type="number" class="form-control" id="discount-amount" min="0" step="0.01" 
+                                value="<%= parseFloat(billing.discountAmount || 0).toFixed(2) %>">
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-bold">Net Payable:</span>
+                        <span>Tk <span id="net-payable"><%= parseFloat(billing.netPayable || 0).toFixed(2) %></span></span>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">Payment</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">Tk</span>
+                            <input type="number" class="form-control" id="paid-amount" min="0" step="0.01" 
+                                value="<%= parseFloat(billing.paidAmount || 0).toFixed(2) %>">
+                            <select class="form-select" id="payment-method">
+                                <option value="Cash" <%= billing.paymentMethod === 'Cash' ? 'selected' : '' %>>Cash</option>
+                                <option value="Card" <%= billing.paymentMethod === 'Card' ? 'selected' : '' %>>Card</option>
+                                <option value="Mobile Banking" <%= billing.paymentMethod === 'Mobile Banking' ? 'selected' : '' %>>Mobile</option>
+                                <option value="Check" <%= billing.paymentMethod === 'Check' ? 'selected' : '' %>>Check</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="fw-bold">Due Amount:</span>
+                        <span class="text-danger fw-bold">Tk <span id="due-amount"><%= parseFloat(billing.dueAmount || 0).toFixed(2) %></span></span>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary w-100" id="update-bill-btn">
+                        <i class="fas fa-save me-1"></i> Update Bill
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column: Bill Items -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list-ul me-2"></i>Bill Items</h5>
+                    <button type="button" class="btn btn-sm btn-success" id="add-item-btn">
+                        <i class="fas fa-plus me-1"></i> Add Item
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered" id="bill-items-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="15%">Type</th>
+                                    <th width="45%">Description</th>
+                                    <th width="15%" class="text-end">Price</th>
+                                    <th width="10%">Qty</th>
+                                    <th width="15%" class="text-end">Amount</th>
+                                    <th width="5%"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="bill-items-list">
+                                <% if (billing.items && billing.items.length > 0) { %>
+                                    <% billing.items.forEach((item, index) => { %>
+                                        <tr class="item-row">
+                                            <td>
+                                                <%= item.type.charAt(0).toUpperCase() + item.type.slice(1) %>
+                                                <input type="hidden" class="item-type" value="<%= item.type %>">
+                                                <input type="hidden" class="item-id" value="<%= item.id %>">
+                                            </td>
+                                            <td><%= item.name %></td>
+                                            <td class="text-end">
+                                                <span class="item-price"><%= parseFloat(item.price).toFixed(2) %></span>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm item-quantity" 
+                                                    value="<%= item.quantity %>" min="1">
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="item-amount"><%= parseFloat(item.amount).toFixed(2) %></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                <% } else { %>
+                                    <tr id="no-items-row">
+                                        <td colspan="6" class="text-center text-muted py-3">
+                                            <i class="fas fa-info-circle me-1"></i> No items added yet
+                                        </td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Item Modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Add Item to Bill</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-item-form">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Item Type</label>
+                        <select class="form-select" id="item-type" required>
+                            <option value="">-- Select Type --</option>
+                            <option value="doctor">Doctor Fee</option>
+                            <option value="test">Test</option>
+                            <option value="cabin">Cabin</option>
+                            <!-- <option value="medicine">Medicine</option>
+                            <option value="other">Other</option> -->
+                        </select>
+                    </div>
+
+                    <!-- Doctor Fee Section -->
+                    <div id="doctor-section" class="item-section" style="display:none;">
+                        <div class="card mb-3 border-primary">
+                            <div class="card-header bg-primary bg-opacity-10">
+                                <h6 class="mb-0"><i class="fas fa-user-md me-2"></i>Doctor Fee</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Select Doctor</label>
+                                    <select class="form-select" id="doctor-select-modal">
+                                        <option value="">Select Doctor</option>
+                                        <% doctors.forEach(doctor => { %>
+                                            <option value="<%= doctor.id %>" 
+                                                data-name="Dr. <%= doctor.name %>"
+                                                data-specialization="<%= doctor.specialization %>"
+                                                data-fee="<%= doctor.consultationFee %>">
+                                                Dr. <%= doctor.name %> (<%= doctor.specialization %>)
+                                            </option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                                <div class="mb-2 border-top pt-2">
+                                    <div class="row mb-1">
+                                        <div class="col-4 text-muted">Doctor:</div>
+                                        <div class="col-8 fw-bold" id="doctor-name-display">-</div>
+                                    </div>
+                                    <div class="row mb-1">
+                                        <div class="col-4 text-muted">Specialization:</div>
+                                        <div class="col-8" id="doctor-specialization-display">-</div>
+                                    </div>
+                                    <div class="row mb-1">
+                                        <div class="col-4 text-muted">Consultation Fee:</div>
+                                        <div class="col-8" id="doctor-fee-display">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Test Section -->
+                    <div id="test-section" class="item-section" style="display:none;">
+                        <div class="card mb-3 border-success">
+                            <div class="card-header bg-success bg-opacity-10">
+                                <h6 class="mb-0"><i class="fas fa-vial me-2"></i>Test</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Select Test</label>
+                                    <select class="form-select" id="test-select-modal">
+                                        <option value="">Select Test</option>
+                                        <% tests.forEach(test => { %>
+                                            <option value="<%= test.id %>" 
+                                                data-name="<%= test.name %>"
+                                                data-price="<%= test.price %>">
+                                                <%= test.name %> 
+                                            </option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                                <div class="mb-2 border-top pt-2">
+                                    <div class="row mb-1">
+                                        <div class="col-4 text-muted">Test Name:</div>
+                                        <div class="col-8 fw-bold" id="test-name-display">-</div>
+                                    </div>
+                                    <div class="row mb-1">
+                                        <div class="col-4 text-muted">Price:</div>
+                                        <div class="col-8" id="test-price-display">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cabin Section -->
+                    <div id="cabin-section" class="item-section" style="display:none;">
+                        <div class="card mb-3 border-info">
+                            <div class="card-header bg-info bg-opacity-10">
+                                <h6 class="mb-0"><i class="fas fa-bed me-2"></i>Cabin</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Select Cabin</label>
+                                    <select class="form-select" id="cabin-select-modal">
+                                        <option value="">Select Cabin</option>
+                                        <% cabins.forEach(cabin => { %>
+                                            <option value="<%= cabin.id %>" 
+                                                data-number="<%= cabin.cabinNumber %>"
+                                                data-type="<%= cabin.cabinType %>"
+                                                data-rate="<%= cabin.pricePerDay %>">
+                                                Cabin #<%= cabin.cabinNumber %> (<%= cabin.cabinType %>)
+                                            </option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Stay Duration (Days)</label>
+                                        <input type="number" class="form-control" id="cabin-days" min="1" value="1">
+                                    </div>
+                                </div>
+                                <div class="mb-2 border-top pt-2">
+                                    <div class="row mb-1">
+                                        <div class="col-4 text-muted">Cabin:</div>
+                                        <div class="col-8 fw-bold" id="cabin-number-display">-</div>
+                                    </div>
+                                    <div class="row mb-1">
+                                        <div class="col-4 text-muted">Type:</div>
+                                        <div class="col-8" id="cabin-type-display">-</div>
+                                    </div>
+                                    <div class="row mb-1">
+                                        <div class="col-4 text-muted">Daily Rate:</div>
+                                        <div class="col-8" id="cabin-rate-display">-</div>
+                                    </div>
+                                    <div class="row mb-1">
+                                        <div class="col-4 text-muted">Total Amount:</div>
+                                        <div class="col-8 fw-bold" id="cabin-total-display">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other Item Section -->
+                    <div id="other-section" class="item-section" style="display:none;">
+                        <div class="card mb-3 border-secondary">
+                            <div class="card-header bg-secondary bg-opacity-10">
+                                <h6 class="mb-0"><i class="fas fa-pills me-2"></i>Other Item</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Item Description</label>
+                                    <input type="text" class="form-control" id="item-description">
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label">Price (Tk)</label>
+                                        <input type="number" class="form-control" id="item-price" min="0" step="0.01">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Quantity</label>
+                                        <input type="number" class="form-control" id="item-quantity" min="1" value="1">
+                                    </div>
+                                </div>
+                                <div class="mb-2 border-top pt-2">
+                                    <div class="row mb-1">
+                                        <div class="col-4 text-muted">Total Amount:</div>
+                                        <div class="col-8 fw-bold">Tk <span id="item-total">0.00</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="add-item-confirm">Add Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Initial setup of values from existing bill data
+    let initialSubtotal = parseFloat($('#subtotal').text()) || 0;
+    
+    // Track if items have been modified
+    let itemsModified = false;
+    
+    // Function to recalculate the totals based on items in the table
+    function recalculateItemsTotal() {
+        let itemsTotal = 0;
+        $('.item-amount').each(function() {
+            itemsTotal += parseFloat($(this).text()) || 0;
+        });
+        return itemsTotal;
+    }
+    
+    // Initialize totals from the bill data or recalculate from items
+    function initializeOrUpdateTotals() {
+        // If items have been modified, calculate from current items
+        if (itemsModified) {
+            const itemsTotal = recalculateItemsTotal();
+            $('#subtotal').text(itemsTotal.toFixed(2));
+        } else {
+            // Otherwise use the original bill amount
+            $('#subtotal').text(initialSubtotal.toFixed(2));
+        }
+        updateNetAndDue();
+    }
+    
+    // Call this once at the beginning to ensure values are displayed correctly
+    initializeOrUpdateTotals();
+    
+    // Show/hide appropriate section based on item type
+    $('#item-type').change(function() {
+        const itemType = $(this).val();
+        $('.item-section').hide();
+        
+        if (itemType === 'doctor') {
+            $('#doctor-section').show();
+        } else if (itemType === 'test') {
+            $('#test-section').show();
+        } else if (itemType === 'cabin') {
+            $('#cabin-section').show();
+        } else if (itemType === 'medicine' || itemType === 'other') {
+            $('#other-section').show();
+        }
+    });
+    
+    // Doctor selection
+    $('#doctor-select-modal').change(function() {
+        const selected = $(this).find('option:selected');
+        
+        if (selected.val()) {
+            const name = selected.attr('data-name');
+            const specialization = selected.attr('data-specialization');
+            const fee = parseFloat(selected.attr('data-fee'));
+            
+            $('#doctor-name-display').text(name);
+            $('#doctor-specialization-display').text(specialization);
+            $('#doctor-fee-display').text('Tk ' + fee.toFixed(2));
+        } else {
+            $('#doctor-name-display').text('-');
+            $('#doctor-specialization-display').text('-');
+            $('#doctor-fee-display').text('-');
+        }
+    });
+    
+    // Test selection
+    $('#test-select-modal').change(function() {
+        const selected = $(this).find('option:selected');
+        
+        if (selected.val()) {
+            const name = selected.attr('data-name');
+            const price = parseFloat(selected.attr('data-price'));
+            
+            $('#test-name-display').text(name);
+            $('#test-price-display').text('Tk ' + price.toFixed(2));
+        } else {
+            $('#test-name-display').text('-');
+            $('#test-price-display').text('-');
+        }
+    });
+    
+    // Cabin selection and duration
+    $('#cabin-select-modal, #cabin-days').on('change input', function() {
+        const selected = $('#cabin-select-modal').find('option:selected');
+        
+        if (selected.val()) {
+            const number = selected.attr('data-number');
+            const type = selected.attr('data-type');
+            const rate = parseFloat(selected.attr('data-rate'));
+            const days = parseInt($('#cabin-days').val()) || 1;
+            const total = rate * days;
+            
+            $('#cabin-number-display').text('Cabin #' + number);
+            $('#cabin-type-display').text(type);
+            $('#cabin-rate-display').text('Tk ' + rate.toFixed(2) + ' per day');
+            $('#cabin-total-display').text('Tk ' + total.toFixed(2) + ' (' + days + ' days)');
+        } else {
+            $('#cabin-number-display').text('-');
+            $('#cabin-type-display').text('-');
+            $('#cabin-rate-display').text('-');
+            $('#cabin-total-display').text('-');
+        }
+    });
+    
+    // Other item calculation
+    $('#item-price, #item-quantity').on('input', function() {
+        const price = parseFloat($('#item-price').val()) || 0;
+        const quantity = parseInt($('#item-quantity').val()) || 0;
+        $('#item-total').text((price * quantity).toFixed(2));
+    });
+
+    // Show add item modal
+    $('#add-item-btn').click(function() {
+        $('#add-item-form')[0].reset();
+        $('.item-section').hide();
+        $('#addItemModal').modal('show');
+    });
+
+    // Add item to bill
+    $('#add-item-confirm').click(function() {
+        // Get common values
+        const itemType = $('#item-type').val();
+        if (!itemType) {
+            alert('Please select an item type');
+            return;
+        }
+        
+        let itemId, itemName, itemPrice, itemQuantity, itemAmount;
+        
+        // Process based on item type
+        if (itemType === 'doctor') {
+            const selected = $('#doctor-select-modal').find('option:selected');
+            if (!selected.val()) {
+                alert('Please select a doctor');
+                return;
+            }
+            
+            itemId = selected.val();
+            itemName = selected.attr('data-name');
+            itemPrice = parseFloat(selected.attr('data-fee'));
+            itemQuantity = 1; // Ensure default is 1
+            itemAmount = itemPrice * itemQuantity;
+            
+        } else if (itemType === 'test') {
+            const selected = $('#test-select-modal').find('option:selected');
+            if (!selected.val()) {
+                alert('Please select a test');
+                return;
+            }
+            
+            itemId = selected.val();
+            itemName = selected.attr('data-name');
+            itemPrice = parseFloat(selected.attr('data-price'));
+            itemQuantity = 1; // Ensure default is 1
+            itemAmount = itemPrice * itemQuantity;
+            
+        } else if (itemType === 'cabin') {
+            const selected = $('#cabin-select-modal').find('option:selected');
+            if (!selected.val()) {
+                alert('Please select a cabin');
+                return;
+            }
+            
+            itemId = selected.val();
+            const cabinNumber = selected.attr('data-number');
+            const cabinType = selected.attr('data-type');
+            itemName = `Cabin #${cabinNumber} (${cabinType})`;
+            
+            const days = parseInt($('#cabin-days').val()) || 1;
+            itemPrice = parseFloat(selected.attr('data-rate'));
+            
+            // Print the raw attribute value for debugging
+            console.log('Raw cabin rate attribute:', selected.attr('data-rate'));
+            
+            itemQuantity = days < 1 ? 1 : days; // Ensure minimum of 1
+            itemAmount = itemPrice * itemQuantity;
+            
+            console.log('Cabin data:', {
+                cabinId: itemId,
+                cabinNumber,
+                cabinType,
+                rate: itemPrice,
+                days: itemQuantity,
+                amount: itemAmount
+            });
+            
+        } else if (itemType === 'medicine' || itemType === 'other') {
+            itemId = 'custom-' + Date.now();
+            itemName = $('#item-description').val();
+            if (!itemName) {
+                alert('Please enter item description');
+                return;
+            }
+            
+            itemPrice = parseFloat($('#item-price').val());
+            if (isNaN(itemPrice) || itemPrice <= 0) {
+                alert('Please enter a valid price');
+                return;
+            }
+            
+            itemQuantity = parseInt($('#item-quantity').val()) || 1; // Default to 1 if invalid
+            if (itemQuantity < 1) {
+                itemQuantity = 1; // Ensure minimum of 1
+                $('#item-quantity').val(1);
+            }
+            
+            itemAmount = itemPrice * itemQuantity;
+        }
+        
+        // Add item to table
+        if ($('#no-items-row').length) {
+            $('#no-items-row').remove();
+        }
+        
+        const newRow = `
+            <tr class="item-row">
+                <td>
+                    ${itemType.charAt(0).toUpperCase() + itemType.slice(1)}
+                    <input type="hidden" class="item-type" value="${itemType}">
+                    <input type="hidden" class="item-id" value="${itemId}">
+                </td>
+                <td>${itemName}</td>
+                <td class="text-end">
+                    <span class="item-price">${itemPrice.toFixed(2)}</span>
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm item-quantity" 
+                        value="${itemQuantity}" min="1">
+                </td>
+                <td class="text-end">
+                    <span class="item-amount">${itemAmount.toFixed(2)}</span>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        
+        $('#bill-items-list').append(newRow);
+        
+        // Mark that items have been modified
+        itemsModified = true;
+        
+        // Recalculate totals
+        initializeOrUpdateTotals();
+        
+        // Close modal
+        $('#addItemModal').modal('hide');
+    });
+
+    // Remove item
+    $(document).on('click', '.remove-item', function() {
+        // Mark items as modified
+        itemsModified = true;
+        
+        $(this).closest('tr').remove();
+        
+        if ($('#bill-items-list tr').length === 0) {
+            $('#bill-items-list').append(`
+                <tr id="no-items-row">
+                    <td colspan="6" class="text-center text-muted py-3">
+                        <i class="fas fa-info-circle me-1"></i> No items added yet
+                    </td>
+                </tr>
+            `);
+        }
+        
+        // Recalculate totals
+        initializeOrUpdateTotals();
+    });
+
+    // Update item quantity
+    $(document).on('input', '.item-quantity', function() {
+        const row = $(this).closest('tr');
+        const price = parseFloat(row.find('.item-price').text());
+        const quantity = parseInt($(this).val()) || 0;
+        const amount = price * quantity;
+        
+        row.find('.item-amount').text(amount.toFixed(2));
+        
+        // Mark items as modified
+        itemsModified = true;
+        
+        // Recalculate totals
+        initializeOrUpdateTotals();
+    });
+
+    // Update discount percentage
+    $('#discount-percent').on('input', function() {
+        const percent = parseFloat($(this).val()) || 0;
+        const subtotal = parseFloat($('#subtotal').text());
+        const amount = (subtotal * percent / 100).toFixed(2);
+        
+        $('#discount-amount').val(amount);
+        updateNetAndDue();
+    });
+
+    // Update discount amount
+    $('#discount-amount').on('input', function() {
+        const amount = parseFloat($(this).val()) || 0;
+        const subtotal = parseFloat($('#subtotal').text());
+        
+        if (subtotal > 0) {
+            const percent = ((amount / subtotal) * 100).toFixed(1);
+            $('#discount-percent').val(percent);
+        } else {
+            $('#discount-percent').val(0);
+        }
+        
+        updateNetAndDue();
+    });
+
+    // Update due amount when paid amount changes
+    $('#paid-amount').on('input', function() {
+        updateDueAmount();
+    });
+
+    // Update totals (subtotal, net payable, due)
+    function updateTotals() {
+        initializeOrUpdateTotals();
+    }
+
+    // Update net payable and due amount
+    function updateNetAndDue() {
+        const subtotal = parseFloat($('#subtotal').text());
+        const discount = parseFloat($('#discount-amount').val()) || 0;
+        const netPayable = Math.max(0, subtotal - discount);
+        
+        $('#net-payable').text(netPayable.toFixed(2));
+        updateDueAmount();
+    }
+
+    // Update due amount
+    function updateDueAmount() {
+        const netPayable = parseFloat($('#net-payable').text());
+        const paidAmount = parseFloat($('#paid-amount').val()) || 0;
+        const dueAmount = Math.max(0, netPayable - paidAmount);
+        
+        $('#due-amount').text(dueAmount.toFixed(2));
+    }
+
+    // Handle update bill button
+    $('#update-bill-btn').click(function() {
+        // Validate items
+        if ($('#bill-items-list .item-row').length === 0) {
+            alert('Please add at least one item to the bill');
+            return;
+        }
+        
+        // Validate patient
+        const patientId = $('#patient-select').val();
+        if (!patientId) {
+            alert('Please select a patient');
+            $('#patient-select').focus();
+            return;
+        }
+        
+        // Collect all items
+        const items = [];
+        $('#bill-items-list .item-row').each(function() {
+            const row = $(this);
+            const item = {
+                type: row.find('.item-type').val(),
+                id: row.find('.item-id').val(),
+                name: row.find('td:nth-child(2)').text().trim(),
+                price: parseFloat(row.find('.item-price').text()),
+                quantity: parseInt(row.find('.item-quantity').val()),
+                amount: parseFloat(row.find('.item-amount').text())
+            };
+            
+            items.push(item);
+        });
+        
+        // Collect billing details
+        const totalAmount = parseFloat($('#subtotal').text());
+        const discountPercentage = parseFloat($('#discount-percent').val()) || 0;
+        const discountAmount = parseFloat($('#discount-amount').val()) || 0;
+        const netPayable = parseFloat($('#net-payable').text());
+        const paidAmount = parseFloat($('#paid-amount').val()) || 0;
+        const dueAmount = parseFloat($('#due-amount').text());
+        const paymentMethod = $('#payment-method').val();
+        const billdelivaridate = $('#bill-delivari-date').val();
+        
+        // Submit update request
+        $.ajax({
+            url: `/billing/<%= billing.id %>`,
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                patientId,
+                totalAmount,
+                discountPercentage,
+                discountAmount,
+                netPayable,
+                paymentMethod,
+                paidAmount,
+                dueAmount,
+                items: JSON.stringify(items),
+                billdelivaridate
+            }),
+            success: function(response) {
+                alert('Bill updated successfully!');
+                window.location.href = `/billing/receipt/${response.billing.id}`;
+            },
+            error: function(xhr) {
+                alert('Error updating bill: ' + (xhr.responseJSON?.message || 'Unknown error'));
+            }
+        });
+    });
+});
+</script>
+
+<%- include('partials/footer') %> 

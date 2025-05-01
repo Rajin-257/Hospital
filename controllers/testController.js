@@ -41,11 +41,10 @@ exports.getTest = async (req, res) => {
 // Create new test
 exports.createTest = async (req, res) => {
   try {
-    const { name, code, price, description } = req.body;
+    const { name,  price, description } = req.body;
     
     const test = await Test.create({
       name,
-      code,
       price,
       description
     });

@@ -34,4 +34,13 @@ router.put('/appointments/update-status',
 // Process payment - no permission check needed
 router.put('/:id/payment', billingController.processPayment);
 
+// Edit billing page route
+router.get('/edit/:id', billingController.editBillingPage);
+
+// Update billing route
+router.put('/:id', billingController.updateBilling);
+
+// Delete billing route
+router.delete('/:id', billingController.deleteBilling);
+
 module.exports = router;

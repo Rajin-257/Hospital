@@ -197,7 +197,7 @@
                                 <select class="form-select" id="test-select" name="testId">
                                     <option value="">Select a Test</option>
                                     <% tests.forEach(test => { %>
-                                        <option value="<%= test.id %>" data-price="<%= test.price %>" data-code="<%= test.code %>"><%= test.name %></option>
+                                        <option value="<%= test.id %>" data-price="<%= test.price %>"><%= test.name %></option>
                                     <% }); %>
                                 </select>
                                 <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#addTestModal" title="Add New Test">
@@ -219,7 +219,6 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Test Name</th>
-                                    <th>Code</th>
                                     <th>Price (Tk)</th>
                                     <th>Priority</th>
                                     <th>Delivery Date</th>
@@ -506,10 +505,6 @@
                         <input type="text" class="form-control" name="name" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label required-label">Test Code</label>
-                        <input type="text" class="form-control" name="code" required>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label required-label">Price</label>
                         <div class="input-group">
                             <span class="input-group-text">Tk</span>
@@ -640,7 +635,6 @@
             const deliveryDate = $('#test-delivery-date').val();
             
             const testName = testSelect.find('option:selected').text();
-            const testCode = testSelect.find('option:selected').data('code');
             let testPrice = parseFloat(testSelect.find('option:selected').data('price'));
             
             // Add extra charge if entered
@@ -664,11 +658,10 @@
             const displayDeliveryDate = deliveryDate ? new Date(deliveryDate).toLocaleDateString() : 'N/A';
             
             const newRow = `
-                <tr id="test-row-${testId}" data-id="${testId}" data-name="${testName}" data-code="${testCode}" 
+                <tr id="test-row-${testId}" data-id="${testId}" data-name="${testName}"  
                     data-price="${totalPrice}" data-priority="${testPriority}" 
                     data-delivery-date="${deliveryDate || ''}">
                     <td>${testName}</td>
-                    <td>${testCode}</td>
                     <td>$${totalPrice.toFixed(2)}${extraChargeDisplay}</td>
                     <td>${priorityLabel}</td>
                     <td>${displayDeliveryDate}</td>
@@ -936,7 +929,6 @@
                     id: $row.data('id'),
                     type: 'test',
                     name: $row.data('name'),
-                    code: $row.data('code'),
                     price: parseFloat($row.data('price')),
                     priority: $row.data('priority'),
                     deliveryDate: deliveryDate
@@ -1264,7 +1256,6 @@
                     // Add test to select and select it
                     const newOption = new Option(response.name, response.id, true, true);
                     newOption.dataset.price = response.price;
-                    newOption.dataset.code = response.code;
                     $('#test-select').append(newOption).trigger('change');
                     
                     // Reset form

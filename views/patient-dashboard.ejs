@@ -414,7 +414,7 @@
             success: function(tests) {
                 const select = $('select[name="testId"]');
                 tests.forEach(test => {
-                    select.append(`<option value="${test.id}">${test.name} - ${test.code} (Tk ${test.price})</option>`);
+                    select.append(`<option value="${test.id}">${test.name} - (Tk ${test.price})</option>`);
                 });
                 
                 // Initialize select2 for test dropdown

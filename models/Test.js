@@ -11,11 +11,6 @@ const Test = sequelize.define('Test', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  code: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
-  },
   price: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
