@@ -109,6 +109,11 @@
                                 </div>
                                 
                                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <% if (!settings.import_tast_data) { %>
+                                        <button type="button" class="btn btn-warning me-2" id="importTestDataBtn">
+                                            <i class="fas fa-file-import me-2"></i>Import Test Data
+                                        </button>
+                                    <% } %>
                                     <button type="submit" class="btn btn-primary">
                                         <i class="fas fa-save me-2"></i>Save Settings
                                     </button>
@@ -284,6 +289,47 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+});
+</script>
+
+<!-- Import Test Data Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const importTestDataBtn = document.getElementById('importTestDataBtn');
+    if (importTestDataBtn) {
+        importTestDataBtn.addEventListener('click', async function() {
+            if (confirm('Are you sure you want to import test data? This action cannot be undone.')) {
+                // Disable button and show loading state
+                importTestDataBtn.disabled = true;
+                importTestDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Importing...';
+                
+                try {
+                    const response = await fetch('/settings/import-test-data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        alert('Test data imported successfully!');
+                        window.location.reload();
+                    } else {
+                        const data = await response.json();
+                        alert('Error importing test data: ' + data.message);
+                        // Reset button state
+                        importTestDataBtn.disabled = false;
+                        importTestDataBtn.innerHTML = '<i class="fas fa-file-import me-2"></i>Import Test Data';
+                    }
+                } catch (error) {
+                    alert('Error importing test data: ' + error.message);
+                    // Reset button state
+                    importTestDataBtn.disabled = false;
+                    importTestDataBtn.innerHTML = '<i class="fas fa-file-import me-2"></i>Import Test Data';
+                }
+            }
+        });
+    }
 });
 </script>
 

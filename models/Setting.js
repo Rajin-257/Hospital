@@ -29,6 +29,11 @@ const Setting = sequelize.define('Setting', {
   favicon_path: {
     type: DataTypes.STRING,
     allowNull: true,
+  },
+  import_tast_data: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
   }
 }, {
   timestamps: true,

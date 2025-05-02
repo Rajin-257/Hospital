@@ -284,7 +284,12 @@
                             <div class="row mb-3">
                                 <div class="col-7 fw-bold">Delivery Date:</div>
                                 <div class="col-5">
-                                    <input type="date" class="form-control form-control-sm" id="bill-delivaridate" name="billdelivaridate">
+                                    <div class="input-group input-group-sm">
+                                        <input type="date" class="form-control form-control-sm" id="bill-delivaridate" name="billdelivaridate" value="<%= new Date().toISOString().split('T')[0] %>">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" id="reset-delivery-date-btn" title="Clear date">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="row mb-3">
@@ -1265,6 +1270,11 @@
                     alert('Error: ' + (error.responseJSON?.message || 'Could not add test'));
                 }
             });
+        });
+        
+        // Handle reset delivery date button click
+        $('#reset-delivery-date-btn').on('click', function() {
+            $('#bill-delivaridate').val('');
         });
     });
 </script>

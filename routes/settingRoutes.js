@@ -5,7 +5,8 @@ const {
   updateSettings, 
   getFeaturePermissions, 
   updateFeaturePermission,
-  batchUpdatePermissions
+  batchUpdatePermissions,
+  importTestData
 } = require('../controllers/settingController');
 const { isAuth, isAdmin } = require('../middleware/authMiddleware');
 const multer = require('multer');
@@ -60,5 +61,8 @@ router.get('/permissions', isAuth, isAdmin, getFeaturePermissions);
 router.get('/permissions/:moduleName', isAuth, isAdmin, getFeaturePermissions);
 router.put('/permissions/:id', isAuth, isAdmin, updateFeaturePermission);
 router.put('/permissions', isAuth, isAdmin, batchUpdatePermissions);
+
+// Import test data endpoint
+router.post('/import-test-data', isAuth, isAdmin, importTestData);
 
 module.exports = router; 

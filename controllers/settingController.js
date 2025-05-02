@@ -4,6 +4,7 @@ const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
 const { Op } = require('sequelize');
+const { exec } = require('child_process');
 
 // Get settings page
 exports.getSettings = async (req, res) => {
@@ -162,4 +163,37 @@ exports.batchUpdatePermissions = async (req, res) => {
     console.error('Error updating feature permissions:', error);
     res.status(500).json({ message: 'Error updating feature permissions' });
   }
+};
+
+// Import test data
+exports.importTestData = async (req, res) => {
+    try {
+        const settings = await Setting.findOne();
+        
+        // Run the testData.js script
+        exec('node scripts/testData.js', async (error, stdout, stderr) => {
+            if (error) {
+                console.error('Error running test data script:', error);
+                return res.status(500).json({ message: 'Error importing test data' });
+            }
+            
+            if (stderr) {
+                console.error('Test data script stderr:', stderr);
+            }
+            
+            console.log('Test data script output:', stdout);
+            
+            // Update settings to disable import_tast_data after successful import
+            if (settings) {
+                await settings.update({
+                    import_tast_data: false
+                });
+            }
+            
+            res.json({ message: 'Test data imported successfully' });
+        });
+    } catch (error) {
+        console.error('Error importing test data:', error);
+        res.status(500).json({ message: 'Error importing test data' });
+    }
 }; 

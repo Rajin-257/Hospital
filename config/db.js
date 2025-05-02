@@ -34,7 +34,7 @@ const connectDB = async () => {
           await User.create({
             username: 'admin',
             email: 'admin@hospital.com',
-            password: '$2a$12$eQCRiWU9YfWIHYG/F7oHr.U5dKnnt3zJHZ59kofvg2.5.JfdrPCmO', // Will be hashed by the model hooks
+            password: '123', // Will be hashed by the model hooks
             role: 'admin',
             isActive: true
           });
