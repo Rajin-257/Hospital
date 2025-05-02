@@ -24,12 +24,29 @@ exports.getSettings = async (req, res) => {
       }
       modules[permission.moduleName].push(permission);
     });
+
+    // Create a map of feature permissions for the navbar
+    const permissionsMap = {};
+    featurePermissions.forEach(permission => {
+      permissionsMap[permission.featureName] = {
+        isVisible: permission.isVisible,
+        roles: permission.roles
+      };
+    });
     
     res.render('settings', {
       title: 'Settings',
       settings: settings || {},
       user: req.user,
       modules: modules,
+      featurePermissions: permissionsMap,
+      isFeatureVisible: (permissionsMap, featureName, userRole) => {
+        if (userRole === 'admin') return true;
+        if (!permissionsMap) return true;
+        const permission = permissionsMap[featureName];
+        if (!permission) return true;
+        return permission.isVisible && permission.roles.includes(userRole);
+      },
       message: req.query.message || null,
       error: req.query.error || null
     });

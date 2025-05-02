@@ -6,15 +6,9 @@ const FeaturePermission = require('../models/FeaturePermission');
  */
 exports.getFeaturePermissions = async (req, res, next) => {
   try {
-    const { moduleName } = req.params;
-    
-    // Default module name is 'Billing' if not specified
-    const module = moduleName || 'Billing';
-    
-    // Fetch all permissions for the module
+    // Fetch all permissions
     const permissions = await FeaturePermission.findAll({
-      where: { moduleName: module },
-      order: [['featureName', 'ASC']]
+      order: [['moduleName', 'ASC'], ['featureName', 'ASC']]
     });
     
     // Create a map of feature permissions
@@ -29,11 +23,37 @@ exports.getFeaturePermissions = async (req, res, next) => {
     // Attach permissions to the request object
     req.featurePermissions = permissionsMap;
     
+    // Add isFeatureVisible helper to res.locals for use in views
+    res.locals.isFeatureVisible = (permissionsMap, featureName, userRole) => {
+      // If no user role is provided, default to visible
+      if (!userRole) return true;
+      
+      // Admin can see everything
+      if (userRole === 'admin') return true;
+      
+      // If no permissions map is available, default to visible
+      if (!permissionsMap) return true;
+      
+      // Get the permission for the feature
+      const permission = permissionsMap[featureName];
+      
+      // If permission doesn't exist, default to visible
+      if (!permission) return true;
+      
+      // Check if the feature is visible and the user role is allowed
+      return permission.isVisible && permission.roles.includes(userRole);
+    };
+    
+    // Add featurePermissions to res.locals for use in views
+    res.locals.featurePermissions = permissionsMap;
+    
     next();
   } catch (error) {
     console.error('Error fetching feature permissions:', error);
     // Continue without permissions if there's an error
     req.featurePermissions = {};
+    res.locals.featurePermissions = {};
+    res.locals.isFeatureVisible = () => true;
     next();
   }
 };
@@ -42,6 +62,9 @@ exports.getFeaturePermissions = async (req, res, next) => {
  * Check if a feature is visible to the current user
  */
 exports.isFeatureVisible = (permissionsMap, featureName, userRole) => {
+  // If no user role is provided, default to visible
+  if (!userRole) return true;
+  
   // Admin can see everything, regardless of permission settings
   if (userRole === 'admin') return true;
   

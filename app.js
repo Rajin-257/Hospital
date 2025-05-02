@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const { connectDB } = require('./config/db');
 const ejs = require('ejs');
+const { getFeaturePermissions } = require('./middleware/featurePermission');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -46,6 +47,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Set view engine
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+
 // Load settings for all views
 app.use(async (req, res, next) => {
   try {
@@ -60,9 +65,8 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Set view engine
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
+// Apply feature permissions middleware to all routes
+app.use(getFeaturePermissions);
 
 // Routes
 app.use('/', authRoutes);

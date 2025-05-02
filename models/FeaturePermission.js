@@ -44,76 +44,87 @@ const FeaturePermission = sequelize.define('FeaturePermission', {
 // Static method to initialize default permissions
 FeaturePermission.initializeDefaults = async function() {
   try {
-    // Default billing features
     const defaultPermissions = [
       {
-        moduleName: 'Billing',
-        featureName: 'Schedule Appointment',
+        moduleName: 'Navigation',
+        featureName: 'Billing',
+        isVisible: true,
+        roles: ['admin', 'doctor', 'receptionist', 'accountant']
+      },
+      {
+        moduleName: 'Navigation',
+        featureName: 'Pay Bill',
+        isVisible: true,
+        roles: ['admin', 'doctor', 'receptionist', 'accountant']
+      },
+      {
+        moduleName: 'Navigation',
+        featureName: 'Patients',
+        isVisible: true,
+        roles: ['admin', 'doctor', 'receptionist']
+      },
+      {
+        moduleName: 'Navigation',
+        featureName: 'Doctors',
         isVisible: true,
         roles: ['admin', 'receptionist']
       },
       {
-        moduleName: 'Billing',
-        featureName: 'Cabin Allocation',
+        moduleName: 'Navigation',
+        featureName: 'Appointments',
         isVisible: true,
-        roles: ['admin', 'receptionist']
+        roles: ['admin', 'doctor', 'receptionist']
       },
       {
-        moduleName: 'Billing',
-        featureName: 'Test Requisition',
+        moduleName: 'Navigation',
+        featureName: 'Cabins',
         isVisible: true,
-        roles: ['admin', 'receptionist']
-      },
-      // Default report features
-      {
-        moduleName: 'Reports',
-        featureName: 'Billing Reports',
-        isVisible: true,
-        roles: ['admin', 'receptionist']
+        roles: ['admin', 'doctor', 'receptionist']
       },
       {
-        moduleName: 'Reports',
-        featureName: 'Patient Reports',
+        moduleName: 'Navigation',
+        featureName: 'Tests',
         isVisible: true,
-        roles: ['admin', 'receptionist']
+        roles: ['admin', 'doctor', 'receptionist']
       },
       {
-        moduleName: 'Reports',
-        featureName: 'Appointment Reports',
+        moduleName: 'Navigation',
+        featureName: 'Reports',
         isVisible: true,
-        roles: ['admin', 'receptionist']
+        roles: ['admin', 'doctor', 'receptionist', 'accountant']
       },
       {
-        moduleName: 'Reports',
-        featureName: 'Test Reports',
+        moduleName: 'Navigation',
+        featureName: 'Staff',
         isVisible: true,
-        roles: ['admin', 'receptionist']
+        roles: ['admin']
+      },
+      {
+        moduleName: 'Navigation',
+        featureName: 'Settings',
+        isVisible: true,
+        roles: ['admin']
       }
     ];
 
-    // For each default permission, create if it doesn't exist
-    for (const perm of defaultPermissions) {
-      const [permission, created] = await FeaturePermission.findOrCreate({
+    for (const permission of defaultPermissions) {
+      await FeaturePermission.findOrCreate({
         where: {
-          moduleName: perm.moduleName,
-          featureName: perm.featureName
+          moduleName: permission.moduleName,
+          featureName: permission.featureName
         },
         defaults: {
-          isVisible: perm.isVisible,
-          roles: perm.roles
+          isVisible: permission.isVisible,
+          roles: permission.roles
         }
       });
-
-      if (created) {
-        console.log(`Created default permission for ${perm.moduleName} - ${perm.featureName}`);
-      }
     }
 
     console.log('Default permissions initialized successfully');
     return true;
   } catch (error) {
-    console.error('Error initializing default permissions:', error);
-    return false;
+    console.error('Error initializing default feature permissions:', error);
+    throw error;
   }
 };
 

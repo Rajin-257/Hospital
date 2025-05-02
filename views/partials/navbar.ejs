@@ -13,52 +13,80 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <% if (locals.featurePermissions && locals.featurePermissions['Billing'] && locals.isFeatureVisible(locals.featurePermissions, 'Billing', locals.user?.role)) { %>
                 <li class="nav-item">
                     <a class="nav-link <%= title === 'Billing' ? 'active' : '' %>" href="/billing">
                         <i class="fas fa-file-invoice-dollar me-1"></i>Billing
                     </a>
                 </li>
+                <% } %>
+                
+                <% if (locals.featurePermissions && locals.featurePermissions['Pay Bill'] && locals.isFeatureVisible(locals.featurePermissions, 'Pay Bill', locals.user?.role)) { %>
                 <li class="nav-item">
                     <a class="nav-link <%= title === '' ? 'active': '' %>" href="/reports/billing/due">
-                        <i class="fas fa-file-invoice-dollar me-1"></i>Pay Bill</a>
+                        <i class="fas fa-file-invoice-dollar me-1"></i>Pay Bill
+                    </a>
                 </li>
+                <% } %>
+                
+                <% if (locals.featurePermissions && locals.featurePermissions['Patients'] && locals.isFeatureVisible(locals.featurePermissions, 'Patients', locals.user?.role)) { %>
                 <li class="nav-item">
                     <a class="nav-link <%= title === 'Patients' ? 'active' : '' %>" href="/patients">
                         <i class="fas fa-user-injured me-1"></i>Patients
                     </a>
                 </li>
+                <% } %>
+                
+                <% if (locals.featurePermissions && locals.featurePermissions['Doctors'] && locals.isFeatureVisible(locals.featurePermissions, 'Doctors', locals.user?.role)) { %>
                 <li class="nav-item">
                     <a class="nav-link <%= title === 'Doctors' ? 'active' : '' %>" href="/doctors">
                         <i class="fas fa-user-md me-1"></i>Doctors
                     </a>
                 </li>
+                <% } %>
+                
+                <% if (locals.featurePermissions && locals.featurePermissions['Appointments'] && locals.isFeatureVisible(locals.featurePermissions, 'Appointments', locals.user?.role)) { %>
                 <li class="nav-item">
                     <a class="nav-link <%= title === 'Appointments' ? 'active' : '' %>" href="/appointments">
                         <i class="fas fa-calendar-check me-1"></i>Appointments
                     </a>
                 </li>
+                <% } %>
+                
+                <% if (locals.featurePermissions && locals.featurePermissions['Cabins'] && locals.isFeatureVisible(locals.featurePermissions, 'Cabins', locals.user?.role)) { %>
                 <li class="nav-item">
                     <a class="nav-link <%= title === 'Cabins' ? 'active' : '' %>" href="/cabins">
                         <i class="fas fa-bed me-1"></i>Cabins
                     </a>
                 </li>
+                <% } %>
+                
+                <% if (locals.featurePermissions && locals.featurePermissions['Tests'] && locals.isFeatureVisible(locals.featurePermissions, 'Tests', locals.user?.role)) { %>
                 <li class="nav-item">
                     <a class="nav-link <%= title === 'Tests' ? 'active' : '' %>" href="/tests">
                         <i class="fas fa-vial me-1"></i>Tests
                     </a>
                 </li>
+                <% } %>
+                
+                <% if (locals.featurePermissions && locals.featurePermissions['Reports'] && locals.isFeatureVisible(locals.featurePermissions, 'Reports', locals.user?.role)) { %>
                 <li class="nav-item">
                     <a class="nav-link <%= title === 'Reports' ? 'active' : '' %>" href="/reports">
                         <i class="fas fa-chart-line me-1"></i>Reports
                     </a>
                 </li>
-                <% if (user && user.role === 'admin') { %>
+                <% } %>
+                
+                <% if (locals.featurePermissions && locals.featurePermissions['Staff'] && locals.isFeatureVisible(locals.featurePermissions, 'Staff', locals.user?.role)) { %>
                 <li class="nav-item">
-                    <a class="nav-link <%= title === 'Register User' ? 'active' : '' %> " href="/register">
+                    <a class="nav-link <%= title === 'Register User' ? 'active' : '' %>" href="/register">
                         <i class="fas fa-cog me-1"></i>Staff
                     </a>
                 </li>
+                <% } %>
+                
+                <% if (locals.featurePermissions && locals.featurePermissions['Settings'] && locals.isFeatureVisible(locals.featurePermissions, 'Settings', locals.user?.role)) { %>
                 <li class="nav-item">
                     <a class="nav-link <%= title === 'Settings' ? 'active' : '' %>" href="/settings">
                         <i class="fas fa-cog me-1"></i>Settings
