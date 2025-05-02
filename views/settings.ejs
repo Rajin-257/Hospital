@@ -5,8 +5,8 @@
     <div class="row">
         <div class="col-lg-12">
             <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Hospital Settings</h5>
+                <div class="card-header bg-primary ">
+                    <h5 class="mb-0 text-white"><i class="fas fa-cog me-2"></i>Hospital Settings</h5>
                 </div>
                 
                 <div class="card-body">
@@ -23,6 +23,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     <% } %>
+                    <p class="text-danger">Before importing feature permissions and Test Data please ensure that the Your General Settings are set.</p>
                     
                     <!-- Tab navigation -->
                     <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
@@ -112,6 +113,11 @@
                                     <% if (!settings.import_tast_data) { %>
                                         <button type="button" class="btn btn-warning me-2" id="importTestDataBtn">
                                             <i class="fas fa-file-import me-2"></i>Import Test Data
+                                        </button>
+                                    <% } %>
+                                    <% if (!settings.import_feature_data) { %>
+                                        <button type="button" class="btn btn-warning me-2" id="importFeaturePermissionsBtn">
+                                            <i class="fas fa-file-import me-2"></i>Import Feature Permissions
                                         </button>
                                     <% } %>
                                     <button type="submit" class="btn btn-primary">
@@ -331,6 +337,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+</script>
+
+<!-- Import Feature Permissions Script -->
+<script>
+    // Import Feature Permissions
+    document.getElementById('importFeaturePermissionsBtn').addEventListener('click', async function() {
+        if (confirm('Are you sure you want to import default feature permissions? This will reset all current permission settings.')) {
+            try {
+                const response = await fetch('/settings/import-feature-permissions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Feature permissions imported successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error importing feature permissions: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error importing feature permissions: ' + error.message);
+            }
+        }
+    });
 </script>
 
 <%- include('./partials/footer') %> 

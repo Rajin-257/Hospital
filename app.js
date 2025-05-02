@@ -20,7 +20,6 @@ const settingRoutes = require('./routes/settingRoutes');
 
 // Import models
 const Setting = require('./models/Setting');
-const FeaturePermission = require('./models/FeaturePermission');
 
 // Initialize express app
 const app = express();
@@ -30,11 +29,6 @@ const app = express();
   try {
     // Connect to database first
     await connectDB();
-    
-    // Then initialize default data after DB is connected and synced
-    console.log('Initializing default data...');
-    await FeaturePermission.initializeDefaults();
-    console.log('Default data initialization complete');
   } catch (error) {
     console.error('Error during startup:', error);
   }

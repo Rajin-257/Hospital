@@ -34,9 +34,15 @@ const Setting = sequelize.define('Setting', {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: false,
-  }
+  },
+  import_feature_data: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
 }, {
   timestamps: true,
+  tableName: 'settings'
 });
 
 module.exports = Setting; 

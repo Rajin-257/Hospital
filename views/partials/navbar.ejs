@@ -86,7 +86,7 @@
                 </li>
                 <% } %>
                 
-                <% if (locals.featurePermissions && locals.featurePermissions['Settings'] && locals.isFeatureVisible(locals.featurePermissions, 'Settings', locals.user?.role)) { %>
+                <% if (locals.user?.role === 'admin' || (locals.featurePermissions && locals.featurePermissions['Settings'] && locals.isFeatureVisible(locals.featurePermissions, 'Settings', locals.user?.role))) { %>
                 <li class="nav-item">
                     <a class="nav-link <%= title === 'Settings' ? 'active' : '' %>" href="/settings">
                         <i class="fas fa-cog me-1"></i>Settings

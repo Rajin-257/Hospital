@@ -12,6 +12,7 @@ const { isAuth, isAdmin } = require('../middleware/authMiddleware');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { importFeaturePermissions } = require('../scripts/featureData');
 
 // Set up multer storage for favicon uploads
 const storage = multer.diskStorage({
@@ -64,5 +65,20 @@ router.put('/permissions', isAuth, isAdmin, batchUpdatePermissions);
 
 // Import test data endpoint
 router.post('/import-test-data', isAuth, isAdmin, importTestData);
+
+// Import feature permissions
+router.post('/import-feature-permissions', async (req, res) => {
+    try {
+        const success = await importFeaturePermissions();
+        if (success) {
+            res.json({ success: true, message: 'Feature permissions imported successfully' });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to import feature permissions' });
+        }
+    } catch (error) {
+        console.error('Error importing feature permissions:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
 module.exports = router; 

@@ -10,13 +10,9 @@ const { exec } = require('child_process');
 exports.getSettings = async (req, res) => {
   try {
     const settings = await Setting.findOne();
+    const featurePermissions = await FeaturePermission.findAll();
     
-    // Get all feature permissions
-    const featurePermissions = await FeaturePermission.findAll({
-      order: [['moduleName', 'ASC'], ['featureName', 'ASC']]
-    });
-
-    // Group by module name
+    // Group permissions by module
     const modules = {};
     featurePermissions.forEach(permission => {
       if (!modules[permission.moduleName]) {
@@ -24,37 +20,24 @@ exports.getSettings = async (req, res) => {
       }
       modules[permission.moduleName].push(permission);
     });
-
-    // Create a map of feature permissions for the navbar
-    const permissionsMap = {};
-    featurePermissions.forEach(permission => {
-      permissionsMap[permission.featureName] = {
-        isVisible: permission.isVisible,
-        roles: permission.roles
-      };
-    });
     
     res.render('settings', {
       title: 'Settings',
       settings: settings || {},
+      modules,
       user: req.user,
-      modules: modules,
-      featurePermissions: permissionsMap,
-      isFeatureVisible: (permissionsMap, featureName, userRole) => {
-        if (userRole === 'admin') return true;
-        if (!permissionsMap) return true;
-        const permission = permissionsMap[featureName];
-        if (!permission) return true;
-        return permission.isVisible && permission.roles.includes(userRole);
-      },
       message: req.query.message || null,
       error: req.query.error || null
     });
   } catch (error) {
-    console.error('Error fetching settings:', error);
-    res.status(500).render('error', {
-      title: 'Error',
-      message: 'Failed to load settings'
+    console.error('Error getting settings:', error);
+    res.render('settings', {
+      title: 'Settings',
+      error: 'Error loading settings',
+      settings: {},
+      modules: {},
+      user: req.user,
+      message: null
     });
   }
 };
