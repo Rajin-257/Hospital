@@ -26,7 +26,7 @@
                             <tr>
                                 <td><%= cabin.cabinNumber %></td>
                                 <td><%= cabin.cabinType %></td>
-                                <td>$<%= parseFloat(cabin.pricePerDay).toFixed(2) %></td>
+                                <td>Tk <%= parseFloat(cabin.pricePerDay).toFixed(2) %></td>
                                 <td>
                                     <% if(cabin.status === 'Available') { %>
                                         <span class="badge bg-success">Available</span>
@@ -82,7 +82,7 @@
                     <div class="mb-3">
                         <label class="form-label required-label">Price Per Day</label>
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
+                            <span class="input-group-text">Tk </span>
                             <input type="number" class="form-control" name="pricePerDay" min="0" step="0.01" required>
                         </div>
                     </div>
@@ -127,7 +127,7 @@
                     <div class="mb-3">
                         <label class="form-label required-label">Price Per Day</label>
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
+                            <span class="input-group-text">Tk </span>
                             <input type="number" class="form-control" id="edit-cabin-price" name="pricePerDay" min="0" step="0.01" required>
                         </div>
                     </div>

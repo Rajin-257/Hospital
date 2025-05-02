@@ -63,7 +63,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
                         <span class="fw-bold">Subtotal:</span>
-                        <span>Tk <span id="subtotal"><%= parseFloat(billing.totalAmount || 0).toFixed(2) %></span></span>
+                        <span>Tk  <span id="subtotal"><%= parseFloat(billing.totalAmount || 0).toFixed(2) %></span></span>
                     </div>
                     
                     <div class="mb-2">
@@ -72,7 +72,7 @@
                             <input type="number" class="form-control" id="discount-percent" min="0" max="100" step="0.1" 
                                 value="<%= parseFloat(billing.discountPercentage || 0).toFixed(1) %>">
                             <span class="input-group-text">%</span>
-                            <span class="input-group-text">Tk</span>
+                            <span class="input-group-text">Tk </span>
                             <input type="number" class="form-control" id="discount-amount" min="0" step="0.01" 
                                 value="<%= parseFloat(billing.discountAmount || 0).toFixed(2) %>">
                         </div>
@@ -80,13 +80,13 @@
                     
                     <div class="d-flex justify-content-between mb-2">
                         <span class="fw-bold">Net Payable:</span>
-                        <span>Tk <span id="net-payable"><%= parseFloat(billing.netPayable || 0).toFixed(2) %></span></span>
+                        <span>Tk  <span id="net-payable"><%= parseFloat(billing.netPayable || 0).toFixed(2) %></span></span>
                     </div>
                     
                     <div class="mb-2">
                         <label class="form-label fw-bold mb-1">Payment</label>
                         <div class="input-group input-group-sm">
-                            <span class="input-group-text">Tk</span>
+                            <span class="input-group-text">Tk </span>
                             <input type="number" class="form-control" id="paid-amount" min="0" step="0.01" 
                                 value="<%= parseFloat(billing.paidAmount || 0).toFixed(2) %>">
                             <select class="form-select" id="payment-method">
@@ -100,7 +100,7 @@
                     
                     <div class="d-flex justify-content-between mb-3">
                         <span class="fw-bold">Due Amount:</span>
-                        <span class="text-danger fw-bold">Tk <span id="due-amount"><%= parseFloat(billing.dueAmount || 0).toFixed(2) %></span></span>
+                        <span class="text-danger fw-bold">Tk  <span id="due-amount"><%= parseFloat(billing.dueAmount || 0).toFixed(2) %></span></span>
                     </div>
                     
                     <button type="button" class="btn btn-primary w-100" id="update-bill-btn">
@@ -332,7 +332,7 @@
                                 </div>
                                 <div class="row g-3 mb-3">
                                     <div class="col-6">
-                                        <label class="form-label">Price (Tk)</label>
+                                        <label class="form-label">Price (Tk )</label>
                                         <input type="number" class="form-control" id="item-price" min="0" step="0.01">
                                     </div>
                                     <div class="col-6">
@@ -343,7 +343,7 @@
                                 <div class="mb-2 border-top pt-2">
                                     <div class="row mb-1">
                                         <div class="col-4 text-muted">Total Amount:</div>
-                                        <div class="col-8 fw-bold">Tk <span id="item-total">0.00</span></div>
+                                        <div class="col-8 fw-bold">Tk  <span id="item-total">0.00</span></div>
                                     </div>
                                 </div>
                             </div>
@@ -419,7 +419,7 @@ $(document).ready(function() {
             
             $('#doctor-name-display').text(name);
             $('#doctor-specialization-display').text(specialization);
-            $('#doctor-fee-display').text('Tk ' + fee.toFixed(2));
+            $('#doctor-fee-display').text('Tk  ' + fee.toFixed(2));
         } else {
             $('#doctor-name-display').text('-');
             $('#doctor-specialization-display').text('-');
@@ -436,7 +436,7 @@ $(document).ready(function() {
             const price = parseFloat(selected.attr('data-price'));
             
             $('#test-name-display').text(name);
-            $('#test-price-display').text('Tk ' + price.toFixed(2));
+            $('#test-price-display').text('Tk  ' + price.toFixed(2));
         } else {
             $('#test-name-display').text('-');
             $('#test-price-display').text('-');
@@ -456,8 +456,8 @@ $(document).ready(function() {
             
             $('#cabin-number-display').text('Cabin #' + number);
             $('#cabin-type-display').text(type);
-            $('#cabin-rate-display').text('Tk ' + rate.toFixed(2) + ' per day');
-            $('#cabin-total-display').text('Tk ' + total.toFixed(2) + ' (' + days + ' days)');
+            $('#cabin-rate-display').text('Tk  ' + rate.toFixed(2) + ' per day');
+            $('#cabin-total-display').text('Tk  ' + total.toFixed(2) + ' (' + days + ' days)');
         } else {
             $('#cabin-number-display').text('-');
             $('#cabin-type-display').text('-');

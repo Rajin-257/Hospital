@@ -69,12 +69,12 @@
     }
     
     .seal-status {
-        font-size: 16px !important;
+        font-size: 15px !important;
         margin-bottom: 0 !important;
     }
     
     .seal-amount {
-        font-size: 14px !important;
+        font-size: 12px !important;
     }
     
     .invoice-total-label, .invoice-total-value {
@@ -287,7 +287,7 @@
     }
     
     .seal-status {
-        font-size: 30px;
+        font-size: 22px;
         font-weight: bold;
         text-transform: uppercase;
         letter-spacing: 2px;
@@ -308,7 +308,7 @@
     }
     
     .seal-amount {
-        font-size: 26px;
+        font-size: 20px;
         font-weight: bold;
         color: #000000;
         margin: 0;
@@ -639,7 +639,7 @@ const printDate = today.toLocaleDateString();
                     <td class="text-center"><%= index + 1 %></td>
                     <td><%= item.name.replace('Consultation with Dr. ', 'Dr. ') %></td>
                     <td>Medical Consultation</td>
-                    <td class="text-right">$<%= parseFloat(item.price).toFixed(2) %></td>
+                    <td class="text-right">Tk <%= parseFloat(item.price).toFixed(2) %></td>
                 </tr>
             <% }) %>
         </tbody>
@@ -663,7 +663,7 @@ const printDate = today.toLocaleDateString();
                     <td class="text-center"><%= index + 1 %></td>
                     <td><%= item.name %></td>
                     <td>Room Charges</td>
-                    <td class="text-right">$<%= parseFloat(item.price).toFixed(2) %></td>
+                    <td class="text-right">Tk <%= parseFloat(item.price).toFixed(2) %></td>
                 </tr>
             <% }) %>
         </tbody>
@@ -706,7 +706,7 @@ const printDate = today.toLocaleDateString();
                             <% } %>
                         </td>
                     <% } %>
-                    <td class="text-right">$<%= parseFloat(item.price).toFixed(2) %></td>
+                    <td class="text-right">Tk <%= parseFloat(item.price).toFixed(2) %></td>
                 </tr>
             <% }) %>
         </tbody>
@@ -760,9 +760,9 @@ const printDate = today.toLocaleDateString();
                     </div>
                     <div class="seal-amount">
                         <% if (billing.status === 'paid') { %>
-                            $<%= parseFloat(billing.paidAmount).toFixed(2) %>
+                            Tk <%= parseFloat(billing.paidAmount).toFixed(2) %>
                         <% } else { %>
-                            $<%= parseFloat(billing.dueAmount).toFixed(2) %>
+                            Tk <%= parseFloat(billing.dueAmount).toFixed(2) %>
                         <% } %>
                     </div>
                 </div>
@@ -772,24 +772,24 @@ const printDate = today.toLocaleDateString();
         <div class="invoice-total">
             <div class="invoice-total-row">
                 <div class="invoice-total-label">Subtotal:</div>
-                <div class="invoice-total-value">$<%= parseFloat(billing.totalAmount).toFixed(2) %></div>
+                <div class="invoice-total-value">Tk <%= parseFloat(billing.totalAmount).toFixed(2) %></div>
             </div>
             <div class="invoice-total-row">
                 <div class="invoice-total-label">Discount (<%= parseFloat(billing.discountPercentage).toFixed(2) %>%):</div>
-                <div class="invoice-total-value">$<%= parseFloat(billing.discountAmount).toFixed(2) %></div>
+                <div class="invoice-total-value">Tk <%= parseFloat(billing.discountAmount).toFixed(2) %></div>
             </div>
             <div class="invoice-total-row invoice-grand-total">
                 <div class="invoice-total-label">Total:</div>
-                <div class="invoice-total-value">$<%= parseFloat(billing.netPayable).toFixed(2) %></div>
+                <div class="invoice-total-value">Tk <%= parseFloat(billing.netPayable).toFixed(2) %></div>
             </div>
             <div class="invoice-total-row">
                 <div class="invoice-total-label">Amount Paid:</div>
-                <div class="invoice-total-value">$<%= parseFloat(billing.paidAmount).toFixed(2) %></div>
+                <div class="invoice-total-value">Tk <%= parseFloat(billing.paidAmount).toFixed(2) %></div>
             </div>
             <% if (parseFloat(billing.dueAmount) > 0) { %>
             <div class="invoice-total-row invoice-grand-total">
                 <div class="invoice-total-label">Balance Due:</div>
-                <div class="invoice-total-value">$<%= parseFloat(billing.dueAmount).toFixed(2) %></div>
+                <div class="invoice-total-value">Tk <%= parseFloat(billing.dueAmount).toFixed(2) %></div>
             </div>
             <% } %>
         </div>
@@ -839,7 +839,7 @@ const printDate = today.toLocaleDateString();
                     <div class="col-md-4">
                         <label class="form-label">Amount</label>
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
+                            <span class="input-group-text">Tk </span>
                             <input type="number" class="form-control" id="payment-amount" name="paidAmount" value="<%= parseFloat(billing.dueAmount).toFixed(2) %>" max="<%= parseFloat(billing.dueAmount).toFixed(2) %>" min="0.01" step="0.01" required>
                         </div>
                     </div>
