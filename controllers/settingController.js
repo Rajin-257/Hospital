@@ -174,7 +174,7 @@ exports.importTestData = async (req, res) => {
         exec('node scripts/testData.js', async (error, stdout, stderr) => {
             if (error) {
                 console.error('Error running test data script:', error);
-                return res.status(500).json({ message: 'Error importing test data' });
+                return res.status(500).json({ success: false, message: 'Error importing test data' });
             }
             
             if (stderr) {
@@ -186,14 +186,14 @@ exports.importTestData = async (req, res) => {
             // Update settings to disable import_tast_data after successful import
             if (settings) {
                 await settings.update({
-                    import_tast_data: false
+                    import_tast_data: true
                 });
             }
             
-            res.json({ message: 'Test data imported successfully' });
+            res.json({ success: true, message: 'Test data imported successfully' });
         });
     } catch (error) {
         console.error('Error importing test data:', error);
-        res.status(500).json({ message: 'Error importing test data' });
+        res.status(500).json({ success: false, message: 'Error importing test data' });
     }
 }; 

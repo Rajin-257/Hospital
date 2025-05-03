@@ -301,57 +301,60 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Import Test Data Script -->
 <script>
     // Import Test Data
-    document.getElementById('importTestDataBtn').addEventListener('click', async function() {
-        if (confirm('Are you sure you want to import test data? This action cannot be undone.')) {
-            try {
-                const response = await fetch('/settings/import-test-data', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
+    const importTestDataBtn = document.getElementById('importTestDataBtn');
+    if (importTestDataBtn) {
+        importTestDataBtn.addEventListener('click', async function() {
+            if (confirm('Are you sure you want to import test data? This action cannot be undone.')) {
+                try {
+                    const response = await fetch('/settings/import-test-data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('Test data imported successfully!');
+                        window.location.reload();
+                    } else {
+                        alert('Error importing test data: ' + result.message);
                     }
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    alert('Test data imported successfully!');
-                    window.location.reload();
-                } else {
-                    alert('Error importing test data: ' + result.message);
+                } catch (error) {
+                    alert('Error importing test data: ' + error.message);
                 }
-            } catch (error) {
-                alert('Error importing test data: ' + error.message);
             }
-        }
-    });
-</script>
+        });
+    }
 
-<!-- Import Feature Permissions Script -->
-<script>
     // Import Feature Permissions
-    document.getElementById('importFeaturePermissionsBtn').addEventListener('click', async function() {
-        if (confirm('Are you sure you want to import default feature permissions? This will reset all current permission settings.')) {
-            try {
-                const response = await fetch('/settings/import-feature-permissions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
+    const importFeaturePermissionsBtn = document.getElementById('importFeaturePermissionsBtn');
+    if (importFeaturePermissionsBtn) {
+        importFeaturePermissionsBtn.addEventListener('click', async function() {
+            if (confirm('Are you sure you want to import feature permissions? This action cannot be undone.')) {
+                try {
+                    const response = await fetch('/settings/import-feature-permissions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('Feature permissions imported successfully!');
+                        window.location.reload();
+                    } else {
+                        alert('Error importing feature permissions: ' + result.message);
                     }
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    alert('Feature permissions imported successfully!');
-                    window.location.reload();
-                } else {
-                    alert('Error importing feature permissions: ' + result.message);
+                } catch (error) {
+                    alert('Error importing feature permissions: ' + error.message);
                 }
-            } catch (error) {
-                alert('Error importing feature permissions: ' + error.message);
             }
-        }
-    });
+        });
+    }
 </script>
 
 <%- include('./partials/footer') %> 
