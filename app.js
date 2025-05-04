@@ -18,6 +18,7 @@ const billingRoutes = require('./routes/billingRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const settingRoutes = require('./routes/settingRoutes');
 const commissionRoutes = require('./routes/commissionRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 // Import models
 const Setting = require('./models/Setting');
@@ -74,6 +75,7 @@ app.use('/billing', billingRoutes);
 app.use('/reports', reportRoutes);
 app.use('/settings', settingRoutes);
 app.use('/commissions', commissionRoutes);
+app.use('/users', userRoutes);
 
 // Redirect root to billing
 app.get('/', (req, res) => {

@@ -128,10 +128,23 @@
                 <% } %>
                 
                 <% if (locals.featurePermissions && locals.featurePermissions['Staff'] && locals.isFeatureVisible(locals.featurePermissions, 'Staff', locals.user?.role)) { %>
-                <li class="nav-item">
-                    <a class="nav-link <%= title === 'Register User' ? 'active' : '' %>" href="/register">
-                        <i class="fas fa-cog me-1"></i>Staff
+                <!-- HRM Dropdown Menu -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <%= (title === 'Register User' || title === 'Staff List' || title === 'Edit Staff') ? 'active' : '' %>" href="#" id="hrmDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-users-cog me-1"></i>HRM
                     </a>
+                    <ul class="dropdown-menu" aria-labelledby="hrmDropdown">
+                        <li>
+                            <a class="dropdown-item <%= title === 'Register User' ? 'active' : '' %>" href="/register">
+                                <i class="fas fa-user-plus me-1"></i>Add Staff
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Staff List' ? 'active' : '' %>" href="/users">
+                                <i class="fas fa-users me-1"></i>Staff List
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <% } %>
                 
