@@ -75,7 +75,7 @@ app.use('/billing', billingRoutes);
 app.use('/reports', reportRoutes);
 app.use('/settings', settingRoutes);
 app.use('/commissions', commissionRoutes);
-app.use('/users', userRoutes);
+app.use('/', userRoutes);
 
 // Redirect root to billing
 app.get('/', (req, res) => {

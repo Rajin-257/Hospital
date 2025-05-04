@@ -160,4 +160,98 @@ exports.deleteUser = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
+};
+
+// Get user profile (for logged in user)
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] }
+    });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.render('users/profile', {
+      title: 'My Profile',
+      user
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Update user profile (for logged in user)
+exports.updateProfile = async (req, res) => {
+  try {
+    const { username, email } = req.body;
+    
+    let user = await User.findByPk(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if username already exists
+    if (username !== user.username) {
+      const existingUser = await User.findOne({ where: { username } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Username already exists' });
+      }
+    }
+    
+    // Check if email already exists
+    if (email !== user.email) {
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already exists' });
+      }
+    }
+    
+    // Update user details (only username and email can be updated by the user)
+    user = await user.update({
+      username,
+      email
+    });
+    
+    res.json({
+      success: true,
+      message: 'Profile updated successfully'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Change password (for logged in user)
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, password } = req.body;
+    
+    const user = await User.findByPk(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Verify current password
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+    
+    // Update password
+    await user.update({ password });
+    
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
 }; 

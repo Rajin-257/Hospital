@@ -103,6 +103,31 @@ const featurePermissions = [
         featureName: 'Test Reports',
         isVisible: true,
         roles: ['admin', 'receptionist']
+    },
+    // HRM Module Permissions
+    {
+        moduleName: 'HRM',
+        featureName: 'Add Staff',
+        isVisible: true,
+        roles: ['admin']
+    },
+    {
+        moduleName: 'HRM',
+        featureName: 'View Staff',
+        isVisible: true,
+        roles: ['admin']
+    },
+    {
+        moduleName: 'HRM',
+        featureName: 'Edit Staff',
+        isVisible: true,
+        roles: ['admin']
+    },
+    {
+        moduleName: 'HRM',
+        featureName: 'Delete Staff',
+        isVisible: true,
+        roles: ['admin']
     }
 ];
 

@@ -3,15 +3,17 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/auth');
 
-// Protect all routes - only accessible to logged in users with admin role
-router.use(protect);
-router.use(authorize('admin'));
+// Profile routes - accessible to any logged in user
+router.get('/profile', protect, userController.getProfile);
+router.put('/profile/update', protect, userController.updateProfile);
+router.post('/profile/change-password', protect, userController.changePassword);
 
-// User list and detail routes
-router.get('/', userController.getAllUsers);
-router.get('/:id', userController.getUser);
-router.put('/:id', userController.updateUser);
-router.delete('/:id', userController.deleteUser);
-router.patch('/:id/toggle-status', userController.toggleUserStatus);
+// Admin routes - only accessible to admin users
+router.use('/users', protect, authorize('admin'));
+router.get('/users', userController.getAllUsers);
+router.get('/users/:id', userController.getUser);
+router.put('/users/:id', userController.updateUser);
+router.delete('/users/:id', userController.deleteUser);
+router.patch('/users/:id/toggle-status', userController.toggleUserStatus);
 
 module.exports = router; 
