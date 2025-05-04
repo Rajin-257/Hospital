@@ -1,0 +1,597 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2><i class="fas fa-bed me-2"></i>Cabin Bookings</h2>
+      <p class="text-muted">View and manage all cabin bookings and patient stays</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <a href="/cabins" class="btn btn-outline-secondary me-2">
+        <i class="fas fa-list me-1"></i> View Cabins
+      </a>
+      <button id="print-btn" class="btn btn-outline-secondary">
+        <i class="fas fa-print me-1"></i> Print
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form id="filter-form" method="GET" class="row g-3">
+        <div class="col-md-4">
+          <label for="status" class="form-label">Status</label>
+          <select class="form-select" id="status" name="status">
+            <option value="all" <%= status === 'all' ? 'selected' : '' %>>All</option>
+            <option value="active" <%= status === 'active' ? 'selected' : '' %>>Active</option>
+            <option value="discharged" <%= status === 'discharged' ? 'selected' : '' %>>Discharged</option>
+            <option value="cancelled" <%= status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="dateRange" class="form-label">Date Range</label>
+          <select class="form-select" id="dateRange" name="dateRange">
+            <option value="all" <%= dateRange === 'all' ? 'selected' : '' %>>All Time</option>
+            <option value="today" <%= dateRange === 'today' ? 'selected' : '' %>>Today</option>
+            <option value="yesterday" <%= dateRange === 'yesterday' ? 'selected' : '' %>>Yesterday</option>
+            <option value="week" <%= dateRange === 'week' ? 'selected' : '' %>>This Week</option>
+            <option value="month" <%= dateRange === 'month' ? 'selected' : '' %>>This Month</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="search" class="form-label">Search</label>
+          <input type="text" class="form-control" id="search" name="search" placeholder="Search by patient name or ID" value="<%= search || '' %>">
+        </div>
+        <div class="col-md-12 d-flex align-items-end justify-content-end">
+          <button type="submit" class="btn btn-primary me-2">
+            <i class="fas fa-filter me-1"></i> Apply Filters
+          </button>
+          <a href="/cabins/bookings/all" class="btn btn-outline-secondary">
+            <i class="fas fa-sync me-1"></i> Reset
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card border-primary">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h6 class="card-subtitle mb-2 text-muted">Total Bookings</h6>
+              <h3 class="card-title mb-0"><%= totalRecords %></h3>
+            </div>
+            <div class="rounded-circle bg-light p-3">
+              <i class="fas fa-clipboard-list text-primary fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+      <div class="card border-success">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h6 class="card-subtitle mb-2 text-muted">Active Stays</h6>
+              <h3 class="card-title mb-0"><%= bookings.filter(b => b.status === 'active').length %></h3>
+            </div>
+            <div class="rounded-circle bg-light p-3">
+              <i class="fas fa-bed text-success fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+      <div class="card border-info">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h6 class="card-subtitle mb-2 text-muted">Discharged</h6>
+              <h3 class="card-title mb-0"><%= bookings.filter(b => b.status === 'discharged').length %></h3>
+            </div>
+            <div class="rounded-circle bg-light p-3">
+              <i class="fas fa-sign-out-alt text-info fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+      <div class="card border-warning">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h6 class="card-subtitle mb-2 text-muted">Not Billed</h6>
+              <h3 class="card-title mb-0"><%= bookings.filter(b => b.billingStatus === 'not_billed').length %></h3>
+            </div>
+            <div class="rounded-circle bg-light p-3">
+              <i class="fas fa-file-invoice-dollar text-warning fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bookings Table -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Patient</th>
+              <th>Cabin</th>
+              <th>Admission</th>
+              <th>Discharge</th>
+              <th>Stay Duration</th>
+              <th>Rate/Day</th>
+              <th>Total Cost</th>
+              <th>Status</th>
+              <th>Billing</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (bookings && bookings.length > 0) { %>
+              <% bookings.forEach(booking => { %>
+                <%
+                  const admissionDate = new Date(booking.admissionDate);
+                  const dischargeDate = booking.dischargeDate ? new Date(booking.dischargeDate) : null;
+                  
+                  // Calculate stay duration
+                  let stayDuration;
+                  if (dischargeDate) {
+                    const diffTime = Math.abs(dischargeDate - admissionDate);
+                    stayDuration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  } else if (booking.status === 'active') {
+                    const diffTime = Math.abs(new Date() - admissionDate);
+                    stayDuration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  } else {
+                    stayDuration = booking.expectedStay || 0;
+                  }
+                  
+                  // Calculate total cost
+                  const totalCost = stayDuration * booking.dailyRate;
+                %>
+                <tr class="<%= booking.status === 'active' ? 'table-success' : '' %>">
+                  <td><strong>#<%= booking.id %></strong></td>
+                  <td>
+                    <a href="/patients/<%= booking.PatientId %>">
+                      <%= booking.Patient ? booking.Patient.name : 'Unknown' %>
+                      <small class="d-block text-muted"><%= booking.Patient ? booking.Patient.patientId : '' %></small>
+                    </a>
+                  </td>
+                  <td>
+                    <%= booking.Cabin ? booking.Cabin.cabinNumber : 'Unknown' %>
+                    <small class="d-block text-muted"><%= booking.Cabin ? booking.Cabin.cabinType : '' %></small>
+                  </td>
+                  <td><%= admissionDate.toLocaleDateString() %></td>
+                  <td>
+                    <% if (dischargeDate) { %>
+                      <%= dischargeDate.toLocaleDateString() %>
+                    <% } else if (booking.status === 'active') { %>
+                      <span class="badge bg-success">Active</span>
+                    <% } else { %>
+                      <span class="text-muted">N/A</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <%= stayDuration %> days
+                  </td>
+                  <td>Tk <%= parseFloat(booking.dailyRate).toFixed(2) %></td>
+                  <td>Tk <%= totalCost.toFixed(2) %></td>
+                  <td>
+                    <span class="badge rounded-pill <%= 
+                      booking.status === 'active' ? 'bg-success' : 
+                      booking.status === 'discharged' ? 'bg-info' : 
+                      'bg-secondary' %>">
+                      <%= booking.status.charAt(0).toUpperCase() + booking.status.slice(1) %>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge rounded-pill <%= booking.billingStatus === 'billed' ? 'bg-success' : 'bg-warning' %>">
+                      <%= booking.billingStatus === 'billed' ? 'Billed' : 'Not Billed' %>
+                    </span>
+                  </td>
+                  <td>
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="actionDropdown<%= booking.id %>" data-bs-toggle="dropdown" aria-expanded="false">
+                        Actions
+                      </button>
+                      <ul class="dropdown-menu" aria-labelledby="actionDropdown<%= booking.id %>">
+                        <li>
+                          <a class="dropdown-item view-booking" href="#" data-id="<%= booking.id %>">
+                            <i class="fas fa-eye me-1"></i> View Details
+                          </a>
+                        </li>
+                        
+                        <% if (booking.status === 'active') { %>
+                        <li>
+                          <a class="dropdown-item checkout-patient" href="#" data-id="<%= booking.id %>" 
+                             data-patient="<%= booking.Patient ? booking.Patient.name : 'Unknown' %>"
+                             data-cabin="<%= booking.Cabin ? booking.Cabin.cabinNumber : 'Unknown' %>">
+                            <i class="fas fa-sign-out-alt me-1"></i> Checkout Patient
+                          </a>
+                        </li>
+                        <% } %>
+                        
+                        <% if (booking.billingStatus === 'not_billed') { %>
+                        <li>
+                          <a class="dropdown-item" href="/billing?patientId=<%= booking.PatientId %>&cabinId=<%= booking.id %>">
+                            <i class="fas fa-file-invoice-dollar me-1"></i> Create Bill
+                          </a>
+                        </li>
+                        <% } %>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="11" class="text-center py-4">
+                  <div class="empty-state">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5>No Cabin Bookings Found</h5>
+                    <p class="text-muted">Try adjusting your filters or create a new booking</p>
+                    <a href="/cabins" class="btn btn-primary mt-3">
+                      <i class="fas fa-plus me-1"></i> View Cabins
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <% if (bookings && bookings.length > 0 && totalPages > 1) { %>
+  <nav aria-label="Cabin bookings pagination">
+    <ul class="pagination justify-content-center">
+      <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+        <a class="page-link" href="?page=<%= currentPage - 1 %>&status=<%= status %>&dateRange=<%= dateRange %>&search=<%= search %>" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+      <% for(let i = 1; i <= totalPages; i++) { %>
+        <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+          <a class="page-link" href="?page=<%= i %>&status=<%= status %>&dateRange=<%= dateRange %>&search=<%= search %>">
+            <%= i %>
+          </a>
+        </li>
+      <% } %>
+      <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+        <a class="page-link" href="?page=<%= currentPage + 1 %>&status=<%= status %>&dateRange=<%= dateRange %>&search=<%= search %>" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <% } %>
+</div>
+
+<!-- Checkout Patient Modal -->
+<div class="modal fade" id="checkoutModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-sign-out-alt me-2"></i>Checkout Patient</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="checkout-form">
+        <input type="hidden" id="checkout-booking-id">
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <p class="mb-0">
+              You are checking out <strong id="checkout-patient-name"></strong> from cabin <strong id="checkout-cabin-number"></strong>.
+            </p>
+          </div>
+          
+          <div class="mb-3">
+            <label for="dischargeDate" class="form-label required-label">Discharge Date</label>
+            <input type="date" class="form-control" id="dischargeDate" name="dischargeDate" required>
+          </div>
+          
+          <div class="mb-3">
+            <label for="remarks" class="form-label">Remarks</label>
+            <textarea class="form-control" id="remarks" name="remarks" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-check me-1"></i> Confirm Checkout
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- View Booking Modal -->
+<div class="modal fade" id="viewBookingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-bed me-2"></i>Booking Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <h5 class="border-bottom pb-2">Patient Information</h5>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Patient ID:</div>
+              <div class="col-md-8" id="view-patient-id"></div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Name:</div>
+              <div class="col-md-8" id="view-patient-name"></div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Phone:</div>
+              <div class="col-md-8" id="view-patient-phone"></div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h5 class="border-bottom pb-2">Cabin Information</h5>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Cabin Number:</div>
+              <div class="col-md-8" id="view-cabin-number"></div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Type:</div>
+              <div class="col-md-8" id="view-cabin-type"></div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Rate/Day:</div>
+              <div class="col-md-8" id="view-cabin-rate"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <h5 class="border-bottom pb-2">Booking Details</h5>
+            <div class="row mb-2">
+              <div class="col-md-3 fw-bold">Booking ID:</div>
+              <div class="col-md-9" id="view-booking-id"></div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-3 fw-bold">Admission Date:</div>
+              <div class="col-md-9" id="view-admission-date"></div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-3 fw-bold">Discharge Date:</div>
+              <div class="col-md-9" id="view-discharge-date"></div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-3 fw-bold">Status:</div>
+              <div class="col-md-9" id="view-status"></div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-3 fw-bold">Billing Status:</div>
+              <div class="col-md-9" id="view-billing-status"></div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-3 fw-bold">Expected Stay:</div>
+              <div class="col-md-9" id="view-expected-stay"></div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-3 fw-bold">Actual Stay:</div>
+              <div class="col-md-9" id="view-actual-stay"></div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-3 fw-bold">Total Cost:</div>
+              <div class="col-md-9" id="view-total-cost"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="row">
+          <div class="col-md-12">
+            <h5 class="border-bottom pb-2">Remarks</h5>
+            <p id="view-remarks" class="mb-0"></p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Print Styles -->
+<style>
+  @media print {
+    .btn, .navbar, .pagination, .no-print, form, .dropdown {
+      display: none !important;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 100%;
+      padding: 0;
+    }
+    
+    .card {
+      border: none !important;
+      box-shadow: none !important;
+    }
+    
+    .table td, .table th {
+      padding: 0.5rem;
+      font-size: 10pt;
+      vertical-align: top;
+    }
+    
+    .badge {
+      border: 1px solid #ccc;
+      font-size: 8pt;
+      color: #000 !important;
+      background-color: #fff !important;
+    }
+    
+    body {
+      font-size: 10pt;
+    }
+    
+    a {
+      text-decoration: none !important;
+      color: #000 !important;
+    }
+    
+    .table-success {
+      background-color: #f2f2f2 !important;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Default discharge date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dischargeDate').value = today;
+    
+    // Handle print button
+    document.getElementById('print-btn').addEventListener('click', function() {
+      window.print();
+    });
+    
+    // Make filters apply on change
+    const filterElements = document.querySelectorAll('#filter-form select');
+    for (const element of filterElements) {
+      element.addEventListener('change', function() {
+        document.getElementById('filter-form').submit();
+      });
+    }
+    
+    // Handle checkout patient button
+    const checkoutButtons = document.querySelectorAll('.checkout-patient');
+    for (const button of checkoutButtons) {
+      button.addEventListener('click', function(event) {
+        event.preventDefault();
+        const id = this.getAttribute('data-id');
+        const patientName = this.getAttribute('data-patient');
+        const cabinNumber = this.getAttribute('data-cabin');
+        
+        document.getElementById('checkout-booking-id').value = id;
+        document.getElementById('checkout-patient-name').textContent = patientName;
+        document.getElementById('checkout-cabin-number').textContent = cabinNumber;
+        
+        const checkoutModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+        checkoutModal.show();
+      });
+    }
+    
+    // Handle checkout form submission
+    document.getElementById('checkout-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+      
+      const bookingId = document.getElementById('checkout-booking-id').value;
+      const dischargeDate = document.getElementById('dischargeDate').value;
+      const remarks = document.getElementById('remarks').value;
+      
+      fetch(`/cabins/booking/${bookingId}/checkout`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dischargeDate,
+          remarks
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Patient checked out successfully!');
+          window.location.reload();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while checking out the patient');
+      });
+    });
+    
+    // Handle view booking details button
+    const viewButtons = document.querySelectorAll('.view-booking');
+    for (const button of viewButtons) {
+      button.addEventListener('click', async function(event) {
+        event.preventDefault();
+        const bookingId = this.getAttribute('data-id');
+        
+        try {
+          // Find the booking in the table and extract information
+          const bookingRow = this.closest('tr');
+          
+          // Get patient info
+          const patientLink = bookingRow.querySelector('td:nth-child(2) a');
+          const patientName = patientLink.textContent.trim();
+          const patientId = bookingRow.querySelector('td:nth-child(2) small').textContent.trim();
+          
+          // Get cabin info
+          const cabinNumber = bookingRow.querySelector('td:nth-child(3)').textContent.trim().split('\n')[0].trim();
+          const cabinType = bookingRow.querySelector('td:nth-child(3) small').textContent.trim();
+          
+          // Get booking details
+          const bookingIdText = bookingRow.querySelector('td:nth-child(1) strong').textContent;
+          const admissionDate = bookingRow.querySelector('td:nth-child(4)').textContent.trim();
+          const dischargeDate = bookingRow.querySelector('td:nth-child(5)').textContent.trim();
+          const stayDuration = bookingRow.querySelector('td:nth-child(6)').textContent.trim();
+          const dailyRate = bookingRow.querySelector('td:nth-child(7)').textContent.trim();
+          const totalCost = bookingRow.querySelector('td:nth-child(8)').textContent.trim();
+          const status = bookingRow.querySelector('td:nth-child(9) span').textContent.trim();
+          const billingStatus = bookingRow.querySelector('td:nth-child(10) span').textContent.trim();
+          
+          // Populate the modal
+          document.getElementById('view-patient-id').textContent = patientId;
+          document.getElementById('view-patient-name').textContent = patientName;
+          document.getElementById('view-patient-phone').textContent = 'N/A'; // We don't have this data in the table
+          
+          document.getElementById('view-cabin-number').textContent = cabinNumber;
+          document.getElementById('view-cabin-type').textContent = cabinType;
+          document.getElementById('view-cabin-rate').textContent = dailyRate;
+          
+          document.getElementById('view-booking-id').textContent = bookingIdText;
+          document.getElementById('view-admission-date').textContent = admissionDate;
+          document.getElementById('view-discharge-date').textContent = dischargeDate;
+          document.getElementById('view-status').textContent = status;
+          document.getElementById('view-billing-status').textContent = billingStatus;
+          document.getElementById('view-expected-stay').textContent = 'N/A'; // Not shown in table
+          document.getElementById('view-actual-stay').textContent = stayDuration;
+          document.getElementById('view-total-cost').textContent = totalCost;
+          document.getElementById('view-remarks').textContent = 'No remarks available'; // Not shown in table
+          
+          // Show the modal
+          const viewModal = new bootstrap.Modal(document.getElementById('viewBookingModal'));
+          viewModal.show();
+        } catch (error) {
+          console.error('Error displaying booking details:', error);
+          alert('Error displaying booking details');
+        }
+      });
+    }
+  });
+</script>
+
+<%- include('partials/footer') %> 

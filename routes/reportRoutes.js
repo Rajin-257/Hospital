@@ -35,6 +35,9 @@ router.get('/due-invoice-stats', checkFeatureAccess('Billing Reports'), reportCo
 // Cabin statistics
 router.get('/cabin-stats', checkFeatureAccess('Billing Reports'), reportController.getCabinStats);
 
+// Commission statistics
+router.get('/commission-stats', checkFeatureAccess('Tests'), reportController.getCommissionStats);
+
 // Get all billing records
 router.get('/all-billings', checkFeatureAccess('Billing Reports'), reportController.getAllBillingRecordsApi);
 

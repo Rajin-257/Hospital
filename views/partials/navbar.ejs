@@ -14,67 +14,108 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <% if (locals.featurePermissions && locals.featurePermissions['Billing'] && locals.isFeatureVisible(locals.featurePermissions, 'Billing', locals.user?.role)) { %>
-                <li class="nav-item">
-                    <a class="nav-link <%= title === 'Billing' ? 'active' : '' %>" href="/billing">
-                        <i class="fas fa-file-invoice-dollar me-1"></i>Billing
+                <% if ((locals.featurePermissions && locals.featurePermissions['Billing'] && locals.isFeatureVisible(locals.featurePermissions, 'Billing', locals.user?.role)) || 
+                      (locals.featurePermissions && locals.featurePermissions['Pay Bill'] && locals.isFeatureVisible(locals.featurePermissions, 'Pay Bill', locals.user?.role))) { %>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <%= (title === 'Billing' || title === 'Due Bill') ? 'active' : '' %>" href="#" id="invoiceDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-file-invoice-dollar me-1"></i>Invoice
                     </a>
+                    <ul class="dropdown-menu" aria-labelledby="invoiceDropdown">
+                        <% if (locals.featurePermissions && locals.featurePermissions['Billing'] && locals.isFeatureVisible(locals.featurePermissions, 'Billing', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Billing' ? 'active' : '' %>" href="/billing">
+                                <i class="fas fa-file-invoice-dollar me-1"></i>Billing
+                            </a>
+                        </li>
+                        <% } %>
+                        <% if (locals.featurePermissions && locals.featurePermissions['Pay Bill'] && locals.isFeatureVisible(locals.featurePermissions, 'Pay Bill', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Due Bill' ? 'active' : '' %>" href="/reports/billing/due">
+                                <i class="fas fa-file-invoice-dollar me-1"></i>Due Bill
+                            </a>
+                        </li>
+                        <% } %>
+                    </ul>
                 </li>
                 <% } %>
                 
-                <% if (locals.featurePermissions && locals.featurePermissions['Pay Bill'] && locals.isFeatureVisible(locals.featurePermissions, 'Pay Bill', locals.user?.role)) { %>
-                <li class="nav-item">
-                    <a class="nav-link <%= title === '' ? 'active': '' %>" href="/reports/billing/due">
-                        <i class="fas fa-file-invoice-dollar me-1"></i>Due Bill
+                <% if ((locals.featurePermissions && locals.featurePermissions['Patients'] && locals.isFeatureVisible(locals.featurePermissions, 'Patients', locals.user?.role)) || 
+                      (locals.featurePermissions && locals.featurePermissions['Doctors'] && locals.isFeatureVisible(locals.featurePermissions, 'Doctors', locals.user?.role))) { %>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <%= (title === 'Patients' || title === 'Doctors') ? 'active' : '' %>" href="#" id="peopleDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-users me-1"></i>People
                     </a>
+                    <ul class="dropdown-menu" aria-labelledby="peopleDropdown">
+                        <% if (locals.featurePermissions && locals.featurePermissions['Patients'] && locals.isFeatureVisible(locals.featurePermissions, 'Patients', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Patients' ? 'active' : '' %>" href="/patients">
+                                <i class="fas fa-user-injured me-1"></i>Patients
+                            </a>
+                        </li>
+                        <% } %>
+                        <% if (locals.featurePermissions && locals.featurePermissions['Doctors'] && locals.isFeatureVisible(locals.featurePermissions, 'Doctors', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Doctors' ? 'active' : '' %>" href="/doctors">
+                                <i class="fas fa-user-md me-1"></i>Doctors
+                            </a>
+                        </li>
+                        <% } %>
+                    </ul>
                 </li>
                 <% } %>
                 
-                <% if (locals.featurePermissions && locals.featurePermissions['Patients'] && locals.isFeatureVisible(locals.featurePermissions, 'Patients', locals.user?.role)) { %>
-                <li class="nav-item">
-                    <a class="nav-link <%= title === 'Patients' ? 'active' : '' %>" href="/patients">
-                        <i class="fas fa-user-injured me-1"></i>Patients
+                <!-- New Bookings Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <%= (title === 'Appointments' || title === 'Test Requisitions' || title === 'Cabin Bookings') ? 'active' : '' %>" href="#" id="bookingsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-calendar-alt me-1"></i>Bookings
                     </a>
+                    <ul class="dropdown-menu" aria-labelledby="bookingsDropdown">
+                        <% if (locals.featurePermissions && locals.featurePermissions['Appointments'] && locals.isFeatureVisible(locals.featurePermissions, 'Appointments', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Appointments' ? 'active' : '' %>" href="/appointments">
+                                <i class="fas fa-calendar-check me-1"></i>Appointments
+                            </a>
+                        </li>
+                        <% } %>
+                        <% if (locals.featurePermissions && locals.featurePermissions['Tests'] && locals.isFeatureVisible(locals.featurePermissions, 'Tests', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Test Requisitions' ? 'active' : '' %>" href="/tests/requisitions">
+                                <i class="fas fa-clipboard-list me-1"></i>Test Requisitions
+                            </a>
+                        </li>
+                        <% } %>
+                        <% if (locals.featurePermissions && locals.featurePermissions['Cabins'] && locals.isFeatureVisible(locals.featurePermissions, 'Cabins', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Cabin Bookings' ? 'active' : '' %>" href="/cabins/bookings/all">
+                                <i class="fas fa-bed me-1"></i>Cabin Bookings
+                            </a>
+                        </li>
+                        <% } %>
+                    </ul>
                 </li>
-                <% } %>
                 
-                <% if (locals.featurePermissions && locals.featurePermissions['Doctors'] && locals.isFeatureVisible(locals.featurePermissions, 'Doctors', locals.user?.role)) { %>
-                <li class="nav-item">
-                    <a class="nav-link <%= title === 'Doctors' ? 'active' : '' %>" href="/doctors">
-                        <i class="fas fa-user-md me-1"></i>Doctors
+                <% if ((locals.featurePermissions && locals.featurePermissions['Tests'] && locals.isFeatureVisible(locals.featurePermissions, 'Tests', locals.user?.role)) || 
+                      (locals.featurePermissions && locals.featurePermissions['Cabins'] && locals.isFeatureVisible(locals.featurePermissions, 'Cabins', locals.user?.role))) { %>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <%= (title === 'Tests' || title === 'Cabins') ? 'active' : '' %>" href="#" id="servicesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-hospital-user me-1"></i>Services
                     </a>
-                </li>
-                <% } %>
-                
-                <% if (locals.featurePermissions && locals.featurePermissions['Appointments'] && locals.isFeatureVisible(locals.featurePermissions, 'Appointments', locals.user?.role)) { %>
-                <li class="nav-item">
-                    <a class="nav-link <%= title === 'Appointments' ? 'active' : '' %>" href="/appointments">
-                        <i class="fas fa-calendar-check me-1"></i>Appointments
-                    </a>
-                </li>
-                <% } %>
-                
-                <% if (locals.featurePermissions && locals.featurePermissions['Cabins'] && locals.isFeatureVisible(locals.featurePermissions, 'Cabins', locals.user?.role)) { %>
-                <li class="nav-item">
-                    <a class="nav-link <%= title === 'Cabins' ? 'active' : '' %>" href="/cabins">
-                        <i class="fas fa-bed me-1"></i>Cabins
-                    </a>
-                </li>
-                <% } %>
-                
-                <% if (locals.featurePermissions && locals.featurePermissions['Tests'] && locals.isFeatureVisible(locals.featurePermissions, 'Tests', locals.user?.role)) { %>
-                <li class="nav-item">
-                    <a class="nav-link <%= title === 'Tests' ? 'active' : '' %>" href="/tests">
-                        <i class="fas fa-vial me-1"></i>Tests
-                    </a>
-                </li>
-                <% } %>
-                
-                <% if (locals.featurePermissions && locals.featurePermissions['Tests'] && locals.isFeatureVisible(locals.featurePermissions, 'Tests', locals.user?.role)) { %>
-                <li class="nav-item">
-                    <a class="nav-link <%= title === 'Doctor Commission Reports' || title === 'Doctor Commission Summary' ? 'active' : '' %>" href="/commissions">
-                        <i class="fas fa-hand-holding-usd me-1"></i>Commissions
-                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="servicesDropdown">
+                        <% if (locals.featurePermissions && locals.featurePermissions['Tests'] && locals.isFeatureVisible(locals.featurePermissions, 'Tests', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Tests' ? 'active' : '' %>" href="/tests">
+                                <i class="fas fa-vial me-1"></i>Tests
+                            </a>
+                        </li>
+                        <% } %>
+                        <% if (locals.featurePermissions && locals.featurePermissions['Cabins'] && locals.isFeatureVisible(locals.featurePermissions, 'Cabins', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Cabins' ? 'active' : '' %>" href="/cabins">
+                                <i class="fas fa-bed me-1"></i>Cabins
+                            </a>
+                        </li>
+                        <% } %>
+                    </ul>
                 </li>
                 <% } %>
                 

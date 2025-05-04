@@ -9,6 +9,43 @@
                 <i class="fas fa-plus me-1"></i> Add Cabin
             </button>
         </div>
+        <!-- Add filters and search box -->
+        <div class="card-body border-bottom pb-3">
+            <form id="filter-form" method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="cabinType" class="form-label">Cabin Type</label>
+                    <select class="form-select" id="cabinType" name="cabinType">
+                        <option value="all" <%= locals.cabinType === 'all' ? 'selected' : '' %>>All Types</option>
+                        <option value="VIP" <%= locals.cabinType === 'VIP' ? 'selected' : '' %>>VIP</option>
+                        <option value="Deluxe" <%= locals.cabinType === 'Deluxe' ? 'selected' : '' %>>Deluxe</option>
+                        <option value="Regular" <%= locals.cabinType === 'Regular' ? 'selected' : '' %>>Regular</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="all" <%= locals.status === 'all' ? 'selected' : '' %>>All Status</option>
+                        <option value="Available" <%= locals.status === 'Available' ? 'selected' : '' %>>Available</option>
+                        <option value="Occupied" <%= locals.status === 'Occupied' ? 'selected' : '' %>>Occupied</option>
+                        <option value="Maintenance" <%= locals.status === 'Maintenance' ? 'selected' : '' %>>Maintenance</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="search" class="form-label">Search</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="search" name="search" placeholder="Search by cabin number or type..." value="<%= locals.search || '' %>">
+                        <button class="btn btn-outline-primary" type="submit">
+                            <i class="fas fa-search me-1"></i> Search
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-12 d-flex justify-content-end">
+                    <a href="/cabins" class="btn btn-outline-secondary">
+                        <i class="fas fa-sync me-1"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover">
@@ -198,6 +235,11 @@
     $(document).ready(function() {
         // Initialize Select2
         initializeSelects();
+        
+        // Make filters apply on change
+        $('#cabinType, #status').on('change', function() {
+            $('#filter-form').submit();
+        });
         
         // Add cabin
         $('#cabin-form').on('submit', function(e) {

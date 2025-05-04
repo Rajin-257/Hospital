@@ -6,7 +6,33 @@ const { Op } = require('sequelize');
 // Get all cabins
 exports.getAllCabins = async (req, res) => {
   try {
-    const cabins = await Cabin.findAll();
+    const { search, cabinType, status } = req.query;
+    
+    // Define where conditions for search and filters
+    const whereConditions = {};
+    
+    // Apply search filter if provided
+    if (search) {
+      whereConditions[Op.or] = [
+        { cabinNumber: { [Op.like]: `%${search}%` } },
+        { cabinType: { [Op.like]: `%${search}%` } }
+      ];
+    }
+    
+    // Apply cabin type filter if provided and not 'all'
+    if (cabinType && cabinType !== 'all') {
+      whereConditions.cabinType = cabinType;
+    }
+    
+    // Apply status filter if provided and not 'all'
+    if (status && status !== 'all') {
+      whereConditions.status = status;
+    }
+    
+    const cabins = await Cabin.findAll({
+      where: whereConditions,
+      order: [['cabinNumber', 'ASC']]
+    });
     
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
       return res.json(cabins);
@@ -14,7 +40,10 @@ exports.getAllCabins = async (req, res) => {
     
     res.render('cabins', {
       title: 'Cabins',
-      cabins
+      cabins,
+      search: search || '',
+      cabinType: cabinType || 'all',
+      status: status || 'all'
     });
   } catch (error) {
     console.error(error);
@@ -206,6 +235,149 @@ exports.getUnbilledCabinBookings = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Get all cabin bookings
+exports.getAllCabinBookings = async (req, res) => {
+  try {
+    const { status, dateRange, search, page = 1 } = req.query;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    // Build query conditions
+    const whereConditions = {};
+    
+    // Status filter
+    if (status && status !== 'all') {
+      whereConditions.status = status;
+    }
+    
+    // Date range filter
+    if (dateRange && dateRange !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      switch (dateRange) {
+        case 'today':
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          whereConditions.admissionDate = {
+            [Op.gte]: today,
+            [Op.lt]: tomorrow
+          };
+          break;
+        case 'yesterday':
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          whereConditions.admissionDate = {
+            [Op.gte]: yesterday,
+            [Op.lt]: today
+          };
+          break;
+        case 'week':
+          const lastWeek = new Date(today);
+          lastWeek.setDate(lastWeek.getDate() - 7);
+          whereConditions.admissionDate = {
+            [Op.gte]: lastWeek
+          };
+          break;
+        case 'month':
+          const lastMonth = new Date(today);
+          lastMonth.setMonth(lastMonth.getMonth() - 1);
+          whereConditions.admissionDate = {
+            [Op.gte]: lastMonth
+          };
+          break;
+      }
+    }
+    
+    // Include options for related models with search if applicable
+    const includeOptions = [
+      { 
+        model: Patient,
+        where: search ? {
+          [Op.or]: [
+            { name: { [Op.like]: `%${search}%` } },
+            { patientId: { [Op.like]: `%${search}%` } }
+          ]
+        } : undefined
+      },
+      { model: Cabin }
+    ];
+    
+    // Count total bookings matching filters
+    const { count, rows: bookings } = await CabinBooking.findAndCountAll({
+      where: whereConditions,
+      include: includeOptions,
+      order: [['admissionDate', 'DESC']],
+      limit,
+      offset,
+      distinct: true
+    });
+    
+    const totalPages = Math.ceil(count / limit);
+    
+    res.render('cabin_bookings', {
+      title: 'Cabin Bookings',
+      bookings,
+      status: status || 'all',
+      dateRange: dateRange || 'all',
+      search: search || '',
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
+    });
+  } catch (error) {
+    console.error('Error in getAllCabinBookings:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to fetch cabin bookings'
+    });
+  }
+};
+
+// Checkout cabin booking
+exports.checkoutCabinBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { dischargeDate, remarks } = req.body;
+    
+    // Find the booking
+    const booking = await CabinBooking.findByPk(id, {
+      include: [{ model: Cabin }]
+    });
+    
+    if (!booking) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Booking not found' 
+      });
+    }
+    
+    // Update booking
+    await booking.update({
+      dischargeDate,
+      status: 'discharged',
+      remarks: remarks || booking.remarks
+    });
+    
+    // Update cabin status to Available
+    if (booking.Cabin) {
+      await booking.Cabin.update({ status: 'Available' });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Patient checked out successfully',
+      booking
+    });
+  } catch (error) {
+    console.error('Error checking out patient:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while checking out patient' 
+    });
   }
 };
 

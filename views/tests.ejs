@@ -9,6 +9,35 @@
                 <i class="fas fa-plus me-1"></i> Add Test
             </button>
         </div>
+        <!-- Add filters and search box -->
+        <div class="card-body border-bottom pb-3">
+            <form id="filter-form" method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="priceRange" class="form-label">Price Range</label>
+                    <select class="form-select" id="priceRange" name="priceRange">
+                        <option value="all" <%= locals.priceRange === 'all' ? 'selected' : '' %>>All Prices</option>
+                        <option value="0-500" <%= locals.priceRange === '0-500' ? 'selected' : '' %>>0 - 500 Tk</option>
+                        <option value="500-1000" <%= locals.priceRange === '500-1000' ? 'selected' : '' %>>500 - 1000 Tk</option>
+                        <option value="1000-2000" <%= locals.priceRange === '1000-2000' ? 'selected' : '' %>>1000 - 2000 Tk</option>
+                        <option value="2000-plus" <%= locals.priceRange === '2000-plus' ? 'selected' : '' %>>Above 2000 Tk</option>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <label for="search" class="form-label">Search</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="search" name="search" placeholder="Search by test name..." value="<%= locals.search || '' %>">
+                        <button class="btn btn-outline-primary" type="submit">
+                            <i class="fas fa-search me-1"></i> Search
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-12 d-flex justify-content-end">
+                    <a href="/tests" class="btn btn-outline-secondary">
+                        <i class="fas fa-sync me-1"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover">
@@ -170,6 +199,11 @@
     $(document).ready(function() {
         // Initialize Select2
         initializeSelects();
+        
+        // Make filters apply on change
+        $('#priceRange').on('change', function() {
+            $('#filter-form').submit();
+        });
         
         // Add test
         $('#test-form').on('submit', function(e) {

@@ -5,6 +5,7 @@ const Billing = require('../models/Billing');
 const CabinBooking = require('../models/CabinBooking');
 const Doctor = require('../models/Doctor');
 const Test = require('../models/Test');
+const DoctorCommission = require('../models/DoctorCommission');
 const { Op } = require('sequelize');
 
 // Get reports dashboard
@@ -180,6 +181,32 @@ exports.getCabinStats = async (req, res) => {
   } catch (error) {
     console.error('Error in getCabinStats:', error);
     res.status(500).json({ message: 'Failed to fetch cabin statistics' });
+  }
+};
+
+// Get commission statistics
+exports.getCommissionStats = async (req, res) => {
+  try {
+    const totalCommissions = await DoctorCommission.count();
+    
+    // Calculate total commission amount
+    const commissions = await DoctorCommission.findAll({
+      attributes: ['amount']
+    });
+    
+    const totalCommissionAmount = commissions.reduce((sum, commission) => sum + Number(commission.amount), 0);
+    
+    res.json({
+      totalCommissions,
+      totalCommissionAmount
+    });
+  } catch (error) {
+    console.error('Error in getCommissionStats:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch commission statistics',
+      totalCommissions: 0,
+      totalCommissionAmount: 0
+    });
   }
 };
 

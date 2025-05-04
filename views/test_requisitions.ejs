@@ -1,0 +1,303 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2><i class="fas fa-vial me-2"></i>Test Requisitions</h2>
+      <p class="text-muted">View and manage all test requisitions</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <button id="print-btn" class="btn btn-outline-secondary ms-2">
+        <i class="fas fa-print me-1"></i> Print
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form id="filter-form" method="GET" class="row g-3">
+        <div class="col-md-3">
+          <label for="status" class="form-label">Status</label>
+          <select class="form-select" id="status" name="status">
+            <option value="all" <%= status === 'all' ? 'selected' : '' %>>All</option>
+            <option value="Pending" <%= status === 'Pending' ? 'selected' : '' %>>Pending</option>
+            <option value="In Progress" <%= status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
+            <option value="Completed" <%= status === 'Completed' ? 'selected' : '' %>>Completed</option>
+            <option value="Delivered" <%= status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+            <option value="Cancelled" <%= status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label for="priority" class="form-label">Priority</label>
+          <select class="form-select" id="priority" name="priority">
+            <option value="all" <%= priority === 'all' ? 'selected' : '' %>>All</option>
+            <option value="Normal" <%= priority === 'Normal' ? 'selected' : '' %>>Normal</option>
+            <option value="Urgent" <%= priority === 'Urgent' ? 'selected' : '' %>>Urgent</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label for="dateRange" class="form-label">Date Range</label>
+          <select class="form-select" id="dateRange" name="dateRange">
+            <option value="all" <%= dateRange === 'all' ? 'selected' : '' %>>All Time</option>
+            <option value="today" <%= dateRange === 'today' ? 'selected' : '' %>>Today</option>
+            <option value="yesterday" <%= dateRange === 'yesterday' ? 'selected' : '' %>>Yesterday</option>
+            <option value="week" <%= dateRange === 'week' ? 'selected' : '' %>>This Week</option>
+            <option value="month" <%= dateRange === 'month' ? 'selected' : '' %>>This Month</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label for="search" class="form-label">Search</label>
+          <input type="text" class="form-control" id="search" name="search" placeholder="Search by patient name, ID, or test name" value="<%= search || '' %>">
+        </div>
+        <div class="col-md-12 d-flex align-items-end justify-content-end">
+          <button type="submit" class="btn btn-primary me-2">
+            <i class="fas fa-filter me-1"></i> Apply Filters
+          </button>
+          <a href="/tests/requisitions" class="btn btn-outline-secondary">
+            <i class="fas fa-sync me-1"></i> Reset
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Requisitions Table -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Req. ID</th>
+              <th>Patient</th>
+              <th>Test</th>
+              <th>Doctor</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Billing</th>
+              <th>Result</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (requisitions && requisitions.length > 0) { %>
+              <% requisitions.forEach(req => { %>
+                <tr class="<%= req.priority === 'Urgent' ? 'table-danger' : '' %>">
+                  <td><strong>#<%= req.id %></strong></td>
+                  <td>
+                    <a href="/patients/<%= req.PatientId %>">
+                      <%= req.Patient ? req.Patient.name : 'Unknown' %>
+                      <small class="d-block text-muted"><%= req.Patient ? req.Patient.patientId : '' %></small>
+                    </a>
+                  </td>
+                  <td><%= req.Test ? req.Test.name : 'Unknown' %></td>
+                  <td>
+                    <% if (req.DoctorId && req.Doctor) { %>
+                      Dr. <%= req.Doctor.name %>
+                    <% } else { %>
+                      No Doctor
+                    <% } %>
+                  </td>
+                  <td>
+                    <%= new Date(req.requestDate).toLocaleDateString() %>
+                    <small class="d-block text-muted">
+                      <% if (req.status === 'Delivered' && req.deliveryDate) { %>
+                        Delivered: <%= new Date(req.deliveryDate).toLocaleDateString() %>
+                      <% } %>
+                    </small>
+                  </td>
+                  <td>
+                    <span class="badge rounded-pill <%= 
+                      req.status === 'Pending' ? 'bg-warning' : 
+                      req.status === 'In Progress' ? 'bg-info' : 
+                      req.status === 'Completed' ? 'bg-success' : 
+                      req.status === 'Delivered' ? 'bg-primary' : 
+                      'bg-secondary' %>">
+                      <%= req.status %>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge rounded-pill <%= req.priority === 'Urgent' ? 'bg-danger' : 'bg-info' %>">
+                      <%= req.priority %>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge rounded-pill <%= req.billingStatus === 'billed' ? 'bg-success' : 'bg-warning' %>">
+                      <%= req.billingStatus === 'billed' ? 'Billed' : 'Not Billed' %>
+                    </span>
+                  </td>
+                  <td>
+                    <% if (req.resultFile) { %>
+                      <a href="/tests/results/<%= req.id %>" class="btn btn-sm btn-info">
+                        <i class="fas fa-file-medical me-1"></i> View
+                      </a>
+                    <% } else { %>
+                      <span class="badge bg-secondary">Not Available</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="actionDropdown<%= req.id %>" data-bs-toggle="dropdown" aria-expanded="false">
+                        Actions
+                      </button>
+                      <ul class="dropdown-menu" aria-labelledby="actionDropdown<%= req.id %>">
+                        <li>
+                          <a class="dropdown-item" href="/tests/requisition/<%= req.id %>">
+                            <i class="fas fa-eye me-1"></i> View Details
+                          </a>
+                        </li>
+                        <li>
+                          <a class="dropdown-item" href="/tests/requisition/edit/<%= req.id %>">
+                            <i class="fas fa-edit me-1"></i> Edit
+                          </a>
+                        </li>
+                        <% if (req.status !== 'Completed' && req.status !== 'Delivered') { %>
+                        <li>
+                          <a class="dropdown-item" href="/tests/results/upload/<%= req.id %>">
+                            <i class="fas fa-file-upload me-1"></i> Upload Result
+                          </a>
+                        </li>
+                        <% } %>
+                        <% if (req.billingStatus === 'not_billed') { %>
+                        <li>
+                          <a class="dropdown-item" href="/billing?patientId=<%= req.PatientId %>&testId=<%= req.id %>">
+                            <i class="fas fa-file-invoice-dollar me-1"></i> Create Bill
+                          </a>
+                        </li>
+                        <% } %>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <a class="dropdown-item text-danger btn-delete" href="#" data-id="<%= req.id %>" data-name="requisition">
+                            <i class="fas fa-trash me-1"></i> Delete
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            <%}%>
+              
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <% if (requisitions && requisitions.length > 0 && totalPages > 1) { %>
+  <nav aria-label="Requisition pagination">
+    <ul class="pagination justify-content-center">
+      <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+        <a class="page-link" href="?page=<%= currentPage - 1 %>&status=<%= status %>&priority=<%= priority %>&dateRange=<%= dateRange %>&search=<%= search %>" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+      <% for(let i = 1; i <= totalPages; i++) { %>
+        <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+          <a class="page-link" href="?page=<%= i %>&status=<%= status %>&priority=<%= priority %>&dateRange=<%= dateRange %>&search=<%= search %>">
+            <%= i %>
+          </a>
+        </li>
+      <% } %>
+      <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+        <a class="page-link" href="?page=<%= currentPage + 1 %>&status=<%= status %>&priority=<%= priority %>&dateRange=<%= dateRange %>&search=<%= search %>" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <% } %>
+</div>
+
+<!-- Print Styles -->
+<style>
+  @media print {
+    .btn, .navbar, .pagination, .no-print, form {
+      display: none !important;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 100%;
+      padding: 0;
+    }
+    
+    .card {
+      border: none !important;
+      box-shadow: none !important;
+    }
+    
+    .table td, .table th {
+      padding: 0.5rem;
+      font-size: 10pt;
+    }
+    
+    .badge {
+      border: 1px solid #ccc;
+      font-size: 8pt;
+      color: #000 !important;
+      background-color: #fff !important;
+    }
+    
+    body {
+      font-size: 10pt;
+    }
+    
+    a {
+      text-decoration: none !important;
+      color: #000 !important;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Handle print button
+    document.getElementById('print-btn').addEventListener('click', function() {
+      window.print();
+    });
+    
+    // Make filters apply on change
+    const filterElements = document.querySelectorAll('#filter-form select');
+    for (const element of filterElements) {
+      element.addEventListener('change', function() {
+        document.getElementById('filter-form').submit();
+      });
+    }
+    
+    // Handle delete button
+    const deleteButtons = document.querySelectorAll('.btn-delete');
+    for (const button of deleteButtons) {
+      button.addEventListener('click', function(event) {
+        event.preventDefault();
+        const id = this.getAttribute('data-id');
+        const name = this.getAttribute('data-name');
+        
+        if (confirm(`Are you sure you want to delete this ${name}?`)) {
+          fetch(`/tests/requisition/${id}`, {
+            method: 'DELETE',
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              alert(data.message || 'Deleted successfully!');
+              window.location.reload();
+            } else {
+              alert(data.message || 'Error deleting item');
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the item');
+          });
+        }
+      });
+    }
+  });
+</script>
+
+<%- include('partials/footer') %> 
