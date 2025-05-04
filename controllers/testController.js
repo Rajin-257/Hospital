@@ -1,6 +1,7 @@
 const Test = require('../models/Test');
 const TestRequest = require('../models/TestRequest');
 const Patient = require('../models/Patient');
+const Doctor = require('../models/Doctor');
 const { Op } = require('sequelize');
 
 // Get all tests
@@ -41,12 +42,13 @@ exports.getTest = async (req, res) => {
 // Create new test
 exports.createTest = async (req, res) => {
   try {
-    const { name,  price, description } = req.body;
+    const { name, price, description, commission } = req.body;
     
     const test = await Test.create({
       name,
       price,
-      description
+      description,
+      commission: commission || 0
     });
     
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
@@ -63,7 +65,7 @@ exports.createTest = async (req, res) => {
 // Update test
 exports.updateTest = async (req, res) => {
   try {
-    const { name, price, description } = req.body;
+    const { name, price, description, commission } = req.body;
     
     let test = await Test.findByPk(req.params.id);
     
@@ -74,7 +76,8 @@ exports.updateTest = async (req, res) => {
     test = await test.update({
       name,
       price,
-      description
+      description,
+      commission: commission || 0
     });
     
     res.json(test);
@@ -155,6 +158,63 @@ exports.getTestRequestsByPatient = async (req, res) => {
     });
     
     res.json(testRequests);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Get doctor commissions report
+exports.getDoctorCommissions = async (req, res) => {
+  try {
+    const { doctorId, startDate, endDate } = req.query;
+    
+    // Build query conditions
+    const whereConditions = {
+      billingStatus: 'billed',
+    };
+    
+    // Add doctor filter if provided
+    if (doctorId) {
+      whereConditions.DoctorId = doctorId;
+    }
+    
+    // Add date range filter if provided
+    if (startDate && endDate) {
+      whereConditions.requestDate = {
+        [Op.between]: [new Date(startDate), new Date(endDate)]
+      };
+    } else if (startDate) {
+      whereConditions.requestDate = {
+        [Op.gte]: new Date(startDate)
+      };
+    } else if (endDate) {
+      whereConditions.requestDate = {
+        [Op.lte]: new Date(endDate)
+      };
+    }
+    
+    const commissions = await TestRequest.findAll({
+      where: whereConditions,
+      include: [
+        { model: Doctor },
+        { model: Test },
+        { model: Patient }
+      ],
+      order: [['requestDate', 'DESC']]
+    });
+    
+    // For API requests
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.json(commissions);
+    }
+    
+    // For web requests, render the commission report view
+    res.render('commission_reports', {
+      title: 'Doctor Commission Reports',
+      commissions,
+      query: req.query
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });

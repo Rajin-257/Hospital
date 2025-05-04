@@ -2,6 +2,7 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 const Patient = require('./Patient');
 const Test = require('./Test');
+const Doctor = require('./Doctor');
 
 const TestRequest = sequelize.define('TestRequest', {
   id: {
@@ -36,11 +37,17 @@ const TestRequest = sequelize.define('TestRequest', {
   deliveryDate: {
     type: DataTypes.DATEONLY,
     allowNull: true
+  },
+  commission: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0
   }
 });
 
 // Relationships
 TestRequest.belongsTo(Patient);
 TestRequest.belongsTo(Test);
+TestRequest.belongsTo(Doctor);
 
 module.exports = TestRequest;

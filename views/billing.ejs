@@ -14,15 +14,12 @@
                     <div class="col-md-3">
                         <label class="form-label required-label">Patient</label>
                         <div class="input-group">
-                            <select class="form-select" id="patient-select" name="patientId" required>
+                            <select class="form-select" id="patient-select" name="patientId">
                                 <option value="">Select a patient</option>
                                 <% patients.forEach(patient => { %>
                                     <option value="<%= patient.id %>"><%= patient.name %> (<%= patient.patientId %>)</option>
                                 <% }); %>
                             </select>
-                            <button class="btn btn-outline-success" type="button" id="show-patient-form" title="Add New Patient">
-                                <i class="fas fa-plus"></i>
-                            </button>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -58,21 +55,21 @@
     </div>
     <% } %>
 
-    <!-- Patient Form (Hidden by default) -->
-    <div class="card mt-4" id="patient-form-card" style="display: none;">
+    <!-- Patient Form (Always visible) -->
+    <div class="card mt-4" id="patient-form-card">
         <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>Add New Patient</h5>
+            <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>Patient Information</h5>
         </div>
         <div class="card-body">
             <form id="patient-form">
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label class="form-label required-label">Full Name</label>
-                        <input type="text" class="form-control" name="name" required>
+                        <input type="text" class="form-control" name="name" id="patient-name" required>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label required-label">Gender</label>
-                        <select class="form-select" name="gender" required>
+                        <select class="form-select" name="gender" id="patient-gender" required>
                             <option value="">Select Gender</option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
@@ -108,11 +105,11 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label required-label">Phone</label>
-                        <input type="tel" class="form-control" name="phone" required>
+                        <input type="tel" class="form-control" name="phone" id="patient-phone" required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Blood Group</label>
-                        <select class="form-select" name="bloodGroup">
+                        <select class="form-select" name="bloodGroup" id="patient-blood-group">
                             <option value="">Select Blood Group</option>
                             <option value="A+">A+</option>
                             <option value="A-">A-</option>
@@ -126,8 +123,9 @@
                     </div>
                 </div>
                 <div class="text-end">
-                    <button type="button" class="btn btn-secondary me-2" id="cancel-patient-form">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Save Patient</button>
+                    <button type="button" class="btn btn-secondary" id="clear-patient-form">
+                        <i class="fas fa-eraser me-1"></i> Clear Form
+                    </button>
                 </div>
             </form>
         </div>
@@ -343,27 +341,27 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3 mb-3">
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label class="form-label">Priority</label>
                             <select class="form-select" id="test-priority">
                                 <option value="Normal">Normal</option>
                                 <option value="Urgent">Urgent</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label class="form-label">Extra Charge</label>
                             <div class="input-group">
                                 <span class="input-group-text">Tk </span>
                                 <input type="number" class="form-control" id="test-extra-charge" min="0" step="0.01" value="0">
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label required-label">Test</label>
                             <div class="input-group">
                                 <select class="form-select" id="test-select" name="testId">
                                     <option value="">Select a Test</option>
                                     <% tests.forEach(test => { %>
-                                        <option value="<%= test.id %>" data-price="<%= test.price %>"><%= test.name %></option>
+                                        <option value="<%= test.id %>" data-price="<%= test.price %>" data-commission="<%= test.commission %>"><%= test.name %></option>
                                     <% }); %>
                                 </select>
                                 <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#addTestModal" title="Add New Test">
@@ -371,7 +369,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label">Delivery Date (if applicable)</label>
                             <input type="date" class="form-control" id="test-delivery-date">
                         </div>
@@ -387,6 +385,7 @@
                                     <th>Test Name</th>
                                     <th>Price (Tk )</th>
                                     <th>Priority</th>
+                                    <th>Doctor</th>
                                     <th>Delivery Date</th>
                                     <th>Action</th>
                                 </tr>
@@ -525,6 +524,13 @@
                         </div>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Commission</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Tk </span>
+                            <input type="number" class="form-control" name="commission" min="0" step="0.01" value="0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Description</label>
                         <textarea class="form-control" name="description" rows="3"></textarea>
                     </div>
@@ -647,8 +653,13 @@
             const extraCharge = parseFloat($('#test-extra-charge').val()) || 0;
             const deliveryDate = $('#test-delivery-date').val();
             
+            // Get the doctor from the appointment
+            const doctorId = $('#doctor-select').val();
+            const doctorName = doctorId ? $('#doctor-select option:selected').text() : 'No Referring Doctor';
+            
             const testName = testSelect.find('option:selected').text();
             let testPrice = parseFloat(testSelect.find('option:selected').data('price'));
+            let testCommission = parseFloat(testSelect.find('option:selected').data('commission')) || 0;
             
             // Add extra charge if entered
             const totalPrice = testPrice + extraCharge;
@@ -673,10 +684,12 @@
             const newRow = `
                 <tr id="test-row-${testId}" data-id="${testId}" data-name="${testName}"  
                     data-price="${totalPrice}" data-priority="${testPriority}" 
-                    data-delivery-date="${deliveryDate || ''}">
+                    data-delivery-date="${deliveryDate || ''}" data-commission="${testCommission}"
+                    data-doctor-id="${doctorId || ''}" data-doctor-name="${doctorName}">
                     <td>${testName}</td>
                     <td>$${totalPrice.toFixed(2)}${extraChargeDisplay}</td>
                     <td>${priorityLabel}</td>
+                    <td>${doctorName || 'None'}</td>
                     <td>${displayDeliveryDate}</td>
                     <td>
                         <button type="button" class="btn btn-sm btn-outline-danger delete-test">
@@ -937,6 +950,9 @@
             $('#test-list tr').each(function() {
                 const $row = $(this);
                 const deliveryDate = $row[0].getAttribute('data-delivery-date') || '';
+                const commission = parseFloat($row.data('commission')) || 0;
+                const doctorId = $row.data('doctor-id') || null;
+                const doctorName = $row.data('doctor-name') || '';
                 
                 testItems.push({
                     id: $row.data('id'),
@@ -944,7 +960,10 @@
                     name: $row.data('name'),
                     price: parseFloat($row.data('price')),
                     priority: $row.data('priority'),
-                    deliveryDate: deliveryDate
+                    deliveryDate: deliveryDate,
+                    commission: commission,
+                    doctorId: doctorId,
+                    doctorName: doctorName
                 });
             });
             
@@ -1197,132 +1216,6 @@
             });
         });
         
-        // Handle patient add button click
-        $('#show-patient-form').on('click', function() {
-            $('#patient-form-card').show();
-        });
-
-        // Handle cancel patient form
-        $('#cancel-patient-form').on('click', function() {
-            $('#patient-form-card').hide();
-            $('#patient-form')[0].reset();
-        });
-
-        // Handle DOB type toggle
-        $('input[name="dobType"]').on('change', function() {
-            if ($(this).val() === 'date') {
-                $('#dobDateInput').show();
-                $('#dobAgeInput').hide();
-                $('#dob-date').prop('required', true);
-                $('#dob-years, #dob-months, #dob-days').prop('required', false);
-            } else {
-                $('#dobDateInput').hide();
-                $('#dobAgeInput').show();
-                $('#dob-date').prop('required', false);
-                $('#dob-years, #dob-months, #dob-days').prop('required', true);
-            }
-        });
-
-        // Calculate date of birth from age
-        function calculateDOB() {
-            const years = parseInt($('#dob-years').val()) || 0;
-            const months = parseInt($('#dob-months').val()) || 0;
-            const days = parseInt($('#dob-days').val()) || 0;
-
-            if (years > 0 || months > 0 || days > 0) {
-                const today = new Date();
-                const dob = new Date(today);
-                
-                dob.setFullYear(today.getFullYear() - years);
-                dob.setMonth(today.getMonth() - months);
-                dob.setDate(today.getDate() - days);
-                
-                $('#dob-date').val(dob.toISOString().split('T')[0]);
-            }
-        }
-
-        // Handle age inputs
-        $('#dob-years, #dob-months, #dob-days').on('input', function() {
-            calculateDOB();
-        });
-
-        // Submit patient form
-        $('#patient-form').on('submit', function(e) {
-            e.preventDefault();
-            
-            // Validate date of birth based on selected type
-            if ($('input[name="dobType"]:checked').val() === 'date') {
-                if (!$('#dob-date').val()) {
-                    alert('Please enter date of birth');
-                    return;
-                }
-            } else {
-                const years = parseInt($('#dob-years').val()) || 0;
-                const months = parseInt($('#dob-months').val()) || 0;
-                const days = parseInt($('#dob-days').val()) || 0;
-                
-                if (years === 0 && months === 0 && days === 0) {
-                    alert('Please enter age');
-                    return;
-                }
-            }
-            
-            // Get form data
-            const formData = new FormData(this);
-            const data = {};
-            
-            // Convert FormData to object and handle blood group
-            for (let [key, value] of formData.entries()) {
-                if (key === 'bloodGroup' && value === '') {
-                    data[key] = null;
-                } else {
-                    data[key] = value;
-                }
-            }
-            
-            // Handle date of birth based on type
-            if ($('input[name="dobType"]:checked').val() === 'age') {
-                const years = parseInt($('#dob-years').val()) || 0;
-                const months = parseInt($('#dob-months').val()) || 0;
-                const days = parseInt($('#dob-days').val()) || 0;
-                
-                const today = new Date();
-                const dob = new Date(today);
-                
-                dob.setFullYear(today.getFullYear() - years);
-                dob.setMonth(today.getMonth() - months);
-                dob.setDate(today.getDate() - days);
-                
-                data.dateOfBirth = dob.toISOString().split('T')[0];
-            }
-            
-            $.ajax({
-                url: '/patients',
-                type: 'POST',
-                data: JSON.stringify(data),
-                contentType: 'application/json',
-                success: function(response) {
-                    // Hide patient form
-                    $('#patient-form-card').hide();
-                    
-                    // Add patient to select and select it
-                    const newOption = new Option(`${response.name} (${response.patientId})`, response.id, true, true);
-                    $('#patient-select').append(newOption).trigger('change');
-                    
-                    // Set patient ID in billing form
-                    $('#billing-patient-id').val(response.id);
-                    
-                    // Reset form
-                    $('#patient-form')[0].reset();
-                    // Reset DOB type to age
-                    $('#dobTypeAge').prop('checked', true).trigger('change');
-                },
-                error: function(error) {
-                    alert('Error: ' + (error.responseJSON?.message || 'Could not add patient'));
-                }
-            });
-        });
-        
         // Handle doctor add button click
         $('#show-doctor-form').on('click', function() {
             $('#doctor-form-card').show();
@@ -1334,31 +1227,6 @@
             $('#doctor-form')[0].reset();
         });
 
-        // Submit doctor form
-        $('#doctor-form').on('submit', function(e) {
-            e.preventDefault();
-            
-            $.ajax({
-                url: '/doctors',
-                type: 'POST',
-                data: $(this).serialize(),
-                success: function(response) {
-                    // Hide doctor form
-                    $('#doctor-form-card').hide();
-                    
-                    // Add doctor to select and select it
-                    const newOption = new Option(`Dr. ${response.name} (${response.specialization})`, response.id, true, true);
-                    $('#doctor-select').append(newOption).trigger('change');
-                    
-                    // Reset form
-                    $('#doctor-form')[0].reset();
-                },
-                error: function(error) {
-                    alert('Error: ' + (error.responseJSON?.message || 'Could not add doctor'));
-                }
-            });
-        });
-        
         // Handle cabin add button click
         $('#show-cabin-form').on('click', function() {
             $('#cabin-form-card').show();
@@ -1410,6 +1278,7 @@
                     // Add test to select and select it
                     const newOption = new Option(response.name, response.id, true, true);
                     newOption.dataset.price = response.price;
+                    newOption.dataset.commission = response.commission;
                     $('#test-select').append(newOption).trigger('change');
                     
                     // Reset form
@@ -1424,6 +1293,138 @@
         // Handle reset delivery date button click
         $('#reset-delivery-date-btn').on('click', function() {
             $('#bill-delivaridate').val('');
+        });
+
+        // Initialize doctor selector to update test permissions
+        $('#doctor-select').on('change', function() {
+            // We'll keep the functionality to update the doctor for tests
+            // but remove restrictions that make it required
+        });
+        
+        // Calculate date of birth from age
+        function calculateDOB() {
+            const years = parseInt($('#dob-years').val()) || 0;
+            const months = parseInt($('#dob-months').val()) || 0;
+            const days = parseInt($('#dob-days').val()) || 0;
+
+            if (years > 0 || months > 0 || days > 0) {
+                const today = new Date();
+                const dob = new Date(today);
+                
+                dob.setFullYear(today.getFullYear() - years);
+                dob.setMonth(today.getMonth() - months);
+                dob.setDate(today.getDate() - days);
+                
+                $('#dob-date').val(dob.toISOString().split('T')[0]);
+            }
+        }
+
+        // Handle age inputs
+        $('#dob-years, #dob-months, #dob-days').on('input', function() {
+            calculateDOB();
+        });
+
+        // Automatically save patient data when form fields change
+        $('#patient-form input, #patient-form select').on('change', function() {
+            // Only save if we have at least name and phone
+            if ($('#patient-name').val() && $('#patient-phone').val()) {
+                savePatientData();
+            }
+        });
+        
+        // Function to save patient data
+        function savePatientData() {
+            // Check if we have at least the required fields
+            if (!$('#patient-name').val() || !$('#patient-phone').val()) {
+                return; // Don't save if required fields are missing
+            }
+            
+            // Get form data
+            const formData = new FormData($('#patient-form')[0]);
+            const data = {};
+            
+            // Convert FormData to object and handle blood group
+            for (let [key, value] of formData.entries()) {
+                if (key === 'bloodGroup' && value === '') {
+                    data[key] = null;
+                } else {
+                    data[key] = value;
+                }
+            }
+            
+            // Handle date of birth based on type
+            if ($('input[name="dobType"]:checked').val() === 'age') {
+                const years = parseInt($('#dob-years').val()) || 0;
+                const months = parseInt($('#dob-months').val()) || 0;
+                const days = parseInt($('#dob-days').val()) || 0;
+                
+                if (years === 0 && months === 0 && days === 0) {
+                    return; // Don't save if age is not set
+                }
+                
+                const today = new Date();
+                const dob = new Date(today);
+                
+                dob.setFullYear(today.getFullYear() - years);
+                dob.setMonth(today.getMonth() - months);
+                dob.setDate(today.getDate() - days);
+                
+                data.dateOfBirth = dob.toISOString().split('T')[0];
+            }
+            
+            // Create a new patient - no updating functionality
+            $.ajax({
+                url: '/patients',
+                type: 'POST',
+                data: JSON.stringify(data),
+                contentType: 'application/json',
+                success: function(response) {
+                    // Add patient to select and select it
+                    const newOption = new Option(`${response.name} (${response.patientId})`, response.id, true, true);
+                    $('#patient-select').append(newOption).trigger('change');
+                    
+                    // Set patient ID in billing form
+                    $('#billing-patient-id').val(response.id);
+                    
+                    // Clear the form for next entry
+                    $('#patient-form')[0].reset();
+                    $('#dobTypeAge').prop('checked', true).trigger('change');
+                },
+                error: function(error) {
+                    console.error('Error adding patient:', error);
+                    alert('Error: ' + (error.responseJSON?.message || 'Could not add patient'));
+                }
+            });
+        }
+
+        // Handle clear button click
+        $('#clear-patient-form').on('click', function() {
+            // Clear the form
+            $('#patient-form')[0].reset();
+            
+            // Reset DOB type to age
+            $('#dobTypeAge').prop('checked', true).trigger('change');
+            
+            // Clear the patient selection in dropdown
+            $('#patient-select').val(null).trigger('change');
+            
+            // Clear patient ID in billing form
+            $('#billing-patient-id').val('');
+        });
+        
+        // Handle DOB type toggle (re-add this function that was removed)
+        $('input[name="dobType"]').on('change', function() {
+            if ($(this).val() === 'date') {
+                $('#dobDateInput').show();
+                $('#dobAgeInput').hide();
+                $('#dob-date').prop('required', true);
+                $('#dob-years, #dob-months, #dob-days').prop('required', false);
+            } else {
+                $('#dobDateInput').hide();
+                $('#dobAgeInput').show();
+                $('#dob-date').prop('required', false);
+                $('#dob-years, #dob-months, #dob-days').prop('required', true);
+            }
         });
     });
 </script>

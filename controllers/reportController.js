@@ -183,6 +183,83 @@ exports.getCabinStats = async (req, res) => {
   }
 };
 
+// Get daily billing statistics
+exports.getDailyBillingStats = async (req, res) => {
+  try {
+    // Get today's date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Get count of today's billings
+    const dailyBillingCount = await Billing.count({
+      where: {
+        billDate: {
+          [Op.gte]: today,
+          [Op.lt]: tomorrow
+        }
+      }
+    });
+    
+    // Calculate total amount for today
+    const dailyBillings = await Billing.findAll({
+      attributes: ['totalAmount'],
+      where: {
+        billDate: {
+          [Op.gte]: today,
+          [Op.lt]: tomorrow
+        }
+      }
+    });
+    
+    const dailyBillingAmount = dailyBillings.reduce((sum, bill) => sum + Number(bill.totalAmount), 0);
+    
+    res.json({
+      dailyBillingCount,
+      dailyBillingAmount
+    });
+  } catch (error) {
+    console.error('Error in getDailyBillingStats:', error);
+    res.status(500).json({ message: 'Failed to fetch daily billing statistics', dailyBillingCount: 0, dailyBillingAmount: 0 });
+  }
+};
+
+// Get due invoice statistics
+exports.getDueInvoiceStats = async (req, res) => {
+  try {
+    // Get count of invoices with due amount > 0
+    const dueInvoiceCount = await Billing.count({
+      where: {
+        dueAmount: {
+          [Op.gt]: 0
+        }
+      }
+    });
+    
+    // Calculate total due amount
+    const dueInvoices = await Billing.findAll({
+      attributes: ['dueAmount'],
+      where: {
+        dueAmount: {
+          [Op.gt]: 0
+        }
+      }
+    });
+    
+    const dueInvoiceAmount = dueInvoices.reduce((sum, bill) => sum + Number(bill.dueAmount), 0);
+    
+    res.json({
+      dueInvoiceCount,
+      dueInvoiceAmount
+    });
+  } catch (error) {
+    console.error('Error in getDueInvoiceStats:', error);
+    res.status(500).json({ message: 'Failed to fetch due invoice statistics', dueInvoiceCount: 0, dueInvoiceAmount: 0 });
+  }
+};
+
 // Get all billing records
 exports.getAllBillingRecords = async (req, res) => {
   try {

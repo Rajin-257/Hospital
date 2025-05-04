@@ -41,9 +41,9 @@
     <% if (visibleFeatures && visibleFeatures.appointmentReports) { %>
     <!-- Doctor Card -->
     <div class="col-md-4 col-lg-3 mb-3" id="doctor-card">
-      <a href="/doctors" class="text-decoration-none">
-        <div class="card h-100 shadow-sm hover-card">
-          <div class="card-body">
+      <div class="card h-100 shadow-sm hover-card">
+        <div class="card-body">
+          <a href="/doctors" class="text-decoration-none">
             <h5 class="card-title text-secondary">Doctors</h5>
             <div class="d-flex align-items-center mb-2">
               <i class="fas fa-user-md fa-2x text-secondary me-3"></i>
@@ -52,12 +52,20 @@
                 <small class="text-muted">Total Doctors</small>
               </div>
             </div>
-          </div>
-          <div class="card-footer bg-light text-center">
-            <small class="text-muted">Click to view all doctors</small>
+          </a>
+        </div>
+        <div class="card-footer bg-light text-center">
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="doctorReportsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fas fa-file-alt me-1"></i> Doctor Reports
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="doctorReportsDropdown">
+              <li><a class="dropdown-item" href="/doctors">View All Doctors</a></li>
+              <li><a class="dropdown-item" href="/commissions">Doctor Commissions</a></li>
+            </ul>
           </div>
         </div>
-      </a>
+      </div>
     </div>
     
     <!-- Appointment Card -->
@@ -120,6 +128,56 @@
         </div>
       </div>
     </div>
+
+    <!-- Daily Billing Card -->
+    <div class="col-md-4 col-lg-3 mb-3" id="daily-billing-card">
+      <div class="card h-100 shadow-sm hover-card">
+        <div class="card-body">
+          <h5 class="card-title text-primary">Daily Billing</h5>
+          <div class="d-flex align-items-center mb-2">
+            <i class="fas fa-calendar-day fa-2x text-primary me-3"></i>
+            <div>
+              <h3 id="dailyBillingCount" class="mb-0">-</h3>
+              <small class="text-muted">Today's Invoices</small>
+            </div>
+          </div>
+          <div class="mt-2">
+            <span id="dailyBillingAmount">-</span>
+            <small class="text-muted"> revenue today</small>
+          </div>
+        </div>
+        <div class="card-footer bg-light text-center">
+          <a href="/reports/billing/daily" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-file-alt me-1"></i> View Daily Report
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Due Invoice Card -->
+    <div class="col-md-4 col-lg-3 mb-3" id="due-invoice-card">
+      <div class="card h-100 shadow-sm hover-card">
+        <div class="card-body">
+          <h5 class="card-title text-danger">Due Invoices</h5>
+          <div class="d-flex align-items-center mb-2">
+            <i class="fas fa-exclamation-circle fa-2x text-danger me-3"></i>
+            <div>
+              <h3 id="dueInvoiceCount" class="mb-0">-</h3>
+              <small class="text-muted">Unpaid Invoices</small>
+            </div>
+          </div>
+          <div class="mt-2">
+            <span id="dueInvoiceAmount">-</span>
+            <small class="text-muted"> amount due</small>
+          </div>
+        </div>
+        <div class="card-footer bg-light text-center">
+          <a href="/reports/billing/due" class="btn btn-sm btn-outline-danger">
+            <i class="fas fa-file-alt me-1"></i> View Due Invoices
+          </a>
+        </div>
+      </div>
+    </div>
     <% } %>
     
     <% if (visibleFeatures && visibleFeatures.testReports) { %>
@@ -141,9 +199,15 @@
           </div>
         </div>
         <div class="card-footer bg-light text-center">
-          <button class="btn btn-sm btn-outline-info show-unbilled-tests-btn">
-            <i class="fas fa-list-alt me-1"></i> Show Not Billed Tests
-          </button>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-info dropdown-toggle" type="button" id="testReportsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fas fa-list-alt me-1"></i> Test Reports
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="testReportsDropdown">
+              <li><button class="dropdown-item show-unbilled-tests-btn">Show Not Billed Tests</button></li>
+              <li><a class="dropdown-item" href="/commissions">Doctor Commissions</a></li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -411,6 +475,8 @@
       appointments: false,
       tests: false,
       billings: false,
+      dailyBilling: false,
+      dueInvoices: false,
       cabins: false
     };
     
@@ -471,6 +537,22 @@
         document.getElementById('billing-card').style.display = 'block';
       }
       
+      // Check daily billing card
+      const dailyBillingCount = parseValue('dailyBillingCount');
+      if (dailyBillingCount === 0) {
+        document.getElementById('daily-billing-card').style.display = 'none';
+      } else if (dailyBillingCount > 0) {
+        document.getElementById('daily-billing-card').style.display = 'block';
+      }
+      
+      // Check due invoice card
+      const dueInvoiceCount = parseValue('dueInvoiceCount');
+      if (dueInvoiceCount === 0) {
+        document.getElementById('due-invoice-card').style.display = 'none';
+      } else if (dueInvoiceCount > 0) {
+        document.getElementById('due-invoice-card').style.display = 'block';
+      }
+      
       // Check cabin card
       const totalBookings = parseValue('totalBookings');
       if (totalBookings === 0) {
@@ -483,7 +565,7 @@
     // Check if all data is loaded
     function checkAllDataLoaded() {
       if (dataLoaded.patients && dataLoaded.doctors && dataLoaded.appointments && 
-          dataLoaded.tests && dataLoaded.billings && dataLoaded.cabins) {
+          dataLoaded.tests && dataLoaded.billings && dataLoaded.dailyBilling && dataLoaded.dueInvoices && dataLoaded.cabins) {
         // All data has been loaded, now hide cards with zero values
         hideCardsWithZeroValue();
       }
@@ -566,6 +648,36 @@
         checkAllDataLoaded();
       });
     
+    // Fetch daily billing statistics
+    fetch('/reports/daily-billing-stats')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('dailyBillingCount').textContent = data.dailyBillingCount;
+        document.getElementById('dailyBillingAmount').textContent = 'Tk ' + data.dailyBillingAmount.toLocaleString();
+        dataLoaded.dailyBilling = true;
+        checkAllDataLoaded();
+      })
+      .catch(error => {
+        console.error('Error fetching daily billing stats:', error);
+        dataLoaded.dailyBilling = true;
+        checkAllDataLoaded();
+      });
+    
+    // Fetch due invoice statistics
+    fetch('/reports/due-invoice-stats')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('dueInvoiceCount').textContent = data.dueInvoiceCount;
+        document.getElementById('dueInvoiceAmount').textContent = 'Tk ' + data.dueInvoiceAmount.toLocaleString();
+        dataLoaded.dueInvoices = true;
+        checkAllDataLoaded();
+      })
+      .catch(error => {
+        console.error('Error fetching due invoice stats:', error);
+        dataLoaded.dueInvoices = true;
+        checkAllDataLoaded();
+      });
+    
     // Fetch cabin statistics
     fetch('/reports/cabin-stats')
       .then(response => response.json())
@@ -590,6 +702,20 @@
       if ($(e.target).closest('.dropdown').length === 0) {
         $('#billing-records-section').removeClass('d-none');
         loadBillingRecords();
+      }
+    });
+    
+    // Show daily billing records when clicking on the daily billing card
+    $('.card h5.card-title.text-primary').parent().parent().on('click', function(e) {
+      if ($(e.target).closest('a').length === 0) {
+        window.location.href = '/reports/billing/daily';
+      }
+    });
+    
+    // Show due invoice records when clicking on the due invoice card
+    $('.card h5.card-title.text-danger:contains("Due Invoices")').parent().parent().on('click', function(e) {
+      if ($(e.target).closest('a').length === 0) {
+        window.location.href = '/reports/billing/due';
       }
     });
     

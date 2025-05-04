@@ -11,5 +11,6 @@ router.delete('/:id', protect, testController.deleteTest);
 
 router.post('/request', protect, testController.createTestRequest);
 router.get('/request/patient/:patientId', protect, testController.getTestRequestsByPatient);
+router.get('/commissions', protect, testController.getDoctorCommissions);
 
 module.exports = router;

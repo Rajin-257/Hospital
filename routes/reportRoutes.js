@@ -26,6 +26,12 @@ router.get('/test-stats', checkFeatureAccess('Test Reports'), reportController.g
 // Billing statistics
 router.get('/billing-stats', checkFeatureAccess('Billing Reports'), reportController.getBillingStats);
 
+// Daily billing statistics
+router.get('/daily-billing-stats', checkFeatureAccess('Billing Reports'), reportController.getDailyBillingStats);
+
+// Due invoice statistics
+router.get('/due-invoice-stats', checkFeatureAccess('Billing Reports'), reportController.getDueInvoiceStats);
+
 // Cabin statistics
 router.get('/cabin-stats', checkFeatureAccess('Billing Reports'), reportController.getCabinStats);
 

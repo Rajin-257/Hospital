@@ -17,6 +17,11 @@ const Test = sequelize.define('Test', {
   },
   description: {
     type: DataTypes.TEXT
+  },
+  commission: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    defaultValue: 0
   }
 });
 

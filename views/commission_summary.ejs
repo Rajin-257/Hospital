@@ -1,0 +1,211 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0"><i class="fas fa-chart-pie me-2"></i>Doctor Commission Summary</h5>
+      <div class="btn-group">
+        <a href="/commissions" class="btn btn-outline-primary">Commission Records</a>
+        <a href="/commissions/summary" class="btn btn-outline-primary">Commission Summary</a>
+      </div>
+    </div>
+    <div class="card-body">
+      <!-- Filters -->
+      <form action="/commissions/summary" method="GET" class="row g-3 mb-4 filter-form">
+        <div class="col-md-3">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="status">
+            <option value="">All Statuses</option>
+            <option value="pending" <%= (query && query.status === 'pending') ? 'selected' : '' %>>Pending</option>
+            <option value="paid" <%= (query && query.status === 'paid') ? 'selected' : '' %>>Paid</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Start Date</label>
+          <input type="date" class="form-control" name="startDate" value="<%= query && query.startDate ? query.startDate : '' %>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">End Date</label>
+          <input type="date" class="form-control" name="endDate" value="<%= query && query.endDate ? query.endDate : '' %>">
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-filter me-1"></i> Apply Filters
+          </button>
+        </div>
+      </form>
+      
+      <!-- Summary Stats -->
+      <% 
+      let totalAmount = 0;
+      let totalTests = 0;
+      
+      if (locals.summary && summary.length > 0) {
+        summary.forEach(item => {
+          totalAmount += parseFloat(item.dataValues.totalAmount || 0);
+          totalTests += parseInt(item.dataValues.totalTests || 0);
+        });
+      }
+      %>
+      
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card bg-light">
+            <div class="card-body text-center">
+              <h5 class="card-title">Total Doctors</h5>
+              <div class="display-6"><%= locals.summary ? summary.length : 0 %></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-light">
+            <div class="card-body text-center">
+              <h5 class="card-title">Total Tests</h5>
+              <div class="display-6"><%= totalTests %></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-light">
+            <div class="card-body text-center">
+              <h5 class="card-title">Total Commission</h5>
+              <div class="display-6">Tk <%= totalAmount.toFixed(2) %></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Summary Table -->
+      <div class="table-responsive print-friendly">
+        <table class="table table-hover table-striped" id="summary-table">
+          <thead class="table-light">
+            <tr>
+              <th>Doctor</th>
+              <th>Contact</th>
+              <th>Tests</th>
+              <th>Commission Amount</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (locals.summary && summary.length > 0) { %>
+              <% summary.forEach(item => { %>
+                <tr>
+                  <td>Dr. <%= item.Doctor.name %></td>
+                  <td><%= item.Doctor.phone || 'N/A' %></td>
+                  <td><%= item.dataValues.totalTests %></td>
+                  <td>Tk <%= parseFloat(item.dataValues.totalAmount).toFixed(2) %></td>
+                  <td>
+                    <a href="/commissions?doctorId=<%= item.dataValues.DoctorId %>" class="btn btn-sm btn-primary">
+                      <i class="fas fa-search me-1"></i> View Details
+                    </a>
+                    <% if (item.dataValues.totalAmount > 0) { %>
+                      <button type="button" class="btn btn-sm btn-success ms-1 pay-all-btn" 
+                              data-doctor-id="<%= item.dataValues.DoctorId %>" 
+                              data-doctor-name="<%= item.Doctor.name %>">
+                        <i class="fas fa-money-bill-wave me-1"></i> Pay All
+                      </button>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="5" class="text-center">No commission summary data found</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pay All Modal -->
+<div class="modal fade" id="payAllModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Pay All Commissions</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="/commissions/mark-paid" method="POST">
+        <div class="modal-body">
+          <p>You are about to mark all pending commissions for <strong id="doctor-name-display"></strong> as paid.</p>
+          <div class="mb-3">
+            <label class="form-label">Payment Date</label>
+            <input type="date" class="form-control" name="paidDate" value="<%= new Date().toISOString().split('T')[0] %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Payment Notes</label>
+            <input type="text" class="form-control" name="notes" placeholder="Payment reference, check number, etc.">
+          </div>
+          <input type="hidden" name="doctorId" id="doctor-id-input">
+          <!-- This will be filled via AJAX -->
+          <div id="pending-commissions-container"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success" id="confirm-pay-btn">
+            <i class="fas fa-money-bill-wave me-1"></i> Mark as Paid
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  $(document).ready(function() {
+    // Initialize DataTable
+    $('#summary-table').DataTable({
+      order: [[3, 'desc']], // Sort by commission amount
+      pageLength: 25,
+      dom: 'Bfrtip',
+      buttons: [
+        'copy', 'csv', 'excel', 'pdf', 'print'
+      ]
+    });
+    
+    // Handle Pay All button
+    $('.pay-all-btn').on('click', function() {
+      const doctorId = $(this).data('doctor-id');
+      const doctorName = $(this).data('doctor-name');
+      
+      // Set doctor info in modal
+      $('#doctor-name-display').text('Dr. ' + doctorName);
+      $('#doctor-id-input').val(doctorId);
+      
+      // Get pending commissions for this doctor
+      $.ajax({
+        url: `/commissions?doctorId=${doctorId}&status=pending`,
+        type: 'GET',
+        dataType: 'json',
+        success: function(data) {
+          const container = $('#pending-commissions-container');
+          container.empty();
+          
+          if (data.length > 0) {
+            data.forEach(commission => {
+              const input = `<input type="hidden" name="commissionIds" value="${commission.id}">`;
+              container.append(input);
+            });
+            
+            $('#confirm-pay-btn').prop('disabled', false).text(`Mark ${data.length} Commissions as Paid`);
+          } else {
+            $('#confirm-pay-btn').prop('disabled', true).text('No Pending Commissions');
+          }
+          
+          $('#payAllModal').modal('show');
+        },
+        error: function(error) {
+          console.error('Error fetching pending commissions:', error);
+          alert('Error loading pending commissions for this doctor.');
+        }
+      });
+    });
+  });
+</script>
+
+<%- include('partials/footer') %> 

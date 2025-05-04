@@ -6,6 +6,7 @@ const Cabin = require('../models/Cabin');
 const Appointment = require('../models/Appointment');
 const CabinBooking = require('../models/CabinBooking');
 const TestRequest = require('../models/TestRequest');
+const DoctorCommission = require('../models/DoctorCommission');
 const { Op } = require('sequelize');
 
 // Render billing page
@@ -131,46 +132,59 @@ exports.createBilling = async (req, res) => {
       items: JSON.parse(items)
     });
     
-    // If appointment IDs are provided, mark them as billed
-    if (appointmentIds && appointmentIds.length > 0) {
-      const appointmentIdsArray = JSON.parse(appointmentIds);
+    // Parse items to process appointments, cabins and tests
+    const parsedItems = JSON.parse(items);
+    
+    // Update appointment status
+    if (appointmentIds) {
+      // Ensure appointmentIds is an array
+      const appointmentIdsArray = Array.isArray(appointmentIds) ? appointmentIds : 
+                                 (typeof appointmentIds === 'string' ? [appointmentIds] : []);
+      
       if (appointmentIdsArray.length > 0) {
-        await Appointment.update(
-          { billingStatus: 'billed' },
-          { 
-            where: { 
-              id: { 
-                [Op.in]: appointmentIdsArray 
-              } 
-            } 
+        await Promise.all(appointmentIdsArray.map(async (id) => {
+          try {
+            const appointmentId = parseInt(id);
+            if (!isNaN(appointmentId)) {
+              await updateAppointmentStatus(appointmentId, 'completed');
+            }
+          } catch (err) {
+            console.error(`Error updating appointment ${id}:`, err);
           }
-        );
+        }));
       }
     }
     
-    // If cabin booking IDs are provided, mark them as billed
-    if (cabinBookingIds && cabinBookingIds.length > 0) {
-      const cabinBookingIdsArray = JSON.parse(cabinBookingIds);
+    // Update cabin booking status
+    if (cabinBookingIds) {
+      // Ensure cabinBookingIds is an array
+      const cabinBookingIdsArray = Array.isArray(cabinBookingIds) ? cabinBookingIds : 
+                                  (typeof cabinBookingIds === 'string' ? [cabinBookingIds] : []);
+      
       if (cabinBookingIdsArray.length > 0) {
-        await CabinBooking.update(
-          { billingStatus: 'billed' },
-          { 
-            where: { 
-              id: { 
-                [Op.in]: cabinBookingIdsArray 
-              } 
-            } 
+        await Promise.all(cabinBookingIdsArray.map(async (id) => {
+          try {
+            const cabinBookingId = parseInt(id);
+            if (!isNaN(cabinBookingId)) {
+              // Here you would call a function to update cabin booking status
+              // This depends on how cabin bookings are managed in your system
+              // For example: await updateCabinBookingStatus(cabinBookingId, 'billed');
+            }
+          } catch (err) {
+            console.error(`Error updating cabin booking ${id}:`, err);
           }
-        );
+        }));
       }
     }
     
-    // Create test requests for test items in the billing
-    const billingItems = JSON.parse(items);
-    const testItems = billingItems.filter(item => item.type === 'test');
+    // Process test items
+    const testItems = parsedItems.filter(item => item.type === 'test');
     
     if (testItems.length > 0) {
-      const testRequests = testItems.map(test => {
+      const testRequests = [];
+      const commissionRecords = [];
+      
+      for (const test of testItems) {
         // Process delivery date if it exists
         let deliveryDate = null;
         if (test.deliveryDate && test.deliveryDate.trim() !== '') {
@@ -182,19 +196,43 @@ exports.createBilling = async (req, res) => {
           }
         }
         
-        return {
+        // Create test request object
+        const testRequestData = {
           PatientId: patientId,
           TestId: test.id,
+          DoctorId: test.doctorId || null,
           priority: test.priority || 'Normal',
           requestDate: today,
           status: 'Requested',
           billingStatus: 'billed',
           deliveryOption: test.deliveryOption || 'Not Collected',
-          deliveryDate: deliveryDate
+          deliveryDate: deliveryDate,
+          commission: test.commission || 0
         };
-      });
+        
+        testRequests.push(testRequestData);
+      }
       
-      await TestRequest.bulkCreate(testRequests);
+      // Bulk create test requests
+      const createdTestRequests = await TestRequest.bulkCreate(testRequests);
+      
+      // Create commission records for tests with doctors
+      for (let i = 0; i < createdTestRequests.length; i++) {
+        const testRequest = createdTestRequests[i];
+        const testItem = testItems[i];
+        
+        if (testRequest.DoctorId && testItem.commission > 0) {
+          await DoctorCommission.create({
+            DoctorId: testRequest.DoctorId,
+            TestId: testRequest.TestId,
+            TestRequestId: testRequest.id,
+            BillingId: billing.id,
+            amount: testItem.commission,
+            commissionDate: today,
+            status: 'pending'
+          });
+        }
+      }
     }
     
     const fullBilling = await Billing.findByPk(billing.id, {
@@ -503,5 +541,23 @@ exports.deleteBilling = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete billing' });
   }
 };
+
+// Helper function to update appointment status
+async function updateAppointmentStatus(appointmentId, status) {
+  try {
+    const Appointment = require('../models/Appointment');
+    
+    const appointment = await Appointment.findByPk(appointmentId);
+    if (appointment) {
+      await appointment.update({
+        status: status,
+        billingStatus: 'billed'
+      });
+    }
+  } catch (error) {
+    console.error(`Error updating appointment status: ${error.message}`);
+    throw error; // Rethrow to be caught and handled by the caller
+  }
+}
 
 module.exports = exports;

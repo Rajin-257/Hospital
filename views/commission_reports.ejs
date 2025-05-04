@@ -1,0 +1,239 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0"><i class="fas fa-hand-holding-usd me-2"></i>Doctor Commission Reports</h5>
+      <div class="btn-group">
+        <a href="/commissions" class="btn btn-outline-primary">Commission Records</a>
+        <a href="/commissions/summary" class="btn btn-outline-primary">Commission Summary</a>
+      </div>
+    </div>
+    <div class="card-body">
+      <!-- Filters -->
+      <form action="/commissions" method="GET" class="row g-3 mb-4 filter-form">
+        <div class="col-md-3">
+          <label class="form-label">Doctor</label>
+          <select class="form-select select2" name="doctorId">
+            <option value="">All Doctors</option>
+            <% if (locals.doctors && doctors.length > 0) { %>
+              <% doctors.forEach(doctor => { %>
+                <option value="<%= doctor.id %>" <%= (query && query.doctorId == doctor.id) ? 'selected' : '' %>>
+                  Dr. <%= doctor.name %>
+                </option>
+              <% }); %>
+            <% } %>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="status">
+            <option value="">All Statuses</option>
+            <option value="pending" <%= (query && query.status === 'pending') ? 'selected' : '' %>>Pending</option>
+            <option value="paid" <%= (query && query.status === 'paid') ? 'selected' : '' %>>Paid</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Start Date</label>
+          <input type="date" class="form-control" name="startDate" value="<%= query && query.startDate ? query.startDate : '' %>">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">End Date</label>
+          <input type="date" class="form-control" name="endDate" value="<%= query && query.endDate ? query.endDate : '' %>">
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-filter"></i>
+          </button>
+        </div>
+      </form>
+      
+      <!-- Summary Card -->
+      <% 
+      let totalCommissionAmount = 0;
+      let pendingCommissionAmount = 0;
+      
+      if (locals.commissions && commissions.length > 0) {
+        commissions.forEach(comm => {
+          totalCommissionAmount += parseFloat(comm.amount);
+          if (comm.status === 'pending') {
+            pendingCommissionAmount += parseFloat(comm.amount);
+          }
+        });
+      }
+      %>
+      
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card bg-light">
+            <div class="card-body text-center">
+              <h5 class="card-title">Total Records</h5>
+              <div class="display-6"><%= locals.commissions ? commissions.length : 0 %></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-light">
+            <div class="card-body text-center">
+              <h5 class="card-title">Total Commission</h5>
+              <div class="display-6">Tk <%= totalCommissionAmount.toFixed(2) %></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-light">
+            <div class="card-body text-center">
+              <h5 class="card-title">Pending Commission</h5>
+              <div class="display-6">Tk <%= pendingCommissionAmount.toFixed(2) %></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Payment Action Form (only visible if there are pending commissions) -->
+      <% if (pendingCommissionAmount > 0) { %>
+      <form action="/commissions/mark-paid" method="POST" id="payment-form" class="mb-4">
+        <div class="card bg-light">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Pay Commission</h6>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="select-all-commissions">
+              <label class="form-check-label" for="select-all-commissions">Select All Pending</label>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Payment Date</label>
+                <input type="date" class="form-control" name="paidDate" value="<%= new Date().toISOString().split('T')[0] %>" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Payment Notes</label>
+                <input type="text" class="form-control" name="notes" placeholder="Payment reference, check number, etc.">
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-success w-100" id="pay-button" disabled>
+                  <i class="fas fa-money-bill-wave me-1"></i> Mark Selected as Paid
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Hidden inputs for selected commissions will be added dynamically -->
+        <input type="hidden" name="doctorId" value="<%= query && query.doctorId ? query.doctorId : '' %>">
+      </form>
+      <% } %>
+      
+      <!-- Commission Table -->
+      <div class="table-responsive print-friendly">
+        <table class="table table-hover table-striped" id="commissions-table">
+          <thead class="table-light">
+            <tr>
+              <% if (pendingCommissionAmount > 0) { %><th width="40px">Pay</th><% } %>
+              <th>Date</th>
+              <th>Doctor</th>
+              <th>Patient</th>
+              <th>Test</th>
+              <th>Bill Number</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Paid Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (locals.commissions && commissions.length > 0) { %>
+              <% commissions.forEach(comm => { %>
+                <tr>
+                  <% if (pendingCommissionAmount > 0) { %>
+                  <td>
+                    <% if (comm.status === 'pending') { %>
+                    <div class="form-check">
+                      <input class="form-check-input commission-checkbox" type="checkbox" 
+                             name="commissionIds" value="<%= comm.id %>" form="payment-form">
+                    </div>
+                    <% } %>
+                  </td>
+                  <% } %>
+                  <td><%= new Date(comm.commissionDate).toLocaleDateString() %></td>
+                  <td><%= comm.Doctor ? `Dr. ${comm.Doctor.name}` : 'N/A' %></td>
+                  <td>
+                    <% if (comm.TestRequest && comm.TestRequest.Patient) { %>
+                      <%= comm.TestRequest.Patient.name %> 
+                      <small class="text-muted">(<%= comm.TestRequest.Patient.patientId %>)</small>
+                    <% } else { %>
+                      N/A
+                    <% } %>
+                  </td>
+                  <td><%= comm.Test ? comm.Test.name : 'N/A' %></td>
+                  <td>
+                    <% if (comm.Billing) { %>
+                      <a href="/billing/receipt/<%= comm.Billing.id %>" target="_blank" 
+                         class="text-decoration-none">
+                        <%= comm.Billing.billNumber %>
+                      </a>
+                    <% } else { %>
+                      N/A
+                    <% } %>
+                  </td>
+                  <td>Tk <%= parseFloat(comm.amount).toFixed(2) %></td>
+                  <td>
+                    <% if (comm.status === 'paid') { %>
+                      <span class="badge bg-success">Paid</span>
+                    <% } else { %>
+                      <span class="badge bg-warning">Pending</span>
+                    <% } %>
+                  </td>
+                  <td><%= comm.paidDate ? new Date(comm.paidDate).toLocaleDateString() : 'N/A' %></td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="<%= pendingCommissionAmount > 0 ? 9 : 8 %>" class="text-center">No commission records found</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  $(document).ready(function() {
+    // Initialize Select2
+    $('.select2').select2({
+      theme: 'bootstrap-5'
+    });
+    
+    // Handle select all checkbox
+    $('#select-all-commissions').on('change', function() {
+      $('.commission-checkbox').prop('checked', this.checked);
+      updatePayButtonState();
+    });
+    
+    // Handle individual checkboxes
+    $('.commission-checkbox').on('change', function() {
+      updatePayButtonState();
+    });
+    
+    // Update pay button state
+    function updatePayButtonState() {
+      const anyChecked = $('.commission-checkbox:checked').length > 0;
+      $('#pay-button').prop('disabled', !anyChecked);
+    }
+    
+    // Initialize DataTable - start with first column by default
+    $('#commissions-table').DataTable({
+      order: [[0, 'desc']],
+      pageLength: 25,
+      dom: 'Bfrtip',
+      buttons: [
+        'copy', 'csv', 'excel', 'pdf', 'print'
+      ]
+    });
+  });
+</script>
+
+<%- include('partials/footer') %> 

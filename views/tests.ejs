@@ -16,6 +16,7 @@
                         <tr>
                             <th>Name</th>
                             <th>Price</th>
+                            <th>Commission</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -24,6 +25,7 @@
                             <tr>
                                 <td><%= test.name %></td>
                                 <td>Tk  <%= parseFloat(test.price).toFixed(2) %></td>
+                                <td>Tk  <%= parseFloat(test.commission).toFixed(2) %></td>
                                 <td>
                                     <button class="btn btn-sm btn-info view-test" data-id="<%= test.id %>">
                                         <i class="fas fa-eye"></i>
@@ -66,6 +68,13 @@
                         </div>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Commission</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Tk </span>
+                            <input type="number" class="form-control" name="commission" min="0" step="0.01" value="0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Description</label>
                         <textarea class="form-control" name="description" rows="3"></textarea>
                     </div>
@@ -102,6 +111,13 @@
                         </div>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Commission</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Tk </span>
+                            <input type="number" class="form-control" id="edit-test-commission" name="commission" min="0" step="0.01" value="0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Description</label>
                         <textarea class="form-control" id="edit-test-desc" name="description" rows="3"></textarea>
                     </div>
@@ -133,6 +149,10 @@
                 <div class="mb-3">
                     <p class="mb-1 fw-bold">Price:</p>
                     <p id="view-test-price"></p>
+                </div>
+                <div class="mb-3">
+                    <p class="mb-1 fw-bold">Commission:</p>
+                    <p id="view-test-commission"></p>
                 </div>
                 <div>
                     <p class="mb-1 fw-bold">Description:</p>
@@ -183,6 +203,7 @@
                     $('#edit-test-id').val(test.id);
                     $('#edit-test-name').val(test.name);
                     $('#edit-test-price').val(test.price);
+                    $('#edit-test-commission').val(test.commission);
                     $('#edit-test-desc').val(test.description);
                     
                     $('#editTestModal').modal('show');
@@ -226,6 +247,7 @@
                 success: function(test) {
                     $('#view-test-name').text(test.name);
                     $('#view-test-price').text('$' + parseFloat(test.price).toFixed(2));
+                    $('#view-test-commission').text('$' + parseFloat(test.commission).toFixed(2));
                     $('#view-test-desc').text(test.description || 'No description available');
                     
                     $('#viewTestModal').modal('show');

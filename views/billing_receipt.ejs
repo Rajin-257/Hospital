@@ -2,6 +2,7 @@
 <%- include('partials/navbar') %>
 
 <style>
+    /* Remove Roboto Mono import and replace with system Arial */
     @media print {
     /* Basic print settings */
     body {
@@ -13,44 +14,58 @@
         padding: 5px;
         max-width: 100%;
         box-sizing: border-box;
-        font-size: 13px;
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     /* Header elements */
     .invoice-title {
         font-size: 22px !important;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .invoice-subtitle {
         font-size: 14px !important;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     /* Information table */
     .invoice-info-table {
-        font-size: 13px !important;
+        border: 1px solid #000000 !important;
     }
     
     .invoice-info-table td {
-        padding: 1px !important;
+        padding: 5px 8px !important;
+        border: none !important;
     }
     
     .info-label {
         font-size: 12px !important;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .info-value {
         font-size: 13px !important;
         margin-bottom: 0 !important;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     /* Section titles and table elements */
     .section-title {
-        font-size: 16px !important;
+        font-size: 12px !important;
+        font-family: Arial, sans-serif;
+        letter-spacing: 0px;
     }
     
     .invoice-table th, .invoice-table td {
-        padding: 2px !important;
-        font-size: 12px !important;
+        font-size: 14px !important;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .invoice-table {
@@ -63,32 +78,39 @@
         padding-top: 2px !important;
     }
     
+    /* Seal container */
     .seal-container {
-        width: 70px !important;
-        height: 70px !important;
+        width: 80px !important;
+        height: 80px !important;
+        transform: rotate(-10deg) !important;
+    }
+    
+    .seal-background {
+        border-width: 1px !important;
     }
     
     .seal-status {
-        font-size: 15px !important;
-        margin-bottom: 0 !important;
+        font-size: 19px !important;
     }
     
     .seal-amount {
-        font-size: 12px !important;
+        font-size: 14px !important;
     }
     
+    /* Totals section */
     .invoice-total-label, .invoice-total-value {
-        font-size: 13px !important;
+        font-size: 14px !important;
     }
     
     .invoice-grand-total {
         font-size: 16px !important;
-        padding-top: 2px !important;
     }
     
     .barcode-container {
         width: 220px !important;
-        margin-bottom: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 0 !important;
     }
     
     /* Page size settings */
@@ -105,6 +127,51 @@
         height: 7.5in;
         overflow: hidden;
     }
+    
+    /* Diagnostic header */
+    .diagnostic-title {
+        font-size: 19px !important;
+    }
+    
+    .diagnostic-address, .diagnostic-mobile {
+        font-size: 13px !important;
+    }
+    
+    /* Signature section */
+    .signature-title {
+        font-size: 12px !important;
+    }
+    
+    .signature-subtitle {
+        font-size: 10px !important;
+    }
+    
+    /* Totals section */
+    .invoice-total-label, .invoice-total-value {
+        font-size: 12px !important;
+    }
+    
+    .invoice-grand-total {
+        font-size: 14px !important;
+    }
+    
+    /* Invoice info spacing */
+    .invoice-info-row {
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+    }
+    
+    .invoice-memo-text {
+        margin-top: -5px !important;
+        line-height: 1 !important;
+    }
+    
+    .invoice-info-table {
+        margin: 0 !important;
+    }
 }
     
     .print-invoice {
@@ -113,8 +180,9 @@
         padding: 10px;
         max-width: 800px;
         margin: 0 auto;
-        font-family: 'Helvetica Neue', Arial, sans-serif;
-        font-size: 15px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        letter-spacing: -0.5px;
     }
     
     .invoice-header {
@@ -125,31 +193,35 @@
     }
     
     .invoice-title {
-        font-size: 32px;
+        font-size: 30px;
         color: #000000;
         font-weight: 300;
         margin: 0;
         line-height: 1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .invoice-subtitle {
         color: #000000;
         font-weight: 300;
         margin: 0;
-        font-size: 18px;
+        font-size: 16px;
         line-height: 1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .invoice-info-table {
         width: 100%;
         border-collapse: collapse;
         margin: 0;
-        border: 1px solid #000;
+        border: 1px solid #000000;
     }
     
     .invoice-info-table td {
-        padding: 2px;
-        border: 1px solid #000;
+        padding: 5px 8px;
+        border: none;
         vertical-align: top;
         background-color: #f9f9f9;
     }
@@ -160,49 +232,63 @@
         color: #000000;
         padding: 0;
         margin: 0;
-        font-weight: bold;
+        font-weight: normal;
         line-height: 1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .info-value {
         font-size: 18px;
         margin: 0 0 2px 0;
         line-height: 1.1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .section-title {
         font-size: 18px;
         text-transform: uppercase;
         color: #000000;
-        font-weight: 600;
-        letter-spacing: 1px;
+        font-weight: normal;
+        letter-spacing: 0px;
         margin: 2px 0;
         line-height: 1;
+        font-family: Arial, sans-serif;
     }
     
     .invoice-table {
         width: 100%;
         border-collapse: collapse;
-        border: 1px solid #000;
-        margin: 2px 0;
+        border: 1px solid #000000;
+        margin: 3px 0;
     }
     
     .invoice-table th {
         background-color: #f9f9f9;
-        padding: 2px;
+        padding: 4px;
         text-align: left;
-        font-weight: 500;
+        font-weight: normal;
         color: #000000;
         font-size: 16px;
-        border: 1px solid #000;
-        line-height: 1;
+        border-bottom: 1px solid #000000;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        line-height: 1.2;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .invoice-table td {
-        padding: 2px;
-        border: 1px solid #000;
-        font-size: 16px;
-        line-height: 1;
+        border-bottom: 1px dotted #eee;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        font-size: 20px;
+        line-height: 1.3;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .text-right {
@@ -214,9 +300,9 @@
     }
     
     .invoice-total-section {
-        margin-top: 2px;
-        padding-top: 2px;
-        border-top: 1px solid #f0f0f0;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #e6e5e5;
         display: flex;
         justify-content: space-between;
     }
@@ -232,10 +318,11 @@
     
     .seal-container {
         position: relative;
-        width: 120px;
-        height: 120px;
-        margin-bottom: 0;
-        transform: rotate(-15deg);
+        width: 130px;
+        height: 130px;
+        margin-bottom: 5px;
+        transform: rotate(-10deg);
+        filter: drop-shadow(0 3px 5px rgba(0,0,0,0.15));
     }
     
     .seal-background {
@@ -245,13 +332,13 @@
         width: 100%;
         height: 100%;
         border-radius: 50%;
-        border: 3px solid #000;
+        border: 2px solid #000;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.25);
         overflow: hidden;
+        background-color: #f8f8f8;
     }
     
     .seal-background::before {
@@ -264,35 +351,36 @@
         background: repeating-linear-gradient(
             45deg,
             transparent,
-            transparent 10px,
-            rgba(0,0,0,0.03) 10px,
-            rgba(0,0,0,0.03) 20px
+            transparent 8px,
+            rgba(0,0,0,0.02) 8px,
+            rgba(0,0,0,0.02) 16px
         );
         z-index: -1;
     }
     
     .paid-seal {
-        background-color: #f2f2f2;
+        background-color: #f8f8f8;
         border-color: #000000;
     }
     
     .partial-seal {
-        background-color: #f2f2f2;
+        background-color: #f8f8f8;
         border-color: #000000;
     }
     
     .unpaid-seal {
-        background-color: #f2f2f2;
+        background-color: #f8f8f8;
         border-color: #000000;
     }
     
     .seal-status {
-        font-size: 22px;
-        font-weight: bold;
+        font-size: 25px;
+        font-weight: normal;
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 1px;
         margin: 0;
         line-height: 1;
+        font-family: Arial, sans-serif;
     }
     
     .paid-text {
@@ -308,18 +396,22 @@
     }
     
     .seal-amount {
-        font-size: 20px;
-        font-weight: bold;
+        font-size: 17px;
+        font-weight: normal;
         color: #000000;
         margin: 0;
         line-height: 1.1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .seal-label {
-        font-size: 13px;
+        font-size: 11px;
         text-transform: uppercase;
         margin-top: 2px;
         color: #000000;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .invoice-total {
@@ -338,22 +430,26 @@
     .invoice-total-label {
         color: #000000;
         font-size: 16px;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .invoice-total-value {
-        font-weight: 500;
+        font-weight: normal;
         text-align: right;
         min-width: 100px;
         font-size: 16px;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .invoice-grand-total {
         font-size: 22px;
-        font-weight: 600;
+        font-weight: normal;
         color: #000000;
         padding-top: 2px;
         margin-top: 2px;
-        border-top: 1px solid #f0f0f0;
+        border-top: 1px solid #000000;
         line-height: 1;
     }
     
@@ -361,9 +457,11 @@
         display: inline-block;
         padding: 2px 5px;
         border-radius: 30px;
-        font-size: 13px;
-        font-weight: 600;
+        font-size: 11px;
+        font-weight: normal;
         text-transform: uppercase;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .status-paid {
@@ -380,14 +478,16 @@
         margin-top: 10px;
         text-align: center;
         color: #000000;
-        font-size: 15px;
+        font-size: 10px;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .signature-section {
         display: flex;
         justify-content: space-between;
-        margin-top: 2px;
-        padding-top: 2px;
+        margin-top: 15px;
+        padding-top: 5px;
     }
     
     .signature-box {
@@ -400,32 +500,36 @@
     .signature-box:not(:last-child):after {
         content: '';
         position: absolute;
-        top: 0;
+        top: 15%;
         right: 0;
-        height: 100%;
-        border-right: 1px dashed #ddd;
+        height: 70%;
+        border-right: 1px dotted #ddd;
     }
     
     .signature-line {
         border-top: 1px solid #333;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
         width: 80%;
         margin-left: auto;
         margin-right: auto;
     }
     
     .signature-title {
-        font-weight: bold;
-        font-size: 16px;
+        font-weight: normal;
+        font-size: 14px;
         margin: 0 0 2px 0;
         line-height: 1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .signature-subtitle {
-        font-size: 14px;
+        font-size: 12px;
         color: #666;
         margin: 0;
         line-height: 1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     /* Barcode container styles */
@@ -441,24 +545,30 @@
         width: 280px;
         margin: 0;
         padding: 0;
+        line-height: 0;
     }
     
     .invoice-memo-text {
-        font-size: 24px;
+        font-size: 19px;
         font-weight: 500;
         text-align: center;
         width: 100%;
         position: absolute;
         left: 0;
         right: 0;
-        margin-top: -12px;
+        margin-top: -5px;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
+        line-height: 1;
     }
     
     .mobile-info {
-        font-size: 16px;
+        font-size: 14px;
         color: #333;
         margin: 0;
         line-height: 1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
     }
     
     .diagnostic-header {
@@ -469,11 +579,12 @@
     }
     
     .diagnostic-title {
-        font-size: 20px;
-        font-weight: bold;
+        font-size: 21px;
+        font-weight: normal;
         color: #333;
         margin: 0 0 2px 0;
         line-height: 1;
+        font-family: Arial, sans-serif;
     }
     
     .diagnostic-address {
@@ -481,13 +592,15 @@
         color: #333;
         margin: 0 0 2px 0;
         line-height: 1;
+        font-family: Arial, sans-serif;
     }
     
     .diagnostic-mobile {
-        font-size: 14px;
+        font-size: 13px;
         color: #333;
         margin: 0 0 2px 0;
         line-height: 1;
+        font-family: Arial, sans-serif;
     }
     
     .invoice-info-row {
@@ -495,18 +608,42 @@
         justify-content: space-between;
         align-items: center;
         position: relative;
-        margin: 0 0 2px 0;
+        margin: 0;
         padding: 0;
+        line-height: 0;
+        height: auto;
+        min-height: 0;
     }
     
     .invoice-info-table {
-        margin: 2px 0;
+        margin: 0;
     }
     
     .duplicate-tag {
-        font-size: 18px;
+        font-size: 16px;
         color: #666;
         margin-left: auto;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
+    }
+
+    /* Handle decimal display differently for print */
+    @media print {
+        .print-no-decimal {
+            display: inline;
+        }
+        .no-print {
+            display: none;
+        }
+    }
+
+    @media screen {
+        .print-no-decimal {
+            display: none;
+        }
+        .no-print {
+            display: inline;
+        }
     }
 </style>
 
@@ -539,6 +676,12 @@ function calculateAge(dateOfBirth) {
     return age;
 }
 
+// Function to format amounts - removes decimal for print, keeps for screen
+function formatAmount(amount) {
+    // When printing, show without decimal places
+    return `<span class="print-no-decimal">Tk ${Math.round(parseFloat(amount))}</span><span class="no-print">Tk ${parseFloat(amount).toFixed(2)}</span>`;
+}
+
 // Get today's date for print date
 const today = new Date();
 const printDate = today.toLocaleDateString();
@@ -553,7 +696,7 @@ const printDate = today.toLocaleDateString();
     
     <div class="invoice-info-row">
         <div class="barcode-container">
-            <svg width="100%" height="40px" viewBox="0 0 280 50">
+            <svg width="100%" viewBox="0 0 280 50">
                 <!-- Linear barcode mimicking standard UPC/EAN style -->
                 <rect x="10" y="5" width="2" height="30" fill="black"/>
                 <rect x="13" y="5" width="1" height="30" fill="black"/>
@@ -606,18 +749,40 @@ const printDate = today.toLocaleDateString();
         <tr>
             <td style="width: 50%;">
                 <div class="info-label">Bill To</div>
-                <div class="info-value"><strong><%= billing.Patient.name %></strong></div>
+                <div class="info-value"><%= billing.Patient.name %></div>
                 <div class="info-value">Patient ID: <%= billing.Patient.patientId %></div>
-                <div class="info-value">Age: <%= calculateAge(billing.Patient.dateOfBirth) %>, Gender: <%= billing.Patient.gender %> </div>
+                <div class="info-value">Age: <%= calculateAge(billing.Patient.dateOfBirth) %>,     Gender: <%= billing.Patient.gender %> </div>
                 <div class="info-value">Mobile: <%= billing.Patient.phone %></div>
             </td>
             <td style="width: 50%;">
                 <div class="info-label">Invoice Details</div>
                 <div class="info-value">Invoice #: <%= billing.billNumber %></div>
-                <div class="info-value">Date: <%= new Date(billing.billDate).toLocaleDateString() %></div>
+                <div class="info-value">Billing Date: <%= new Date(billing.billDate).toLocaleDateString() %></div>
                 <% if (billing.billdelivaridate) { %>
                 <div class="info-value">Delivery Date: <%= new Date(billing.billdelivaridate).toLocaleDateString() %></div>
                 <% } %>
+                <% if (billing.referringDoctor) { %>
+                <div class="info-value">Ref: <%= billing.referringDoctor.replace(/[()]/g, '') %></div>
+                <% } %>
+                
+                <% 
+                // Display all doctors associated with tests
+                if (Array.isArray(items)) {
+                    const testItems = items.filter(item => item.type === 'test' && item.doctorId && item.doctorName);
+                    
+                    if (testItems.length > 0) {
+                        // Get all doctor names without duplicates and remove brackets
+                        const uniqueDoctors = [...new Set(testItems.map(item => 
+                            item.doctorName ? item.doctorName.replace(/[()]/g, '') : ''
+                        ))];
+                        if (uniqueDoctors.length > 0) {
+                %>
+                <div class="info-value">Ref: <%= uniqueDoctors.join(', ') %></div>
+                <% 
+                        }
+                    }
+                }
+                %>
             </td>
         </tr>
     </table>
@@ -630,7 +795,7 @@ const printDate = today.toLocaleDateString();
                 <th class="text-center" style="width: 5%;">S.No</th>
                 <th class="text-center">Doctor</th>
                 <th class="text-center">Service</th>
-                <th class="text-center">Basic Amount</th>
+                <th class="text-end">Basic Amount</th>
             </tr>
         </thead>
         <tbody>
@@ -639,7 +804,7 @@ const printDate = today.toLocaleDateString();
                     <td class="text-center"><%= index + 1 %></td>
                     <td><%= item.name.replace('Consultation with Dr. ', 'Dr. ') %></td>
                     <td>Medical Consultation</td>
-                    <td class="text-right">Tk <%= parseFloat(item.price).toFixed(2) %></td>
+                    <td class="text-right"><%- formatAmount(item.price) %></td>
                 </tr>
             <% }) %>
         </tbody>
@@ -654,7 +819,7 @@ const printDate = today.toLocaleDateString();
                 <th class="text-center" style="width: 5%;">S.No</th>
                 <th class="text-center">Room Details</th>
                 <th class="text-center">Service Type</th>
-                <th class="text-center">Basic Amount</th>
+                <th class="text-end">Basic Amount</th>
             </tr>
         </thead>
         <tbody>
@@ -663,7 +828,7 @@ const printDate = today.toLocaleDateString();
                     <td class="text-center"><%= index + 1 %></td>
                     <td><%= item.name %></td>
                     <td>Room Charges</td>
-                    <td class="text-right">Tk <%= parseFloat(item.price).toFixed(2) %></td>
+                    <td class="text-right"><%- formatAmount(item.price) %></td>
                 </tr>
             <% }) %>
         </tbody>
@@ -676,11 +841,11 @@ const printDate = today.toLocaleDateString();
         <thead>
             <tr>
                 <th class="text-center" style="width: 5%;">S.No</th>
-                <th class="text-center">Test</th>
+                <th class="text-center">Test Name</th>
                 <% if (!billing.billdelivaridate) { %>
                 <th class="text-center">Delivery Date</th>
                 <% } %>
-                <th class="text-center">Basic Amount</th>
+                <th class="text-end">Basic Amount</th>
             </tr>
         </thead>
         <tbody>
@@ -706,7 +871,7 @@ const printDate = today.toLocaleDateString();
                             <% } %>
                         </td>
                     <% } %>
-                    <td class="text-right">Tk <%= parseFloat(item.price).toFixed(2) %></td>
+                    <td class="text-right"><%- formatAmount(item.price) %></td>
                 </tr>
             <% }) %>
         </tbody>
@@ -725,7 +890,7 @@ const printDate = today.toLocaleDateString();
         <ul style="margin-bottom: 0; padding-left: 20px;">
             <% specialDeliveryTests.forEach(test => { %>
                 <li style="margin-bottom: 5px;">
-                    <strong><%= test.name %></strong>: <%= test.deliveryOption %>
+                    <%= test.name %>: <%= test.deliveryOption %>
                     <% if (test.deliveryOption === 'Home Delivery' && test.deliveryDate && test.deliveryDate.trim() !== '') {
                         try {
                             const deliveryDate = new Date(test.deliveryDate);
@@ -738,10 +903,10 @@ const printDate = today.toLocaleDateString();
             <% }) %>
         </ul>
         <% if (specialDeliveryTests.some(test => test.deliveryOption === 'Email')) { %>
-            <p style="margin-top: 10px; margin-bottom: 0;"><small>* Email results will be sent to <strong><%= billing.Patient.email || 'the email on file' %></strong></small></p>
+            <p style="margin-top: 10px; margin-bottom: 0;"><small>* Email results will be sent to <%= billing.Patient.email || 'the email on file' %></small></p>
         <% } %>
         <% if (specialDeliveryTests.some(test => test.deliveryOption === 'Home Delivery')) { %>
-            <p style="margin-top: 5px; margin-bottom: 0;"><small>* Home delivery will be made to <strong><%= billing.Patient.address || 'the address on file' %></strong></small></p>
+            <p style="margin-top: 5px; margin-bottom: 0;"><small>* Home delivery will be made to <%= billing.Patient.address || 'the address on file' %></small></p>
         <% } %>
     </div>
     <% } %>
@@ -760,9 +925,11 @@ const printDate = today.toLocaleDateString();
                     </div>
                     <div class="seal-amount">
                         <% if (billing.status === 'paid') { %>
-                            Tk <%= parseFloat(billing.paidAmount).toFixed(2) %>
+                            <span class="print-no-decimal">Tk <%= Math.round(parseFloat(billing.paidAmount)) %></span>
+                            <span class="no-print">Tk <%= parseFloat(billing.paidAmount).toFixed(2) %></span>
                         <% } else { %>
-                            Tk <%= parseFloat(billing.dueAmount).toFixed(2) %>
+                            <span class="print-no-decimal">Tk <%= Math.round(parseFloat(billing.dueAmount)) %></span>
+                            <span class="no-print">Tk <%= parseFloat(billing.dueAmount).toFixed(2) %></span>
                         <% } %>
                     </div>
                 </div>
@@ -772,24 +939,24 @@ const printDate = today.toLocaleDateString();
         <div class="invoice-total">
             <div class="invoice-total-row">
                 <div class="invoice-total-label">Subtotal:</div>
-                <div class="invoice-total-value">Tk <%= parseFloat(billing.totalAmount).toFixed(2) %></div>
+                <div class="invoice-total-value"><%- formatAmount(billing.totalAmount) %></div>
             </div>
             <div class="invoice-total-row">
                 <div class="invoice-total-label">Discount (<%= parseFloat(billing.discountPercentage).toFixed(2) %>%):</div>
-                <div class="invoice-total-value">Tk <%= parseFloat(billing.discountAmount).toFixed(2) %></div>
+                <div class="invoice-total-value"><%- formatAmount(billing.discountAmount) %></div>
             </div>
             <div class="invoice-total-row invoice-grand-total">
                 <div class="invoice-total-label">Total:</div>
-                <div class="invoice-total-value">Tk <%= parseFloat(billing.netPayable).toFixed(2) %></div>
+                <div class="invoice-total-value"><%- formatAmount(billing.netPayable) %></div>
             </div>
             <div class="invoice-total-row">
                 <div class="invoice-total-label">Amount Paid:</div>
-                <div class="invoice-total-value">Tk <%= parseFloat(billing.paidAmount).toFixed(2) %></div>
+                <div class="invoice-total-value"><%- formatAmount(billing.paidAmount) %></div>
             </div>
             <% if (parseFloat(billing.dueAmount) > 0) { %>
             <div class="invoice-total-row invoice-grand-total">
                 <div class="invoice-total-label">Balance Due:</div>
-                <div class="invoice-total-value">Tk <%= parseFloat(billing.dueAmount).toFixed(2) %></div>
+                <div class="invoice-total-value"><%- formatAmount(billing.dueAmount) %></div>
             </div>
             <% } %>
         </div>
@@ -803,19 +970,19 @@ const printDate = today.toLocaleDateString();
             <div class="signature-title">Prepared By</div>
         </div>
         <div class="signature-box">
-            <span>&nbsp</span>
+            <div class="signature-subtitle">&nbsp</div>
             <div class="signature-line"></div>
             <div class="signature-title">Checked By</div>
         </div>
         <div class="signature-box">
-            <span>&nbsp</span>
+            <div class="signature-subtitle">&nbsp</div>
             <div class="signature-line"></div>
             <div class="signature-title">Accounts</div>
         </div>
     </div>
     
     <div class="invoice-footer">
-        Thank you for choosing our services
+        Thank you for choosing our services | Printed on: <%= new Date().toLocaleDateString() %> <%= new Date().toLocaleTimeString() %>
     </div>
 </div>
 
