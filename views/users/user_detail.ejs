@@ -37,6 +37,14 @@
                         <p class="mb-0">
                             <% if (user.role === 'admin') { %>
                                 <span class="badge bg-primary">Admin</span>
+                            <% } else if (user.role === 'doctor') { %>
+                                <span class="badge bg-success">Doctor</span>
+                            <% } else if (user.role === 'laboratorist') { %>
+                                <span class="badge bg-warning">Laboratorist</span>
+                            <% } else if (user.role === 'nurse') { %>
+                                <span class="badge bg-danger">Nurse</span>
+                            <% } else if (user.role === 'marketing') { %>
+                                <span class="badge bg-purple">Marketing</span>
                             <% } else { %>
                                 <span class="badge bg-info">Receptionist</span>
                             <% } %>
@@ -137,6 +145,10 @@
                         <select class="form-select" id="edit-role" name="role" required>
                             <option value="admin">Admin</option>
                             <option value="receptionist">Receptionist</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="laboratorist">Laboratorist</option>
+                            <option value="nurse">Nurse</option>
+                            <option value="marketing">Marketing Officer</option>
                         </select>
                     </div>
                     <div class="mb-3">

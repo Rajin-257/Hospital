@@ -58,6 +58,18 @@ const Billing = sequelize.define('Billing', {
   items: {
     type: DataTypes.JSON,
     allowNull: false
+  },
+  marketingManagerId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
+  referralNote: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 });
 

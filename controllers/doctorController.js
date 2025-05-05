@@ -1,4 +1,5 @@
 const Doctor = require('../models/Doctor');
+const User = require('../models/User');
 const { Op } = require('sequelize');
 
 // Get all doctors
@@ -41,6 +42,7 @@ exports.createDoctor = async (req, res) => {
   try {
     const { name, specialization, qualification, phone, email, consultationFee } = req.body;
     
+    // Create the doctor record
     const doctor = await Doctor.create({
       name,
       specialization,
@@ -49,6 +51,27 @@ exports.createDoctor = async (req, res) => {
       email,
       consultationFee
     });
+    
+    // Extract last 4 digits of the phone number for password
+    const password = phone.slice(-4);
+    
+    // Create a user account for the doctor if email is provided
+    if (email) {
+      // Generate username from name and phone (last 4 digits)
+      const username = name.split(' ')[0].toLowerCase() + phone.slice(-4);
+      
+      // Check if user with this email already exists
+      const existingUser = await User.findOne({ where: { email } });
+      
+      if (!existingUser) {
+        await User.create({
+          username,
+          email,
+          password,
+          role: 'doctor'
+        });
+      }
+    }
     
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
       return res.status(201).json(doctor);

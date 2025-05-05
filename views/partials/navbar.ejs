@@ -64,7 +64,9 @@
                 </li>
                 <% } %>
                 
-                <!-- New Bookings Dropdown -->
+                <% if ((locals.featurePermissions && locals.featurePermissions['Appointments'] && locals.isFeatureVisible(locals.featurePermissions, 'Appointments', locals.user?.role)) || 
+                      (locals.featurePermissions && locals.featurePermissions['Tests'] && locals.isFeatureVisible(locals.featurePermissions, 'Tests', locals.user?.role)) ||
+                      (locals.featurePermissions && locals.featurePermissions['Cabins'] && locals.isFeatureVisible(locals.featurePermissions, 'Cabins', locals.user?.role))) { %>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle <%= (title === 'Appointments' || title === 'Test Requisitions' || title === 'Cabin Bookings') ? 'active' : '' %>" href="#" id="bookingsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-calendar-alt me-1"></i>Bookings
@@ -93,6 +95,7 @@
                         <% } %>
                     </ul>
                 </li>
+                <% } %>
                 
                 <% if ((locals.featurePermissions && locals.featurePermissions['Tests'] && locals.isFeatureVisible(locals.featurePermissions, 'Tests', locals.user?.role)) || 
                       (locals.featurePermissions && locals.featurePermissions['Cabins'] && locals.isFeatureVisible(locals.featurePermissions, 'Cabins', locals.user?.role))) { %>
@@ -127,8 +130,42 @@
                 </li>
                 <% } %>
                 
-                <% if (locals.featurePermissions && locals.featurePermissions['Staff'] && locals.isFeatureVisible(locals.featurePermissions, 'Staff', locals.user?.role)) { %>
-                <!-- HRM Dropdown Menu -->
+                <!-- Marketing Menu -->
+                <% if (locals.featurePermissions && locals.featurePermissions['Marketing'] && locals.isFeatureVisible(locals.featurePermissions, 'Marketing', locals.user?.role)) { %>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <%= (title === 'Doctor Commissions' || title === 'Referral Dashboard' || title === 'Commission Reports') ? 'active' : '' %>" href="#" id="marketingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-bullhorn me-1"></i>Marketing
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="marketingDropdown">
+                        <% if (locals.featurePermissions && locals.featurePermissions['Doctor Commissions'] && locals.isFeatureVisible(locals.featurePermissions, 'Doctor Commissions', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Doctor Commissions' ? 'active' : '' %>" href="/marketing/commissions">
+                                <i class="fas fa-percentage me-1"></i>Doctor Commissions
+                            </a>
+                        </li>
+                        <% } %>
+                        <% if (locals.featurePermissions && locals.featurePermissions['Referral Dashboard'] && locals.isFeatureVisible(locals.featurePermissions, 'Referral Dashboard', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Referral Dashboard' ? 'active' : '' %>" href="/marketing/dashboard">
+                                <i class="fas fa-users me-1"></i>Referral Dashboard
+                            </a>
+                        </li>
+                        <% } %>
+                        <% if (locals.featurePermissions && locals.featurePermissions['Commission Reports'] && locals.isFeatureVisible(locals.featurePermissions, 'Commission Reports', locals.user?.role)) { %>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Commission Reports' ? 'active' : '' %>" href="/marketing/reports">
+                                <i class="fas fa-file-invoice-dollar me-1"></i>Commission Reports
+                            </a>
+                        </li>
+                        <% } %>
+                    </ul>
+                </li>
+                <% } %>
+                
+                <% if ((locals.featurePermissions && locals.featurePermissions['Add Staff'] && locals.isFeatureVisible(locals.featurePermissions, 'Add Staff', locals.user?.role)) || 
+                      (locals.featurePermissions && locals.featurePermissions['View Staff'] && locals.isFeatureVisible(locals.featurePermissions, 'View Staff', locals.user?.role)) ||
+                      (locals.featurePermissions && locals.featurePermissions['Edit Staff'] && locals.isFeatureVisible(locals.featurePermissions, 'Edit Staff', locals.user?.role)) ||
+                      (locals.featurePermissions && locals.featurePermissions['Delete Staff'] && locals.isFeatureVisible(locals.featurePermissions, 'Delete Staff', locals.user?.role))) { %>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle <%= (title === 'Register User' || title === 'Staff List' || title === 'Edit Staff') ? 'active' : '' %>" href="#" id="hrmDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-users-cog me-1"></i>HRM

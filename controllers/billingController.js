@@ -7,6 +7,7 @@ const Appointment = require('../models/Appointment');
 const CabinBooking = require('../models/CabinBooking');
 const TestRequest = require('../models/TestRequest');
 const DoctorCommission = require('../models/DoctorCommission');
+const User = require('../models/User');
 const { Op } = require('sequelize');
 
 // Render billing page
@@ -16,6 +17,15 @@ exports.renderBillingPage = async (req, res) => {
     const doctors = await Doctor.findAll();
     const tests = await Test.findAll();
     const cabins = await Cabin.findAll();
+    
+    // Get marketing managers (users with 'marketing' role)
+    const marketingManagers = await User.findAll({
+      where: {
+        role: 'marketing',
+        isActive: true
+      },
+      attributes: ['id', 'username']
+    });
     
     // Get feature permissions from request
     const featurePermissions = req.featurePermissions || {};
@@ -45,6 +55,7 @@ exports.renderBillingPage = async (req, res) => {
       doctors,
       tests,
       cabins,
+      marketingManagers,
       visibleFeatures
     });
   } catch (error) {
@@ -83,7 +94,9 @@ exports.createBilling = async (req, res) => {
       items,
       appointmentIds,
       cabinBookingIds,
-      billdelivaridate
+      billdelivaridate,
+      marketingManagerId,
+      referralNote
     } = req.body;
     
     // Validate total amount
@@ -129,7 +142,9 @@ exports.createBilling = async (req, res) => {
       paidAmount,
       dueAmount,
       status,
-      items: JSON.parse(items)
+      items: JSON.parse(items),
+      marketingManagerId: marketingManagerId || null,
+      referralNote: referralNote || null
     });
     
     // Parse items to process appointments, cabins and tests
@@ -265,13 +280,22 @@ exports.getBilling = async (req, res) => {
       return res.status(404).json({ message: 'Billing not found' });
     }
     
+    // Get marketing manager data if exists
+    let marketingManager = null;
+    if (billing.marketingManagerId) {
+      marketingManager = await User.findByPk(billing.marketingManagerId, {
+        attributes: ['id', 'username', 'email']
+      });
+    }
+    
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
       return res.json(billing);
     }
     
     res.render('billing_receipt', {
       title: 'Billing Receipt',
-      billing
+      billing,
+      marketingManager
     });
   } catch (error) {
     console.error(error);
@@ -470,7 +494,9 @@ exports.updateBilling = async (req, res) => {
       paidAmount, 
       dueAmount,
       items,
-      billdelivaridate
+      billdelivaridate,
+      marketingManagerId,
+      referralNote
     } = req.body;
     
     // Find the billing
@@ -507,7 +533,9 @@ exports.updateBilling = async (req, res) => {
       paidAmount,
       dueAmount,
       status,
-      items: JSON.parse(items)
+      items: items ? JSON.parse(items) : billing.items,
+      marketingManagerId: marketingManagerId || null,
+      referralNote: referralNote || null
     });
     
     res.status(200).json({ 

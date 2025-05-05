@@ -1,0 +1,512 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h2><i class="fas fa-tachometer-alt me-2"></i>Hospital Dashboard</h2>
+      <p class="text-muted">Welcome to the Hospital Management System</p>
+    </div>
+  </div>
+
+  <!-- Quick Stats Row -->
+  <div class="row mb-4">
+    <!-- Today's Stats -->
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card bg-white border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title text-primary fw-bold">Today's Summary</h5>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h6 class="mb-1 text-muted">Patients</h6>
+              <h4 id="todayPatients" class="mb-0 fw-bold">-</h4>
+            </div>
+            <div class="bg-light rounded-circle p-3">
+              <i class="fas fa-user-injured fa-lg text-primary"></i>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1 text-muted">Revenue</h6>
+              <h4 id="todayRevenue" class="mb-0 fw-bold">-</h4>
+            </div>
+            <div class="bg-light rounded-circle p-3">
+              <i class="fas fa-money-bill-wave fa-lg text-success"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Financial Overview -->
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card bg-white border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title text-success fw-bold">Financial Overview</h5>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h6 class="mb-1 text-muted">Total Revenue</h6>
+              <h4 id="totalRevenue" class="mb-0 fw-bold">-</h4>
+            </div>
+            <div class="bg-light rounded-circle p-3">
+              <i class="fas fa-chart-line fa-lg text-success"></i>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1 text-muted">Due Amount</h6>
+              <h4 id="dueAmount" class="mb-0 fw-bold">-</h4>
+            </div>
+            <div class="bg-light rounded-circle p-3">
+              <i class="fas fa-exclamation-circle fa-lg text-danger"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Patient Overview -->
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card bg-white border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title text-purple fw-bold">Patient Overview</h5>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h6 class="mb-1 text-muted">Total Patients</h6>
+              <h4 id="totalPatients" class="mb-0 fw-bold">-</h4>
+            </div>
+            <div class="bg-light rounded-circle p-3">
+              <i class="fas fa-users fa-lg text-purple"></i>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1 text-muted">New (30 days)</h6>
+              <h4 id="newPatients" class="mb-0 fw-bold">-</h4>
+            </div>
+            <div class="bg-light rounded-circle p-3">
+              <i class="fas fa-user-plus fa-lg text-info"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Services Overview -->
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card bg-white border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title text-secondary fw-bold">Services Overview</h5>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h6 class="mb-1 text-muted">Doctors</h6>
+              <h4 id="totalDoctors" class="mb-0 fw-bold">-</h4>
+            </div>
+            <div class="bg-light rounded-circle p-3">
+              <i class="fas fa-user-md fa-lg text-secondary"></i>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1 text-muted">Pending Appts</h6>
+              <h4 id="pendingAppointments" class="mb-0 fw-bold">-</h4>
+            </div>
+            <div class="bg-light rounded-circle p-3">
+              <i class="fas fa-calendar-check fa-lg text-danger"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Middle Row - Quick Access Cards -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h4 class="mb-3">Quick Access</h4>
+    </div>
+    
+    <!-- Quick Access Cards -->
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+      <a href="/billing" class="text-decoration-none">
+        <div class="card text-center border-0 shadow-sm hover-card py-3">
+          <div class="card-body d-flex align-items-center">
+            <div class="rounded-circle bg-light p-3 me-3">
+              <i class="fas fa-file-invoice-dollar fa-lg text-success"></i>
+            </div>
+            <div class="text-start">
+              <h6 class="card-title mb-0">Billing</h6>
+              <p class="text-muted small mb-0">Create invoices</p>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+      <a href="/patients" class="text-decoration-none">
+        <div class="card text-center border-0 shadow-sm hover-card py-3">
+          <div class="card-body d-flex align-items-center">
+            <div class="rounded-circle bg-light p-3 me-3">
+              <i class="fas fa-user-injured fa-lg text-primary"></i>
+            </div>
+            <div class="text-start">
+              <h6 class="card-title mb-0">Patients</h6>
+              <p class="text-muted small mb-0">Patient records</p>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+      <a href="/appointments" class="text-decoration-none">
+        <div class="card text-center border-0 shadow-sm hover-card py-3">
+          <div class="card-body d-flex align-items-center">
+            <div class="rounded-circle bg-light p-3 me-3">
+              <i class="fas fa-calendar-check fa-lg text-danger"></i>
+            </div>
+            <div class="text-start">
+              <h6 class="card-title mb-0">Appointments</h6>
+              <p class="text-muted small mb-0">Schedule visits</p>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+      <a href="/tests" class="text-decoration-none">
+        <div class="card text-center border-0 shadow-sm hover-card py-3">
+          <div class="card-body d-flex align-items-center">
+            <div class="rounded-circle bg-light p-3 me-3">
+              <i class="fas fa-vial fa-lg text-info"></i>
+            </div>
+            <div class="text-start">
+              <h6 class="card-title mb-0">Tests</h6>
+              <p class="text-muted small mb-0">Manage lab tests</p>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+      <a href="/cabins" class="text-decoration-none">
+        <div class="card text-center border-0 shadow-sm hover-card py-3">
+          <div class="card-body d-flex align-items-center">
+            <div class="rounded-circle bg-light p-3 me-3">
+              <i class="fas fa-bed fa-lg text-warning"></i>
+            </div>
+            <div class="text-start">
+              <h6 class="card-title mb-0">Cabins</h6>
+              <p class="text-muted small mb-0">Room bookings</p>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+      <a href="/reports" class="text-decoration-none">
+        <div class="card text-center border-0 shadow-sm hover-card py-3">
+          <div class="card-body d-flex align-items-center">
+            <div class="rounded-circle bg-light p-3 me-3">
+              <i class="fas fa-chart-bar fa-lg text-secondary"></i>
+            </div>
+            <div class="text-start">
+              <h6 class="card-title mb-0">Reports</h6>
+              <p class="text-muted small mb-0">View analytics</p>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+  
+  <!-- Bottom Row - Split Between Charts and Recent Invoices -->
+  <div class="row">
+    <!-- Revenue Chart -->
+    <div class="col-lg-8 mb-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Revenue Trend</h5>
+            <div>
+              <button class="btn btn-sm btn-primary" id="weeklyBtn">Weekly</button>
+              <button class="btn btn-sm btn-outline-secondary" id="monthlyBtn">Monthly</button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="position: relative; height: 300px;">
+            <canvas id="revenueChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Recent Invoices -->
+    <div class="col-lg-4 mb-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Recent Invoices</h5>
+          <a href="/billing" class="btn btn-sm btn-outline-success">View All</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" id="recentInvoicesList">
+            <div class="text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Dashboard JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Fetch dashboard data
+  fetchDashboardData();
+  fetchRecentInvoices();
+
+  // Set up revenue chart
+  setupRevenueChart();
+  
+  // Set up event listeners
+  document.getElementById('weeklyBtn').addEventListener('click', function() {
+    updateChartData('weekly');
+  });
+  
+  document.getElementById('monthlyBtn').addEventListener('click', function() {
+    updateChartData('monthly');
+  });
+});
+
+// Fetch dashboard data
+function fetchDashboardData() {
+  // Financial statistics
+  fetch('/reports/billing-stats')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('totalRevenue').textContent = formatCurrency(data.totalRevenue || 0);
+      document.getElementById('todayRevenue').textContent = formatCurrency(data.todayRevenue || 0);
+      document.getElementById('dueAmount').textContent = formatCurrency(data.dueAmount || 0);
+    })
+    .catch(error => console.error('Error fetching billing stats:', error));
+  
+  // Patient statistics
+  fetch('/reports/patient-stats')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('totalPatients').textContent = data.totalPatients || 0;
+      document.getElementById('newPatients').textContent = data.newPatients || 0;
+      document.getElementById('todayPatients').textContent = data.todayPatients || 0;
+    })
+    .catch(error => console.error('Error fetching patient stats:', error));
+  
+  // Doctor and appointment statistics
+  fetch('/reports/doctor-stats')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('totalDoctors').textContent = data.totalDoctors || 0;
+    })
+    .catch(error => console.error('Error fetching doctor stats:', error));
+  
+  fetch('/reports/appointment-stats')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('pendingAppointments').textContent = data.pendingAppointments || 0;
+    })
+    .catch(error => console.error('Error fetching appointment stats:', error));
+}
+
+// Fetch recent invoices
+function fetchRecentInvoices() {
+  fetch('/reports/all-billings?limit=5')
+    .then(response => response.json())
+    .then(data => {
+      const invoicesList = document.getElementById('recentInvoicesList');
+      invoicesList.innerHTML = '';
+      
+      if (data.billings && data.billings.length > 0) {
+        data.billings.forEach(invoice => {
+          const statusClass = invoice.isPaid ? 'bg-success' : (invoice.partiallyPaid ? 'bg-warning' : 'bg-danger');
+          const statusText = invoice.isPaid ? 'Paid' : (invoice.partiallyPaid ? 'Partial' : 'Due');
+          
+          const invoiceItem = document.createElement('a');
+          invoiceItem.href = `/billing/receipt/${invoice.id}`;
+          invoiceItem.className = 'list-group-item list-group-item-action py-3 px-4 border-start-0 border-end-0';
+          
+          // Format the date
+          const billDate = new Date(invoice.billDate);
+          const formattedDate = billDate.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric' 
+          });
+          
+          invoiceItem.innerHTML = `
+            <div class="d-flex w-100 justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-1 fw-semibold">${invoice.patientName || 'Unknown Patient'}</h6>
+                <div class="d-flex align-items-center">
+                  <small class="text-muted me-2">#${invoice.invoiceNumber}</small>
+                  <small class="text-muted"><i class="far fa-calendar-alt me-1"></i>${formattedDate}</small>
+                </div>
+              </div>
+              <div class="text-end">
+                <h6 class="mb-1 fw-semibold">${formatCurrency(invoice.totalAmount)}</h6>
+                <span class="badge ${statusClass}">${statusText}</span>
+              </div>
+            </div>
+          `;
+          
+          invoicesList.appendChild(invoiceItem);
+        });
+      } else {
+        invoicesList.innerHTML = '<div class="text-center py-4"><i class="fas fa-receipt text-muted mb-3" style="font-size: 2rem;"></i><p class="text-muted">No recent invoices found</p></div>';
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching recent invoices:', error);
+      document.getElementById('recentInvoicesList').innerHTML = 
+        '<div class="text-center py-4"><i class="fas fa-exclamation-circle text-danger mb-3" style="font-size: 2rem;"></i><p class="text-muted">Error loading recent invoices</p></div>';
+    });
+}
+
+// Set up revenue chart
+function setupRevenueChart() {
+  const ctx = document.getElementById('revenueChart').getContext('2d');
+  
+  // Properly check and destroy existing chart
+  if (window.revenueChart && typeof window.revenueChart.destroy === 'function') {
+    window.revenueChart.destroy();
+  }
+  
+  // Create new chart
+  window.revenueChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Daily Revenue',
+        data: [],
+        borderColor: '#4361ee',
+        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: '#ffffff',
+        pointBorderColor: '#4361ee',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#ffffff',
+        pointHoverBorderColor: '#4361ee',
+        pointHoverBorderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: '#ffffff',
+          titleColor: '#212529',
+          bodyColor: '#212529',
+          bodyFont: {
+            family: 'Poppins, sans-serif'
+          },
+          titleFont: {
+            family: 'Poppins, sans-serif',
+            weight: 'bold'
+          },
+          padding: 12,
+          boxPadding: 8,
+          borderColor: 'rgba(0,0,0,0.1)',
+          borderWidth: 1,
+          callbacks: {
+            label: function(context) {
+              return formatCurrency(context.raw);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            display: false,
+            drawBorder: false
+          },
+          ticks: {
+            font: {
+              family: 'Poppins, sans-serif'
+            }
+          }
+        },
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0,0,0,0.05)',
+            drawBorder: false
+          },
+          ticks: {
+            font: {
+              family: 'Poppins, sans-serif'
+            },
+            callback: function(value) {
+              return formatCurrency(value, true);
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // Initial chart data (weekly)
+  updateChartData('weekly');
+}
+
+// Update chart data based on period
+function updateChartData(period) {
+  const endpoint = period === 'weekly' ? '/reports/daily-billing-stats' : '/reports/daily-billing-stats?period=monthly';
+  
+  // Update button styles first for better UX
+  if (period === 'weekly') {
+    document.getElementById('weeklyBtn').classList.replace('btn-outline-primary', 'btn-primary');
+    document.getElementById('monthlyBtn').classList.replace('btn-primary', 'btn-outline-secondary');
+  } else {
+    document.getElementById('monthlyBtn').classList.replace('btn-outline-secondary', 'btn-primary');
+    document.getElementById('weeklyBtn').classList.replace('btn-primary', 'btn-outline-primary');
+  }
+  
+  fetch(endpoint)
+    .then(response => response.json())
+    .then(data => {
+      const labels = data.stats.map(item => item.date);
+      const values = data.stats.map(item => item.amount);
+      
+      window.revenueChart.data.labels = labels;
+      window.revenueChart.data.datasets[0].data = values;
+      window.revenueChart.update();
+    })
+    .catch(error => console.error('Error fetching chart data:', error));
+}
+
+// Format currency
+function formatCurrency(amount, abbreviated = false) {
+  if (abbreviated && amount >= 1000) {
+    return '$' + (amount / 1000).toFixed(1) + 'k';
+  }
+  return '$' + (parseFloat(amount) || 0).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+}
+</script>
+
+<%- include('partials/footer') %> 

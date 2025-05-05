@@ -92,23 +92,30 @@
                         <div class="col-md-6">
                             <label class="form-label required-label">Phone</label>
                             <input type="tel" class="form-control" name="phone" required>
+                            <small class="form-text text-muted">Last 4 digits will be used as password</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label required-label">Email</label>
                             <input type="email" class="form-control" name="email">
+                            <small class="form-text text-muted">Required for system access</small>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label required-label">Consultation Fee</label>
                         <div class="input-group">
                             <span class="input-group-text">Tk </span>
-                            <input type="number" class="form-control" name="consultationFee" min="0" step="0.01" required>
+                            <input type="number" class="form-control" name="consultationFee" step="0.01" required>
                         </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <small><i class="fas fa-info-circle me-1"></i> System login credentials will be automatically created for the doctor. The username will be the first name + last 4 digits of phone, and the password will be the last 4 digits of the phone number.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Save Doctor</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Save
+                    </button>
                 </div>
             </form>
         </div>

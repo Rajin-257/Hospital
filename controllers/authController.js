@@ -77,7 +77,7 @@ exports.login = async (req, res) => {
     });
 
     // Render dashboard or redirect
-    res.redirect('/billing');
+    res.redirect('/');
   } catch (error) {
     res.status(500).json({
       success: false,

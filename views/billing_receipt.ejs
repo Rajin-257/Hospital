@@ -63,7 +63,7 @@
     }
     
     .invoice-table th, .invoice-table td {
-        font-size: 14px !important;
+        font-size: 12px !important;
         font-family: Arial, sans-serif;
         letter-spacing: -0.5px;
     }
@@ -134,7 +134,7 @@
     }
     
     .diagnostic-address, .diagnostic-mobile {
-        font-size: 13px !important;
+        font-size: 15px !important;
     }
     
     /* Signature section */
@@ -285,7 +285,7 @@
         border-left: none;
         border-right: none;
         border-top: none;
-        font-size: 20px;
+        font-size: 16px;
         line-height: 1.3;
         font-family: Arial, sans-serif;
         letter-spacing: -0.5px;
@@ -588,7 +588,7 @@
     }
     
     .diagnostic-address {
-        font-size: 14px;
+        font-size: 16px;
         color: #333;
         margin: 0 0 2px 0;
         line-height: 1;
@@ -596,7 +596,7 @@
     }
     
     .diagnostic-mobile {
-        font-size: 13px;
+        font-size: 15px;
         color: #333;
         margin: 0 0 2px 0;
         line-height: 1;
@@ -668,12 +668,26 @@ const tests = items.filter(item => item.type === 'test');
 function calculateAge(dateOfBirth) {
     const dob = new Date(dateOfBirth);
     const today = new Date();
-    let age = today.getFullYear() - dob.getFullYear();
-    const monthDiff = today.getMonth() - dob.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-        age--;
+    
+    let years = today.getFullYear() - dob.getFullYear();
+    let months = today.getMonth() - dob.getMonth();
+    let days = today.getDate() - dob.getDate();
+    
+    // Adjust for negative days
+    if (days < 0) {
+        months--;
+        // Days in previous month
+        const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        days += lastMonth.getDate();
     }
-    return age;
+    
+    // Adjust for negative months
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
+    
+    return `${years} years, ${months} months, ${days} days`;
 }
 
 // Function to format amounts - removes decimal for print, keeps for screen
@@ -751,7 +765,8 @@ const printDate = today.toLocaleDateString();
                 <div class="info-label">Bill To</div>
                 <div class="info-value"><%= billing.Patient.name %></div>
                 <div class="info-value">Patient ID: <%= billing.Patient.patientId %></div>
-                <div class="info-value">Age: <%= calculateAge(billing.Patient.dateOfBirth) %>,     Gender: <%= billing.Patient.gender %> </div>
+                <div class="info-value">Age: <%= calculateAge(billing.Patient.dateOfBirth) %></div>
+                <div class="info-value">Gender: <%= billing.Patient.gender %></div>
                 <div class="info-value">Mobile: <%= billing.Patient.phone %></div>
             </td>
             <td style="width: 50%;">
@@ -783,6 +798,15 @@ const printDate = today.toLocaleDateString();
                     }
                 }
                 %>
+                <% if (billing.marketingManagerId) { %>
+                        <div class="info-value">Marketing_by: 
+                        <% if (locals.marketingManager) { %>
+                            <%= marketingManager.username %>
+                        <% } else { %>
+                            -
+                        <% } %>
+                        </div>
+                <% } %>
             </td>
         </tr>
     </table>
@@ -959,6 +983,8 @@ const printDate = today.toLocaleDateString();
                 <div class="invoice-total-value"><%- formatAmount(billing.dueAmount) %></div>
             </div>
             <% } %>
+            
+            
         </div>
     </div>
     

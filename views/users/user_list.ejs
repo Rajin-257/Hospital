@@ -24,6 +24,10 @@
                         <option value="all" <%= locals.roleFilter === 'all' ? 'selected' : '' %>>All Roles</option>
                         <option value="admin" <%= locals.roleFilter === 'admin' ? 'selected' : '' %>>Admin</option>
                         <option value="receptionist" <%= locals.roleFilter === 'receptionist' ? 'selected' : '' %>>Receptionist</option>
+                        <option value="doctor" <%= locals.roleFilter === 'doctor' ? 'selected' : '' %>>Doctor</option>
+                        <option value="laboratorist" <%= locals.roleFilter === 'laboratorist' ? 'selected' : '' %>>Laboratorist</option>
+                        <option value="nurse" <%= locals.roleFilter === 'nurse' ? 'selected' : '' %>>Nurse</option>
+                        <option value="marketing" <%= locals.roleFilter === 'marketing' ? 'selected' : '' %>>Marketing Officer</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -54,7 +58,7 @@
 
     <!-- Summary Cards -->
     <div class="row mb-4">
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <div class="card border-primary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
@@ -70,7 +74,7 @@
             </div>
         </div>
         
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <div class="card border-success">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
@@ -86,7 +90,7 @@
             </div>
         </div>
         
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <div class="card border-info">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
@@ -102,7 +106,7 @@
             </div>
         </div>
         
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <div class="card border-secondary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
@@ -112,6 +116,70 @@
                         </div>
                         <div class="rounded-circle bg-light p-3">
                             <i class="fas fa-user-tie text-secondary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-2 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Doctors</h6>
+                            <h3 class="card-title mb-0"><%= users.filter(user => user.role === 'doctor').length %></h3>
+                        </div>
+                        <div class="rounded-circle bg-light p-3">
+                            <i class="fas fa-user-md text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-2 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Laboratorists</h6>
+                            <h3 class="card-title mb-0"><%= users.filter(user => user.role === 'laboratorist').length %></h3>
+                        </div>
+                        <div class="rounded-circle bg-light p-3">
+                            <i class="fas fa-flask text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-2 mb-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Nurses</h6>
+                            <h3 class="card-title mb-0"><%= users.filter(user => user.role === 'nurse').length %></h3>
+                        </div>
+                        <div class="rounded-circle bg-light p-3">
+                            <i class="fas fa-user-nurse text-danger fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-2 mb-3">
+            <div class="card border-purple">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Marketing</h6>
+                            <h3 class="card-title mb-0"><%= users.filter(user => user.role === 'marketing').length %></h3>
+                        </div>
+                        <div class="rounded-circle bg-light p-3">
+                            <i class="fas fa-user-tag text-purple fa-2x"></i>
                         </div>
                     </div>
                 </div>
@@ -142,6 +210,14 @@
                                     <td>
                                         <% if (user.role === 'admin') { %>
                                             <span class="badge bg-primary">Admin</span>
+                                        <% } else if (user.role === 'doctor') { %>
+                                            <span class="badge bg-success">Doctor</span>
+                                        <% } else if (user.role === 'laboratorist') { %>
+                                            <span class="badge bg-warning">Laboratorist</span>
+                                        <% } else if (user.role === 'nurse') { %>
+                                            <span class="badge bg-danger">Nurse</span>
+                                        <% } else if (user.role === 'marketing') { %>
+                                            <span class="badge bg-purple">Marketing</span>
                                         <% } else { %>
                                             <span class="badge bg-info">Receptionist</span>
                                         <% } %>
@@ -218,6 +294,10 @@
                         <select class="form-select" id="edit-role" name="role" required>
                             <option value="admin">Admin</option>
                             <option value="receptionist">Receptionist</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="laboratorist">Laboratorist</option>
+                            <option value="nurse">Nurse</option>
+                            <option value="marketing">Marketing Officer</option>
                         </select>
                     </div>
                     <div class="mb-3">

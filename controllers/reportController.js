@@ -74,9 +74,25 @@ exports.getPatientStats = async (req, res) => {
       }
     });
     
+    // Get today's patients
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const todayPatients = await Patient.count({
+      where: {
+        createdAt: {
+          [Op.gte]: today,
+          [Op.lt]: tomorrow
+        }
+      }
+    });
+    
     res.json({
       totalPatients,
-      newPatients
+      newPatients,
+      todayPatients
     });
   } catch (error) {
     console.error('Error in getPatientStats:', error);
@@ -145,18 +161,36 @@ exports.getTestStats = async (req, res) => {
 // Get billing statistics
 exports.getBillingStats = async (req, res) => {
   try {
-    const totalBillings = await Billing.count();
-    
-    // Calculate total revenue
-    const billings = await Billing.findAll({
-      attributes: ['totalAmount']
-    });
-    
+    // Get total revenue
+    const billings = await Billing.findAll();
     const totalRevenue = billings.reduce((sum, bill) => sum + Number(bill.totalAmount), 0);
     
+    // Get due amount
+    const dueAmount = billings.reduce((sum, bill) => sum + Number(bill.dueAmount), 0);
+    
+    // Get today's revenue
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const todayBillings = await Billing.findAll({
+      where: {
+        billDate: {
+          [Op.gte]: today,
+          [Op.lt]: tomorrow
+        }
+      }
+    });
+    
+    const todayRevenue = todayBillings.reduce((sum, bill) => sum + Number(bill.totalAmount), 0);
+    const todayCount = todayBillings.length;
+    
     res.json({
-      totalBillings,
-      totalRevenue
+      totalRevenue,
+      dueAmount,
+      todayRevenue,
+      todayCount
     });
   } catch (error) {
     console.error('Error in getBillingStats:', error);
@@ -213,43 +247,56 @@ exports.getCommissionStats = async (req, res) => {
 // Get daily billing statistics
 exports.getDailyBillingStats = async (req, res) => {
   try {
-    // Get today's date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const { period } = req.query;
+    let days = 7; // Default to weekly
     
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (period === 'monthly') {
+      days = 30;
+    }
     
-    // Get count of today's billings
-    const dailyBillingCount = await Billing.count({
-      where: {
-        billDate: {
-          [Op.gte]: today,
-          [Op.lt]: tomorrow
-        }
-      }
-    });
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days + 1);
+    startDate.setHours(0, 0, 0, 0);
     
-    // Calculate total amount for today
-    const dailyBillings = await Billing.findAll({
-      attributes: ['totalAmount'],
-      where: {
-        billDate: {
-          [Op.gte]: today,
-          [Op.lt]: tomorrow
-        }
-      }
-    });
+    const endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
     
-    const dailyBillingAmount = dailyBillings.reduce((sum, bill) => sum + Number(bill.totalAmount), 0);
+    // Get dates for the range
+    const dateRange = [];
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      dateRange.push(date);
+    }
     
-    res.json({
-      dailyBillingCount,
-      dailyBillingAmount
-    });
+    // Prepare data for each day
+    const stats = await Promise.all(
+      dateRange.map(async (date) => {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        const billings = await Billing.findAll({
+          where: {
+            billDate: {
+              [Op.gte]: date,
+              [Op.lt]: nextDay
+            }
+          }
+        });
+        
+        const amount = billings.reduce((sum, bill) => sum + Number(bill.totalAmount), 0);
+        
+        return {
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          amount
+        };
+      })
+    );
+    
+    res.json({ stats });
   } catch (error) {
     console.error('Error in getDailyBillingStats:', error);
-    res.status(500).json({ message: 'Failed to fetch daily billing statistics', dailyBillingCount: 0, dailyBillingAmount: 0 });
+    res.status(500).json({ message: 'Failed to fetch daily billing statistics' });
   }
 };
 
@@ -819,17 +866,35 @@ exports.renderBillingReports = async (req, res) => {
   }
 };
 
-// Get all billing records for API (JSON response)
+// Get all billing records for API (JSON response) with limit
 exports.getAllBillingRecordsApi = async (req, res) => {
   try {
+    const { limit = 5 } = req.query;
+    
     const bills = await Billing.findAll({
       include: [
         { model: Patient }
       ],
-      order: [['billDate', 'DESC']]
+      order: [['billDate', 'DESC']],
+      limit: parseInt(limit)
     });
     
-    res.json(bills);
+    // Format for the dashboard
+    const billings = bills.map(bill => {
+      return {
+        id: bill.id,
+        invoiceNumber: bill.billNumber,
+        patientName: bill.Patient ? bill.Patient.name : 'Unknown',
+        totalAmount: bill.totalAmount,
+        paidAmount: bill.paidAmount,
+        dueAmount: bill.dueAmount,
+        isPaid: bill.status === 'paid',
+        partiallyPaid: bill.status === 'partial' && bill.paidAmount > 0,
+        billDate: bill.billDate
+      };
+    });
+    
+    res.json({ billings });
   } catch (error) {
     console.error('Error in getAllBillingRecordsApi:', error);
     res.status(500).json({ 

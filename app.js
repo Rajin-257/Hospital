@@ -19,6 +19,7 @@ const reportRoutes = require('./routes/reportRoutes');
 const settingRoutes = require('./routes/settingRoutes');
 const commissionRoutes = require('./routes/commissionRoutes');
 const userRoutes = require('./routes/userRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 // Import models
 const Setting = require('./models/Setting');
@@ -66,6 +67,7 @@ app.use(getFeaturePermissions);
 
 // Routes
 app.use('/', authRoutes);
+app.use('/dashboard', dashboardRoutes);
 app.use('/patients', patientRoutes);
 app.use('/doctors', doctorRoutes);
 app.use('/appointments', appointmentRoutes);
@@ -77,9 +79,9 @@ app.use('/settings', settingRoutes);
 app.use('/commissions', commissionRoutes);
 app.use('/', userRoutes);
 
-// Redirect root to billing
+// Redirect root to dashboard
 app.get('/', (req, res) => {
-  res.redirect('/reports');
+  res.redirect('/dashboard');
 });
 
 // 404 handler

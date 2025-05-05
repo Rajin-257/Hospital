@@ -6,19 +6,19 @@ const featurePermissions = [
         moduleName: 'Navigation',
         featureName: 'Billing',
         isVisible: true,
-        roles: ['admin', 'doctor', 'receptionist', 'accountant']
+        roles: ['admin', 'receptionist']
     },
     {
         moduleName: 'Navigation',
         featureName: 'Pay Bill',
         isVisible: true,
-        roles: ['admin', 'doctor', 'receptionist', 'accountant']
+        roles: ['admin', 'receptionist',]
     },
     {
         moduleName: 'Navigation',
         featureName: 'Patients',
         isVisible: true,
-        roles: ['admin', 'doctor', 'receptionist']
+        roles: ['admin', 'doctor', 'receptionist', 'nurse', 'laboratorist']
     },
     {
         moduleName: 'Navigation',
@@ -30,25 +30,25 @@ const featurePermissions = [
         moduleName: 'Navigation',
         featureName: 'Appointments',
         isVisible: true,
-        roles: ['admin', 'doctor', 'receptionist']
+        roles: ['admin', 'doctor', 'receptionist', 'nurse']
     },
     {
         moduleName: 'Navigation',
         featureName: 'Cabins',
         isVisible: true,
-        roles: ['admin', 'doctor', 'receptionist']
+        roles: ['admin', 'doctor', 'receptionist', 'nurse']
     },
     {
         moduleName: 'Navigation',
         featureName: 'Tests',
         isVisible: true,
-        roles: ['admin', 'doctor', 'receptionist']
+        roles: ['admin', 'doctor', 'receptionist', 'laboratorist']
     },
     {
         moduleName: 'Navigation',
         featureName: 'Reports',
         isVisible: true,
-        roles: ['admin', 'doctor', 'receptionist', 'accountant']
+        roles: ['admin', 'doctor', 'receptionist']
     },
     {
         moduleName: 'Navigation',
@@ -63,6 +63,12 @@ const featurePermissions = [
         roles: ['admin']
     },
     {
+        moduleName: 'Navigation',
+        featureName: 'Marketing',
+        isVisible: true,
+        roles: ['admin', 'marketing']
+    },
+    {
         moduleName: 'Billing',
         featureName: 'Schedule Appointment',
         isVisible: true,
@@ -72,13 +78,19 @@ const featurePermissions = [
         moduleName: 'Billing',
         featureName: 'Cabin Allocation',
         isVisible: true,
-        roles: ['admin', 'receptionist']
+        roles: ['admin', 'receptionist', 'nurse']
     },
     {
         moduleName: 'Billing',
         featureName: 'Test Requisition',
         isVisible: true,
-        roles: ['admin', 'receptionist']
+        roles: ['admin', 'receptionist', 'doctor', 'laboratorist']
+    },
+    {
+        moduleName: 'Billing',
+        featureName: 'Doctor Referral',
+        isVisible: true,
+        roles: ['admin', 'receptionist', 'marketing']
     },
     {
         moduleName: 'Reports',
@@ -90,19 +102,19 @@ const featurePermissions = [
         moduleName: 'Reports',
         featureName: 'Patient Reports',
         isVisible: true,
-        roles: ['admin', 'receptionist']
+        roles: ['admin', 'receptionist', 'doctor', 'nurse']
     },
     {
         moduleName: 'Reports',
         featureName: 'Appointment Reports',
         isVisible: true,
-        roles: ['admin', 'receptionist']
+        roles: ['admin', 'receptionist', 'doctor', 'nurse']
     },
     {
         moduleName: 'Reports',
         featureName: 'Test Reports',
         isVisible: true,
-        roles: ['admin', 'receptionist']
+        roles: ['admin', 'receptionist', 'doctor']
     },
     // HRM Module Permissions
     {
@@ -128,6 +140,25 @@ const featurePermissions = [
         featureName: 'Delete Staff',
         isVisible: true,
         roles: ['admin']
+    },
+    // Marketing Module Permissions
+    {
+        moduleName: 'Marketing',
+        featureName: 'Doctor Commissions',
+        isVisible: true,
+        roles: ['admin', 'marketing']
+    },
+    {
+        moduleName: 'Marketing',
+        featureName: 'Referral Dashboard',
+        isVisible: true,
+        roles: ['admin', 'marketing']
+    },
+    {
+        moduleName: 'Marketing',
+        featureName: 'Commission Reports',
+        isVisible: true,
+        roles: ['admin', 'marketing']
     }
 ];
 
