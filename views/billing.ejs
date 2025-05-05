@@ -228,6 +228,43 @@
         </div>
     </div>
 
+    <!-- Marketing Manager Form (Hidden by default) -->
+    <div class="card mt-4" id="marketing-manager-form-card" style="display: none;">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-user-tag me-2"></i>Add New Marketing Manager</h5>
+        </div>
+        <div class="card-body">
+            <form id="marketing-manager-form">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label required-label">Username</label>
+                        <input type="text" class="form-control" name="username" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label required-label">Email</label>
+                        <input type="email" class="form-control" name="email" >
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label required-label">Password</label>
+                        <input type="password" class="form-control" name="password" required>
+                        <small class="form-text text-muted">Minimum 6 characters</small>
+                    </div>
+                </div>
+                <div class="alert alert-info mb-3">
+                    <small><i class="fas fa-info-circle me-1"></i> This will create a new marketing manager account with access to the marketing module.</small>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary me-2" id="cancel-marketing-manager-form">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Save Marketing Manager
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Cabin Selection -->
     <% if (visibleFeatures && visibleFeatures.cabinAllocation) { %>
     <div class="card mt-4">
@@ -461,14 +498,19 @@
                             <div class="row mb-3">
                                 <div class="col-7 fw-bold">Marketing Manager:</div>
                                 <div class="col-5">
-                                    <select class="form-select form-select-sm" id="marketing-manager" name="marketingManagerId">
-                                        <option value="">None</option>
-                                        <% if (locals.marketingManagers && marketingManagers.length > 0) { %>
-                                            <% marketingManagers.forEach(manager => { %>
-                                                <option value="<%= manager.id %>"><%= manager.username %></option>
-                                            <% }); %>
-                                        <% } %>
-                                    </select>
+                                    <div class="input-group">
+                                        <select class="form-select form-select-sm" id="marketing-manager" name="marketingManagerId">
+                                            <option value="">None</option>
+                                            <% if (locals.marketingManagers && marketingManagers.length > 0) { %>
+                                                <% marketingManagers.forEach(manager => { %>
+                                                    <option value="<%= manager.id %>"><%= manager.username %></option>
+                                                <% }); %>
+                                            <% } %>
+                                        </select>
+                                        <button class="btn btn-sm btn-outline-success" type="button" id="show-marketing-manager-form" title="Add New Marketing Manager">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -656,6 +698,12 @@
             minimumResultsForSearch: Infinity,
             width: '100%',
             dropdownCssClass: 'payment-dropdown'
+        });
+        
+        $('#marketing-manager').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Select marketing manager...',
+            allowClear: true
         });
         
         // Initialize tooltips
@@ -1317,12 +1365,41 @@
             $('#bill-delivaridate').val('');
         });
 
-        // Initialize doctor selector to update test permissions
-        $('#doctor-select').on('change', function() {
-            // We'll keep the functionality to update the doctor for tests
-            // but remove restrictions that make it required
+        // Handle marketing manager add button click
+        $('#show-marketing-manager-form').on('click', function() {
+            $('#marketing-manager-form-card').show();
         });
-        
+
+        // Handle cancel marketing manager form
+        $('#cancel-marketing-manager-form').on('click', function() {
+            $('#marketing-manager-form-card').hide();
+            $('#marketing-manager-form')[0].reset();
+        });
+
+        // Submit marketing manager form
+        $('#marketing-manager-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = $(this).serialize() + '&role=marketing';
+            
+            $.ajax({
+                url: '/register',
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    // Show success message
+                    alert('Marketing Manager added successfully');
+                    
+                    // Reload page to refresh the marketing managers list
+                    window.location.reload();
+                },
+                error: function(error) {
+                    alert('Error: ' + (error.responseJSON?.message || 'Could not add marketing manager'));
+                }
+            });
+        });
+
         // Calculate date of birth from age
         function calculateDOB() {
             const years = parseInt($('#dob-years').val()) || 0;
@@ -1475,6 +1552,12 @@
                     alert('Error: ' + (error.responseJSON?.message || 'Could not add doctor'));
                 }
             });
+        });
+
+        // Initialize doctor selector to update test permissions
+        $('#doctor-select').on('change', function() {
+            // We'll keep the functionality to update the doctor for tests
+            // but remove restrictions that make it required
         });
     });
 </script>
