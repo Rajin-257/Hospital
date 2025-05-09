@@ -35,7 +35,7 @@ exports.renderBillingPage = async (req, res) => {
     
     // For admin users, all features are visible regardless of permission settings
     let visibleFeatures;
-    if (userRole === 'admin') {
+    if (userRole === 'softadmin') {
       visibleFeatures = {
         scheduleAppointment: true,
         cabinAllocation: true,
@@ -447,7 +447,7 @@ exports.editBillingPage = async (req, res) => {
     
     // For admin users, all features are visible regardless of permission settings
     let visibleFeatures;
-    if (userRole === 'admin') {
+    if (userRole === 'softadmin') {
       visibleFeatures = {
         scheduleAppointment: true,
         cabinAllocation: true,

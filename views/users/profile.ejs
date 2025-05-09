@@ -31,8 +31,10 @@
                     <div class="mb-3">
                         <label class="text-muted mb-1">Role</label>
                         <p class="mb-0">
-                            <% if (user.role === 'admin') { %>
-                                <span class="badge bg-primary">Admin</span>
+                            <% if (user.role === 'softadmin') { %>
+                                <span class="badge bg-primary">Soft Admin</span>
+                            <% } else if (user.role === 'admin') { %>
+                                <span class="badge bg-success">admin</span>
                             <% } else if (user.role === 'doctor') { %>
                                 <span class="badge bg-success">Doctor</span>
                             <% } else if (user.role === 'receptionist') { %>

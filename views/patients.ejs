@@ -5,9 +5,11 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fas fa-user-injured me-2"></i>Patients</h5>
+            <% if (locals.isFeatureVisible('Patient Registration')) { %>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPatientModal">
                 <i class="fas fa-plus me-1"></i> Add Patient
             </button>
+            <% } %>
         </div>
         <div class="card-body">
             <div class="mb-3">
@@ -50,12 +52,14 @@
                                     <a href="/patients/<%= patient.id %>/dashboard" class="btn btn-sm btn-info">
                                         <i class="fas fa-eye"></i>
                                     </a>
+                                    <% if (locals.isFeatureVisible('Patient Management')) { %>
                                     <button class="btn btn-sm btn-primary edit-patient" data-id="<%= patient.id %>">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button class="btn btn-sm btn-danger btn-delete" data-url="/patients/<%= patient.id %>" data-name="patient">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
+                                    <% } %>
                                 </td>
                             </tr>
                         <% }); %>
@@ -299,10 +303,12 @@
                     data: { term: searchTerm },
                     success: function(patients) {
                         let html = '';
+                        
                         patients.forEach(patient => {
                             const dob = new Date(patient.dateOfBirth);
                             const age = Math.floor((new Date() - dob) / (365.25 * 24 * 60 * 60 * 1000));
                             
+                            // Start building HTML
                             html += `
                                 <tr>
                                     <td>${patient.patientId}</td>
@@ -314,13 +320,20 @@
                                     <td>
                                         <a href="/patients/${patient.id}/dashboard" class="btn btn-sm btn-info">
                                             <i class="fas fa-eye"></i>
-                                        </a>
+                                        </a>`;
+                            
+                            // Check if management buttons should be shown
+                            if ($('.edit-patient').length > 0) {
+                                html += `
                                         <button class="btn btn-sm btn-primary edit-patient" data-id="${patient.id}">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button class="btn btn-sm btn-danger btn-delete" data-url="/patients/${patient.id}" data-name="patient">
                                             <i class="fas fa-trash-alt"></i>
-                                        </button>
+                                        </button>`;
+                            }
+                            
+                            html += `
                                     </td>
                                 </tr>
                             `;

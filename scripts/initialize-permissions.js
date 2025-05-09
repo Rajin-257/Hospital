@@ -1,26 +1,41 @@
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config();
 const { connectDB } = require('../config/db');
 const FeaturePermission = require('../models/FeaturePermission');
+const Setting = require('../models/Setting');
+const featureData = require('./featureData');
 
-// Function to initialize or reset all permissions
-async function initializeOrResetPermissions() {
+// Function to import feature permissions
+async function importFeaturePermissions() {
   try {
     console.log('Connecting to database...');
     await connectDB();
     
-    console.log('Removing existing feature permissions...');
+    console.log('Clearing existing feature permissions...');
     await FeaturePermission.destroy({ where: {} });
     
-    console.log('Initializing default feature permissions...');
-    await FeaturePermission.initializeDefaults();
+    console.log('Importing feature permissions...');
+    for (const permission of featureData.featurePermissions) {
+      await FeaturePermission.create({
+        moduleName: permission.moduleName,
+        featureName: permission.featureName,
+        isVisible: permission.isVisible,
+        roles: permission.roles
+      });
+    }
     
-    console.log('Feature permissions initialized successfully!');
-    process.exit(0);
+    console.log('Updating settings to mark feature permissions as imported...');
+    let settings = await Setting.findOne();
+    if (settings) {
+      await settings.update({
+        import_feature_data: true
+      });
+    }
+    
+    console.log('Feature permissions imported successfully');
   } catch (error) {
-    console.error('Error initializing permissions:', error);
-    process.exit(1);
+    console.error('Error importing feature permissions:', error);
   }
 }
 
-// Run the initialization
-initializeOrResetPermissions(); 
+// Run the import
+importFeaturePermissions(); 

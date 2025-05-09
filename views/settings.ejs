@@ -32,11 +32,13 @@
                                 <i class="fas fa-info-circle me-2"></i>General Settings
                             </button>
                         </li>
+                        <% if (locals.isFeatureVisible('Permission Management')) { %>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="permissions-tab" data-bs-toggle="tab" data-bs-target="#permissions" type="button" role="tab" aria-controls="permissions" aria-selected="false">
                                 <i class="fas fa-lock me-2"></i>Feature Permissions
                             </button>
                         </li>
+                        <% } %>
                     </ul>
                     
                     <!-- Tab content -->
@@ -115,7 +117,7 @@
                                             <i class="fas fa-file-import me-2"></i>Import Test Data
                                         </button>
                                     <% } %>
-                                    <% if (!settings.import_feature_data) { %>
+                                    <% if (!settings.import_feature_data && locals.isFeatureVisible('Permission Management')) { %>
                                         <button type="button" class="btn btn-warning me-2" id="importFeaturePermissionsBtn">
                                             <i class="fas fa-file-import me-2"></i>Import Feature Permissions
                                         </button>
@@ -127,11 +129,12 @@
                             </form>
                         </div>
                         
-                        <!-- Feature Permissions Tab -->
+                        <!-- Feature Permissions Tab (only for softadmin) -->
+                        <% if (locals.isFeatureVisible('Permission Management')) { %>
                         <div class="tab-pane fade" id="permissions" role="tabpanel" aria-labelledby="permissions-tab">
                             <div class="alert alert-primary mb-3">
                                 <i class="fas fa-info-circle me-2"></i>
-                                <strong>Note:</strong> Admin users will always see all features regardless of permission settings. These settings only affect non-admin roles like receptionist.
+                                <strong>Note:</strong> SoftAdmin users will always see all features regardless of permission settings. These settings only affect other roles like admin, receptionist, doctor, etc.
                             </div>
                             
                             <!-- Tab navigation for modules -->
@@ -194,6 +197,10 @@
                                                                     <select class="form-select permission-roles" multiple>
                                                                         <option value="admin" <%= permission.roles.includes('admin') ? 'selected' : '' %>>Admin</option>
                                                                         <option value="receptionist" <%= permission.roles.includes('receptionist') ? 'selected' : '' %>>Receptionist</option>
+                                                                        <option value="doctor" <%= permission.roles.includes('doctor') ? 'selected' : '' %>>Doctor</option>
+                                                                        <option value="nurse" <%= permission.roles.includes('nurse') ? 'selected' : '' %>>Nurse</option>
+                                                                        <option value="laboratorist" <%= permission.roles.includes('laboratorist') ? 'selected' : '' %>>Laboratorist</option>
+                                                                        <option value="marketing" <%= permission.roles.includes('marketing') ? 'selected' : '' %>>Marketing</option>
                                                                     </select>
                                                                 </td>
                                                             </tr>
@@ -212,6 +219,7 @@
                                 <% }); %>
                             </div>
                         </div>
+                        <% } %>
                     </div>
                 </div>
             </div>
@@ -298,13 +306,14 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- Import Test Data Script -->
+<!-- Script for importing test data and feature permissions -->
 <script>
-    // Import Test Data
+document.addEventListener('DOMContentLoaded', function() {
+    // Import test data
     const importTestDataBtn = document.getElementById('importTestDataBtn');
     if (importTestDataBtn) {
         importTestDataBtn.addEventListener('click', async function() {
-            if (confirm('Are you sure you want to import test data? This action cannot be undone.')) {
+            if (confirm('Are you sure you want to import test data? This will add sample data to your database.')) {
                 try {
                     const response = await fetch('/settings/import-test-data', {
                         method: 'POST',
@@ -312,14 +321,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             'Content-Type': 'application/json'
                         }
                     });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        alert('Test data imported successfully!');
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert('Test data imported successfully! Please refresh the page.');
                         window.location.reload();
                     } else {
-                        alert('Error importing test data: ' + result.message);
+                        alert('Failed to import test data: ' + data.message);
                     }
                 } catch (error) {
                     alert('Error importing test data: ' + error.message);
@@ -327,12 +336,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    // Import Feature Permissions
+    
+    // Import feature permissions
     const importFeaturePermissionsBtn = document.getElementById('importFeaturePermissionsBtn');
     if (importFeaturePermissionsBtn) {
         importFeaturePermissionsBtn.addEventListener('click', async function() {
-            if (confirm('Are you sure you want to import feature permissions? This action cannot be undone.')) {
+            if (confirm('Are you sure you want to import feature permissions? This will reset all existing permissions.')) {
                 try {
                     const response = await fetch('/settings/import-feature-permissions', {
                         method: 'POST',
@@ -340,14 +349,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             'Content-Type': 'application/json'
                         }
                     });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        alert('Feature permissions imported successfully!');
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert('Feature permissions imported successfully! Please refresh the page.');
                         window.location.reload();
                     } else {
-                        alert('Error importing feature permissions: ' + result.message);
+                        alert('Failed to import feature permissions: ' + data.message);
                     }
                 } catch (error) {
                     alert('Error importing feature permissions: ' + error.message);
@@ -355,6 +364,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+});
 </script>
 
 <%- include('./partials/footer') %> 

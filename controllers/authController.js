@@ -22,7 +22,7 @@ exports.register = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secretkey', {
-      expiresIn: '1d'
+      expiresIn: '1h'
     });
 
     res.status(201).json({
@@ -67,14 +67,25 @@ exports.login = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secretkey', {
-      expiresIn: '1d'
+      expiresIn: '30m' // Changed to 30 minutes
     });
 
     // Set token in cookie
     res.cookie('token', token, {
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
+      maxAge: 30 * 60 * 1000 // 30 minutes in milliseconds
     });
+
+    // Store user data in session
+    req.session.user = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role
+    };
+    
+    // Set session expiry
+    req.session.cookie.maxAge = 30 * 60 * 1000; // 30 minutes in milliseconds
 
     // Render dashboard or redirect
     res.redirect('/');
@@ -88,8 +99,16 @@ exports.login = async (req, res) => {
 
 // Logout user
 exports.logout = (req, res) => {
+  // Clear the cookie
   res.clearCookie('token');
-  res.redirect('/login');
+  
+  // Destroy the session
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Error destroying session:', err);
+    }
+    res.redirect('/login');
+  });
 };
 
 // Get current user

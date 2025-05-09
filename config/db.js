@@ -18,7 +18,7 @@ const connectDB = async () => {
     console.log('Database connected successfully');
     
     // Sync database
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ alter: false });
     console.log('Database synchronized');
     
     setTimeout(async () => {
@@ -27,15 +27,15 @@ const connectDB = async () => {
         const User = require('../models/User');
         
         // Check if admin user exists
-        const adminExists = await User.findOne({ where: { username: 'admin' } });
+        const adminExists = await User.findOne({ where: { username: 'softadmin' } });
         
         if (!adminExists) {
           // Create default admin user
           await User.create({
-            username: 'admin',
-            email: 'admin@hospital.com',
+            username: 'softadmin',
+            email: 'softadmin@hospital.com',
             password: '123', // Will be hashed by the model hooks
-            role: 'admin',
+            role: 'softadmin',
             isActive: true
           });
           console.log('Default admin user created');

@@ -1,5 +1,22 @@
 <%- include('partials/header') %>
 <%- include('partials/navbar') %>
+<%- include('partials/date-formatter') %>
+
+<%
+// Date formatting helper function
+function formatDate(date) {
+    if (!date) return 'N/A';
+    
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = d.toLocaleString('en-US', { month: 'short' });
+    const year = d.getFullYear().toString().slice(-2);
+    
+    return `${day}-${month}-${year}`;
+}
+%>
 
 <div class="container-fluid py-4">
     <div class="card">
@@ -83,7 +100,7 @@
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-md-4 fw-bold">Date of Birth:</div>
-                                        <div class="col-md-8"><%= new Date(patient.dateOfBirth).toLocaleDateString() %></div>
+                                        <div class="col-md-8"><%= formatDate(patient.dateOfBirth) %></div>
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-md-4 fw-bold">Age:</div>
@@ -116,7 +133,7 @@
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-md-4 fw-bold">Registration Date:</div>
-                                        <div class="col-md-8"><%= new Date(patient.createdAt).toLocaleDateString() %></div>
+                                        <div class="col-md-8"><%= formatDate(patient.createdAt) %></div>
                                     </div>
                                 </div>
                             </div>
@@ -161,14 +178,14 @@
                                         <tr>
                                             <td><%= test.id %></td>
                                             <td><%= test.Test ? test.Test.name : (test.testName || 'Unknown Test') %></td>
-                                            <td><%= new Date(test.requestDate || test.createdAt).toLocaleDateString() %></td>
+                                            <td><%= formatDate(test.requestDate || test.createdAt) %></td>
                                             <td>
                                                 <span class="badge bg-<%= test.status === 'Completed' ? 'success' : (test.status === 'Requested' ? 'warning' : 'info') %>">
                                                     <%= test.status %>
                                                 </span>
                                             </td>
                                             <td><%= test.deliveryOption || 'Collect' %></td>
-                                            <td><%= test.deliveryDate ? new Date(test.deliveryDate).toLocaleDateString() : 'N/A' %></td>
+                                            <td><%= test.deliveryDate ? formatDate(test.deliveryDate) : 'N/A' %></td>
                                             <td>
                                                 <% if (test.status === 'Completed') { %>
                                                     <a href="/tests/request/<%= test.id %>/result" class="btn btn-sm btn-outline-primary">
@@ -267,8 +284,8 @@
                                             <td><%= booking.bookingId %></td>
                                             <td><%= booking.cabinNumber %></td>
                                             <td><%= booking.cabinType %></td>
-                                            <td><%= new Date(booking.checkInDate).toLocaleDateString() %></td>
-                                            <td><%= booking.checkOutDate ? new Date(booking.checkOutDate).toLocaleDateString() : 'Active' %></td>
+                                            <td><%= formatDate(booking.checkInDate) %></td>
+                                            <td><%= booking.checkOutDate ? formatDate(booking.checkOutDate) : 'Active' %></td>
                                             <td>
                                                 <span class="badge bg-<%= booking.status === 'completed' ? 'success' : (booking.status === 'active' ? 'info' : (booking.status === 'cancelled' ? 'danger' : 'warning')) %>">
                                                     <%= booking.status.charAt(0).toUpperCase() + booking.status.slice(1) %>
@@ -313,7 +330,7 @@
                                     <% invoices.forEach(invoice => { %>
                                         <tr>
                                             <td><%= invoice.billNumber || invoice.id %></td>
-                                            <td><%= new Date(invoice.billDate || invoice.createdAt).toLocaleDateString() %></td>
+                                            <td><%= formatDate(invoice.billDate || invoice.createdAt) %></td>
                                             <td>Medical Bill</td>
                                             <td>$<%= parseFloat(invoice.netPayable || invoice.totalAmount).toFixed(2) %></td>
                                             <td>

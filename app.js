@@ -3,9 +3,12 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
-const { connectDB } = require('./config/db');
+const { connectDB, sequelize } = require('./config/db');
 const ejs = require('ejs');
+const { protect } = require('./middleware/auth');
 const { getFeaturePermissions } = require('./middleware/featurePermission');
+const session = require('express-session');
+const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -44,6 +47,44 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Configure session with Sequelize store
+const sessionStore = new SequelizeStore({
+  db: sequelize,
+  tableName: 'sessions',
+  expiration: 30 * 60 * 1000, // 30 minutes in milliseconds
+  checkExpirationInterval: 15 * 60 * 1000 // Check every 15 minutes
+});
+
+app.use(session({
+  store: sessionStore,
+  secret: process.env.SESSION_SECRET || 'session_secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 30 * 60 * 1000 // 30 minutes in milliseconds
+  }
+}));
+
+// Initialize the session store
+sessionStore.sync();
+
+// Middleware to extend session on activity
+app.use((req, res, next) => {
+  // Skip for login page and public assets
+  if (req.path === '/login' || req.path.startsWith('/public')) {
+    return next();
+  }
+  
+  // If there's a session and the user is logged in, extend the session
+  if (req.session && req.session.user) {
+    req.session.cookie.maxAge = 30 * 60 * 1000; // Reset to 30 minutes
+  }
+  
+  next();
+});
+
 // Set view engine
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -62,8 +103,19 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Apply feature permissions middleware to all routes
-app.use(getFeaturePermissions);
+// Apply auth and feature permissions middleware to relevant routes
+// The root level only applies to authenticated routes, individual routes handle auth separately
+app.use((req, res, next) => {
+  // Skip auth for login page and public assets
+  if (req.path === '/login' || req.path.startsWith('/public')) {
+    return next();
+  }
+  // For other routes, apply auth and permissions middleware
+  protect(req, res, (err) => {
+    if (err) return next(err);
+    getFeaturePermissions(req, res, next);
+  });
+});
 
 // Routes
 app.use('/', authRoutes);

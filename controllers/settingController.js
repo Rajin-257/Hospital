@@ -126,7 +126,7 @@ exports.updateFeaturePermission = async (req, res) => {
     
     await permission.update({
       isVisible: isVisible === 'true' || isVisible === true,
-      roles: roles || ['admin'],
+      roles: roles || ['softadmin'],
       updatedBy: req.user.id
     });
     
@@ -163,6 +163,24 @@ exports.batchUpdatePermissions = async (req, res) => {
     console.error('Error updating feature permissions:', error);
     res.status(500).json({ message: 'Error updating feature permissions' });
   }
+};
+
+// Import feature permissions
+exports.importFeaturePermissions = async (req, res) => {
+    try {
+        const { importFeaturePermissions } = require('../scripts/featureData');
+        
+        const result = await importFeaturePermissions();
+        
+        if (result.success) {
+            res.json({ success: true, message: result.message });
+        } else {
+            res.status(500).json({ success: false, message: result.message });
+        }
+    } catch (error) {
+        console.error('Error importing feature permissions:', error);
+        res.status(500).json({ success: false, message: 'Error importing feature permissions' });
+    }
 };
 
 // Import test data

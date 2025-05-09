@@ -22,6 +22,9 @@
                     <label for="roleFilter" class="form-label">Role</label>
                     <select class="form-select" id="roleFilter" name="roleFilter">
                         <option value="all" <%= locals.roleFilter === 'all' ? 'selected' : '' %>>All Roles</option>
+                        <% if (user.role === 'softadmin') { %>
+                        <option value="softadmin" <%= locals.roleFilter === 'softadmin' ? 'selected' : '' %>>Soft Admin</option>
+                        <% } %>
                         <option value="admin" <%= locals.roleFilter === 'admin' ? 'selected' : '' %>>Admin</option>
                         <option value="receptionist" <%= locals.roleFilter === 'receptionist' ? 'selected' : '' %>>Receptionist</option>
                         <option value="doctor" <%= locals.roleFilter === 'doctor' ? 'selected' : '' %>>Doctor</option>
@@ -208,8 +211,10 @@
                                     <td><%= user.username %></td>
                                     <td><%= user.email %></td>
                                     <td>
-                                        <% if (user.role === 'admin') { %>
-                                            <span class="badge bg-primary">Admin</span>
+                                        <% if (user.role === 'softadmin') { %>
+                                            <span class="badge bg-primary">Soft Admin</span>
+                                        <% } else if (user.role === 'admin') { %>
+                                            <span class="badge bg-success">admin</span>
                                         <% } else if (user.role === 'doctor') { %>
                                             <span class="badge bg-success">Doctor</span>
                                         <% } else if (user.role === 'laboratorist') { %>

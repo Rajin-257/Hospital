@@ -19,7 +19,7 @@ exports.getReportsDashboard = async (req, res) => {
     
     // For admin users, all features are visible regardless of permission settings
     let visibleFeatures;
-    if (userRole === 'admin') {
+    if (userRole === 'softadmin') {
       visibleFeatures = {
         billingReports: true,
         patientReports: true,

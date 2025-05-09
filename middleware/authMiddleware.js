@@ -45,7 +45,7 @@ exports.isAuth = async (req, res, next) => {
 
 // Admin authorization middleware
 exports.isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
+  if (req.user && req.user.role === 'softadmin') {
     next();
   } else {
     return res.status(403).render('error', {

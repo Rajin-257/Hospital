@@ -1,5 +1,6 @@
 <%- include('partials/header') %>
 <%- include('partials/navbar') %>
+<%- include('partials/date-formatter') %>
 
 <style>
     /* Remove Roboto Mono import and replace with system Arial */
@@ -143,7 +144,7 @@
     }
     
     .signature-subtitle {
-        font-size: 10px !important;
+        font-size: 16px !important;
     }
     
     /* Totals section */
@@ -524,7 +525,7 @@
     }
     
     .signature-subtitle {
-        font-size: 12px;
+        font-size: 16px;
         color: #666;
         margin: 0;
         line-height: 1;
@@ -658,7 +659,21 @@
     </div>
 </div>
 
-<% 
+<%
+// Date formatting helper function
+function formatDate(date) {
+    if (!date) return 'N/A';
+    
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = d.toLocaleString('en-US', { month: 'short' });
+    const year = d.getFullYear().toString().slice(-2);
+    
+    return `${day}-${month}-${year}`;
+}
+
 const items = JSON.parse(billing.items);
 const appointments = items.filter(item => item.type === 'appointment');
 const cabins = items.filter(item => item.type === 'cabin');
@@ -687,7 +702,7 @@ function calculateAge(dateOfBirth) {
         months += 12;
     }
     
-    return `${years} years, ${months} months, ${days} days`;
+    return `${years} Y, ${months} M, ${days} D`;
 }
 
 // Function to format amounts - removes decimal for print, keeps for screen
@@ -695,10 +710,6 @@ function formatAmount(amount) {
     // When printing, show without decimal places
     return `<span class="print-no-decimal">Tk ${Math.round(parseFloat(amount))}</span><span class="no-print">Tk ${parseFloat(amount).toFixed(2)}</span>`;
 }
-
-// Get today's date for print date
-const today = new Date();
-const printDate = today.toLocaleDateString();
 %>
 
 <div class="print-invoice">
@@ -772,9 +783,9 @@ const printDate = today.toLocaleDateString();
             <td style="width: 50%;">
                 <div class="info-label">Invoice Details</div>
                 <div class="info-value">Invoice #: <%= billing.billNumber %></div>
-                <div class="info-value">Billing Date: <%= new Date(billing.billDate).toLocaleDateString() %></div>
+                <div class="info-value">Billing Date: <%= formatDate(billing.billDate) %></div>
                 <% if (billing.billdelivaridate) { %>
-                <div class="info-value">Delivery Date: <%= new Date(billing.billdelivaridate).toLocaleDateString() %></div>
+                <div class="info-value">Delivery Date: <%= formatDate(billing.billdelivaridate) %></div>
                 <% } %>
                 <% if (billing.referringDoctor) { %>
                 <div class="info-value">Ref: <%= billing.referringDoctor.replace(/[()]/g, '') %></div>
@@ -883,7 +894,7 @@ const printDate = today.toLocaleDateString();
                                 try {
                                     const deliveryDate = new Date(item.deliveryDate);
                                     if (!isNaN(deliveryDate.getTime())) { %>
-                                        <%= deliveryDate.toLocaleDateString() %>
+                                        <%= formatDate(deliveryDate) %>
                                     <% } else { %>
                                         N/A
                                     <% }
@@ -919,7 +930,7 @@ const printDate = today.toLocaleDateString();
                         try {
                             const deliveryDate = new Date(test.deliveryDate);
                             if (!isNaN(deliveryDate.getTime())) { %>
-                                - Expected delivery on <%= deliveryDate.toLocaleDateString() %>
+                                - Expected delivery on <%= formatDate(deliveryDate) %>
                             <% }
                         } catch(e) { /* Ignore date errors */ }
                     } %>
@@ -1008,7 +1019,7 @@ const printDate = today.toLocaleDateString();
     </div>
     
     <div class="invoice-footer">
-        Thank you for choosing our services | Printed on: <%= new Date().toLocaleDateString() %> <%= new Date().toLocaleTimeString() %>
+        Thank you for choosing our services | Printed on: <%= formatDate(new Date()) %> <%= new Date().toLocaleTimeString() %>
     </div>
 </div>
 

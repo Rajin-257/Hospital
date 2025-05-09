@@ -2,13 +2,15 @@ const express = require('express');
 const router = express.Router();
 const reportController = require('../controllers/reportController');
 const { protect } = require('../middleware/auth');
-const { getFeaturePermissions, checkFeatureAccess } = require('../middleware/featurePermission');
+const { getFeaturePermissions, checkFeatureAccess, checkAnyFeatureAccess } = require('../middleware/featurePermission');
 
 // Apply feature permissions middleware to all report routes
 router.use(protect, getFeaturePermissions);
 
 // Reports dashboard - accessible based on permissions
-router.get('/', reportController.getReportsDashboard);
+router.get('/', checkAnyFeatureAccess(['Billing Reports', 'Patient Reports', 'Appointment Reports', 'Test Reports']), 
+  reportController.getReportsDashboard
+);
 
 // API routes for report data
 // Patient statistics
@@ -36,7 +38,7 @@ router.get('/due-invoice-stats', checkFeatureAccess('Billing Reports'), reportCo
 router.get('/cabin-stats', checkFeatureAccess('Billing Reports'), reportController.getCabinStats);
 
 // Commission statistics
-router.get('/commission-stats', checkFeatureAccess('Tests'), reportController.getCommissionStats);
+router.get('/commission-stats', checkFeatureAccess('Commission Reports'), reportController.getCommissionStats);
 
 // Get all billing records
 router.get('/all-billings', checkFeatureAccess('Billing Reports'), reportController.getAllBillingRecordsApi);
@@ -59,4 +61,4 @@ router.get('/billing', checkFeatureAccess('Billing Reports'), reportController.r
 router.get('/billing/all', checkFeatureAccess('Billing Reports'), reportController.getAllBillingRecords);
 router.get('/billing/due', checkFeatureAccess('Billing Reports'), reportController.getDuePaymentBills);
 
-module.exports = router; 
+module.exports = router;

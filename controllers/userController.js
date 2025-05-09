@@ -9,9 +9,20 @@ exports.getAllUsers = async (req, res) => {
     // Define where conditions for search and filters
     const whereConditions = {};
     
+    // Hide softadmin users from non-softadmins
+    // Only softadmin users can see other softadmin users
+    if (req.user.role !== 'softadmin') {
+      whereConditions.role = { [Op.ne]: 'softadmin' };
+    }
+    
     // Apply role filter if provided and not 'all'
     if (roleFilter && roleFilter !== 'all') {
-      whereConditions.role = roleFilter;
+      // If user is not softadmin and tries to filter for softadmin, ignore it
+      if (roleFilter === 'softadmin' && req.user.role !== 'softadmin') {
+        // Just keep the existing condition that prevents showing softadmins
+      } else {
+        whereConditions.role = roleFilter;
+      }
     }
     
     // Apply status filter if provided and not 'all'
@@ -21,10 +32,20 @@ exports.getAllUsers = async (req, res) => {
     
     // Apply search filter if provided
     if (search) {
-      whereConditions[Op.or] = [
+      // Create search conditions
+      const searchConditions = [
         { username: { [Op.like]: `%${search}%` } },
         { email: { [Op.like]: `%${search}%` } }
       ];
+      
+      // If there's an existing roleFilter condition
+      if (whereConditions.role) {
+        // Keep the role condition separate from search
+        // This maintains the restriction on softadmin visibility
+      } else {
+        // If no role condition exists, add the search as an OR condition
+        whereConditions[Op.or] = searchConditions;
+      }
     }
     
     const users = await User.findAll({
@@ -61,6 +82,11 @@ exports.getUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
+    // Prevent non-softadmin users from viewing softadmin user details
+    if (user.role === 'softadmin' && req.user.role !== 'softadmin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
       return res.json(user);
     }
@@ -84,6 +110,16 @@ exports.updateUser = async (req, res) => {
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Prevent non-softadmin users from updating softadmin users
+    if (user.role === 'softadmin' && req.user.role !== 'softadmin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    // Prevent users from promoting others to softadmin unless they are softadmin themselves
+    if (role === 'softadmin' && req.user.role !== 'softadmin') {
+      return res.status(403).json({ message: 'You cannot promote users to softadmin' });
     }
     
     // Update user details
@@ -127,6 +163,11 @@ exports.toggleUserStatus = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
+    // Prevent non-softadmin users from toggling softadmin users
+    if (user.role === 'softadmin' && req.user.role !== 'softadmin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
     await user.update({ isActive: !user.isActive });
     
     res.json({
@@ -151,6 +192,11 @@ exports.deleteUser = async (req, res) => {
     // Don't allow deleting yourself
     if (user.id === req.user.id) {
       return res.status(400).json({ message: 'You cannot delete your own account' });
+    }
+    
+    // Prevent non-softadmin users from deleting softadmin users
+    if (user.role === 'softadmin' && req.user.role !== 'softadmin') {
+      return res.status(403).json({ message: 'Access denied' });
     }
     
     await user.destroy();

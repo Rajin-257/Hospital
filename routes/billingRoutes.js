@@ -2,22 +2,22 @@ const express = require('express');
 const router = express.Router();
 const billingController = require('../controllers/billingController');
 const { protect } = require('../middleware/auth');
-const { getFeaturePermissions, checkFeatureAccess } = require('../middleware/featurePermission');
+const { getFeaturePermissions, checkFeatureAccess, checkAnyFeatureAccess } = require('../middleware/featurePermission');
 
 // Apply feature permissions middleware to all billing routes
 router.use(protect, getFeaturePermissions);
 
 // Main billing page
-router.get('/', billingController.renderBillingPage);
+router.get('/', checkFeatureAccess('Billing Management'), billingController.renderBillingPage);
 
 // Create billing - no permission check needed as this is a core function
-router.post('/', billingController.createBilling);
+router.post('/', checkFeatureAccess('Billing Management'), billingController.createBilling);
 
-// Get billing receipt - no permission check needed
-router.get('/receipt/:id', billingController.getBilling);
+// Get billing receipt - accessible to anyone who can access billing
+router.get('/receipt/:id', checkFeatureAccess('Billing Management'), billingController.getBilling);
 
-// Get billings by patient - no permission check needed
-router.get('/patient/:patientId', billingController.getBillingsByPatient);
+// Get billings by patient
+router.get('/patient/:patientId', checkAnyFeatureAccess(['Billing Management', 'Patient Dashboard']), billingController.getBillingsByPatient);
 
 // Get unbilled appointments - for Schedule Appointment feature
 router.get('/patient/:patientId/unbilled-appointments', 
@@ -31,16 +31,16 @@ router.put('/appointments/update-status',
   billingController.updateAppointmentBillingStatus
 );
 
-// Process payment - no permission check needed
-router.put('/:id/payment', billingController.processPayment);
+// Process payment
+router.put('/:id/payment', checkFeatureAccess('Billing Management'), billingController.processPayment);
 
 // Edit billing page route
-router.get('/edit/:id', billingController.editBillingPage);
+router.get('/edit/:id', checkFeatureAccess('Billing Management'), billingController.editBillingPage);
 
 // Update billing route
-router.put('/:id', billingController.updateBilling);
+router.put('/:id', checkFeatureAccess('Billing Management'), billingController.updateBilling);
 
 // Delete billing route
-router.delete('/:id', billingController.deleteBilling);
+router.delete('/:id', checkFeatureAccess('Billing Management'), billingController.deleteBilling);
 
 module.exports = router;

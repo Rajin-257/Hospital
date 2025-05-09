@@ -1,13 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
-const { getFeaturePermissions } = require('../middleware/featurePermission');
+const { checkFeatureAccess } = require('../middleware/featurePermission');
 
-// Apply middleware to protect all dashboard routes
-router.use(protect, getFeaturePermissions);
-
-// Main dashboard route
-router.get('/', (req, res) => {
+// Main dashboard route - accessible to all authenticated users with Dashboard permission
+router.get('/', checkFeatureAccess('Dashboard'), (req, res) => {
   // Set title and user information
   res.render('dashboard', {
     title: 'Dashboard',
@@ -16,4 +12,4 @@ router.get('/', (req, res) => {
   });
 });
 
-module.exports = router; 
+module.exports = router;

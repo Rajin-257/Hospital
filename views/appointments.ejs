@@ -1,13 +1,16 @@
 <%- include('partials/header') %>
 <%- include('partials/navbar') %>
+<%- include('partials/date-formatter') %>
 
 <div class="container-fluid py-4">
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Appointments</h5>
+            <% if (locals.isFeatureVisible('Schedule Appointment')) { %>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAppointmentModal">
                 <i class="fas fa-plus me-1"></i> New Appointment
             </button>
+            <% } %>
         </div>
         <div class="card-body">
             <div class="mb-3">
@@ -35,7 +38,7 @@
                             <tr>
                                 <td><%= appointment.Patient.name %> (<%= appointment.Patient.patientId %>)</td>
                                 <td>Dr. <%= appointment.Doctor.name %></td>
-                                <td><%= new Date(appointment.appointmentDate).toLocaleDateString() %></td>
+                                <td><%= formatDate(appointment.appointmentDate) %></td>
                                 <td><%= appointment.appointmentTime.substring(0, 5) %></td>
                                 <td>
                                     <% if(appointment.status === 'scheduled') { %>
@@ -175,142 +178,134 @@
 </div>
 
 <script>
-    $(document).ready(function() {
-        // Initialize Select2
-        initializeSelects();
-        
-        // Filter appointments by date
-        $('#filter-btn').on('click', function() {
-            const date = $('#appointment-date-filter').val();
-            if (date) {
-                $.ajax({
-                    url: `/appointments/date/${date}`,
-                    type: 'GET',
-                    success: function(appointments) {
-                        let html = '';
-                        appointments.forEach(appointment => {
-                            let statusBadge = '';
-                            if (appointment.status === 'scheduled') {
-                                statusBadge = '<span class="badge bg-info">Scheduled</span>';
-                            } else if (appointment.status === 'completed') {
-                                statusBadge = '<span class="badge bg-success">Completed</span>';
-                            } else {
-                                statusBadge = '<span class="badge bg-danger">Cancelled</span>';
-                            }
-                            
-                            let actionButtons = `
-                                <button class="btn btn-sm btn-info view-appointment" data-id="${appointment.id}">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            `;
-                            
-                            if (appointment.status === 'scheduled') {
-                                actionButtons += `
-                                    <button class="btn btn-sm btn-success update-status" data-id="${appointment.id}" data-status="completed">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-danger update-status" data-id="${appointment.id}" data-status="cancelled">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                `;
-                            }
-                            
-                            actionButtons += `
-                                <button class="btn btn-sm btn-danger btn-delete" data-url="/appointments/${appointment.id}" data-name="appointment">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            `;
-                            
-                            html += `
-                                <tr>
-                                    <td>${appointment.Patient.name} (${appointment.Patient.patientId})</td>
-                                    <td>Dr. ${appointment.Doctor.name}</td>
-                                    <td>${new Date(appointment.appointmentDate).toLocaleDateString()}</td>
-                                    <td>${appointment.appointmentTime.substring(0, 5)}</td>
-                                    <td>${statusBadge}</td>
-                                    <td>${actionButtons}</td>
-                                </tr>
-                            `;
-                        });
-                        
-                        if (html === '') {
-                            html = '<tr><td colspan="6" class="text-center">No appointments found for this date</td></tr>';
+$(document).ready(function() {
+    // Initialize Select2
+    initializeSelects();
+    
+    // Filter appointments by date
+    $('#filter-btn').on('click', function() {
+        const date = $('#appointment-date-filter').val();
+        if (date) {
+            $.ajax({
+                url: `/appointments/date/${date}`,
+                type: 'GET',
+                success: function(appointments) {
+                    let html = '';
+                    
+                    // Check if permission buttons already exist in the page
+                    const hasManagementButtons = $('.update-status').length > 0;
+                    
+                    appointments.forEach(function(appointment) {
+                        let statusBadge;
+                        if (appointment.status === 'scheduled') {
+                            statusBadge = '<span class="badge bg-info">Scheduled</span>';
+                        } else if (appointment.status === 'completed') {
+                            statusBadge = '<span class="badge bg-success">Completed</span>';
+                        } else {
+                            statusBadge = '<span class="badge bg-danger">Cancelled</span>';
                         }
                         
-                        $('#appointment-list').html(html);
-                    },
-                    error: function(error) {
-                        showToast('Error fetching appointments', 'error');
+                        let row = '<tr>';
+                        row += '<td>' + appointment.Patient.name + ' (' + appointment.Patient.patientId + ')</td>';
+                        row += '<td>Dr. ' + appointment.Doctor.name + '</td>';
+                        row += '<td>' + formatDate(appointment.appointmentDate) + '</td>';
+                        row += '<td>' + appointment.appointmentTime.substring(0, 5) + '</td>';
+                        row += '<td>' + statusBadge + '</td>';
+                        row += '<td>';
+                        row += '<button class="btn btn-sm btn-info view-appointment" data-id="' + appointment.id + '"><i class="fas fa-eye"></i></button>';
+                        
+                        if (hasManagementButtons) {
+                            if (appointment.status === 'scheduled') {
+                                row += '<button class="btn btn-sm btn-success update-status" data-id="' + appointment.id + '" data-status="completed"><i class="fas fa-check"></i></button>';
+                                row += '<button class="btn btn-sm btn-danger update-status" data-id="' + appointment.id + '" data-status="cancelled"><i class="fas fa-times"></i></button>';
+                            }
+                            
+                            row += '<button class="btn btn-sm btn-danger btn-delete" data-url="/appointments/' + appointment.id + '" data-name="appointment"><i class="fas fa-trash-alt"></i></button>';
+                        }
+                        
+                        row += '</td>';
+                        row += '</tr>';
+                        
+                        html += row;
+                    });
+                    
+                    if (html === '') {
+                        html = '<tr><td colspan="6" class="text-center">No appointments found for this date</td></tr>';
                     }
-                });
+                    
+                    $('#appointment-list').html(html);
+                },
+                error: function(error) {
+                    showToast('Error fetching appointments', 'error');
+                }
+            });
+        }
+    });
+    
+    // Add appointment
+    $('#appointment-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: '/appointments',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                $('#addAppointmentModal').modal('hide');
+                showToast('Appointment scheduled successfully');
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1000);
+            },
+            error: function(error) {
+                showToast('Error: ' + (error.responseJSON ? error.responseJSON.message : 'Could not schedule appointment'), 'error');
             }
         });
+    });
+    
+    // Update appointment status
+    $(document).on('click', '.update-status', function() {
+        const appointmentId = $(this).data('id');
+        const status = $(this).data('status');
         
-        // Add appointment
-        $('#appointment-form').on('submit', function(e) {
-            e.preventDefault();
-            
-            $.ajax({
-                url: '/appointments',
-                type: 'POST',
-                data: $(this).serialize(),
-                success: function(response) {
-                    $('#addAppointmentModal').modal('hide');
-                    showToast('Appointment scheduled successfully');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                },
-                error: function(error) {
-                    showToast('Error: ' + (error.responseJSON?.message || 'Could not schedule appointment'), 'error');
-                }
-            });
-        });
-        
-        // Update appointment status
-        $(document).on('click', '.update-status', function() {
-            const appointmentId = $(this).data('id');
-            const status = $(this).data('status');
-            
-            $.ajax({
-                url: `/appointments/${appointmentId}/status`,
-                type: 'PUT',
-                data: { status },
-                success: function(response) {
-                    showToast(`Appointment marked as ${status}`);
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                },
-                error: function(error) {
-                    showToast('Error updating appointment status', 'error');
-                }
-            });
-        });
-        
-        // View appointment
-        $(document).on('click', '.view-appointment', function() {
-            const appointmentId = $(this).data('id');
-            
-            // In a real application, you would fetch the appointment details
-            // For now, we'll use the data available in the page
-            const row = $(this).closest('tr');
-            const patient = row.find('td:eq(0)').text();
-            const doctor = row.find('td:eq(1)').text();
-            const date = row.find('td:eq(2)').text();
-            const time = row.find('td:eq(3)').text();
-            const status = row.find('td:eq(4)').html();
-            
-            $('#view-appointment-patient').text(patient);
-            $('#view-appointment-doctor').text(doctor);
-            $('#view-appointment-date').text(date);
-            $('#view-appointment-time').text(time);
-            $('#view-appointment-status').html(status);
-            $('#view-appointment-remarks').text('No remarks available'); // In a real app, fetch this from the server
-            
-            $('#viewAppointmentModal').modal('show');
+        $.ajax({
+            url: `/appointments/${appointmentId}/status`,
+            type: 'PUT',
+            data: { status: status },
+            success: function(response) {
+                showToast(`Appointment marked as ${status}`);
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1000);
+            },
+            error: function(error) {
+                showToast('Error updating appointment status', 'error');
+            }
         });
     });
+    
+    // View appointment
+    $(document).on('click', '.view-appointment', function() {
+        const appointmentId = $(this).data('id');
+        
+        // Get data from the row
+        const row = $(this).closest('tr');
+        const patient = row.find('td:eq(0)').text();
+        const doctor = row.find('td:eq(1)').text();
+        const date = row.find('td:eq(2)').text();
+        const time = row.find('td:eq(3)').text();
+        const status = row.find('td:eq(4)').html();
+        
+        $('#view-appointment-patient').text(patient);
+        $('#view-appointment-doctor').text(doctor);
+        $('#view-appointment-date').text(date);
+        $('#view-appointment-time').text(time);
+        $('#view-appointment-status').html(status);
+        $('#view-appointment-remarks').text('No remarks available');
+        
+        $('#viewAppointmentModal').modal('show');
+    });
+});
 </script>
 
 <%- include('partials/footer') %>

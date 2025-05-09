@@ -1,18 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { 
-  getSettings, 
-  updateSettings, 
-  getFeaturePermissions, 
-  updateFeaturePermission,
-  batchUpdatePermissions,
-  importTestData
-} = require('../controllers/settingController');
-const { isAuth, isAdmin } = require('../middleware/authMiddleware');
+const settingController = require('../controllers/settingController');
+const { protect, authorize } = require('../middleware/auth');
+const { getFeaturePermissions, checkFeatureAccess } = require('../middleware/featurePermission');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { importFeaturePermissions } = require('../scripts/featureData');
+
+// Apply feature permissions middleware
+router.use(protect, getFeaturePermissions);
 
 // Set up multer storage for favicon uploads
 const storage = multer.diskStorage({
@@ -51,34 +47,22 @@ const upload = multer({
   limits: { fileSize: 1024 * 1024 } // 1MB file size limit
 });
 
-// Get settings page - only admin can access
-router.get('/', isAuth, isAdmin, getSettings);
+// Get settings page - admin/softadmin can access with General Settings permission
+router.get('/', checkFeatureAccess('General Settings'), settingController.getSettings);
 
-// Update settings - only admin can update
-router.post('/', isAuth, isAdmin, upload.single('favicon'), updateSettings);
+// Update settings - admin/softadmin can update with General Settings permission
+router.post('/', checkFeatureAccess('General Settings'), upload.single('favicon'), settingController.updateSettings);
 
-// Feature permission endpoints
-router.get('/permissions', isAuth, isAdmin, getFeaturePermissions);
-router.get('/permissions/:moduleName', isAuth, isAdmin, getFeaturePermissions);
-router.put('/permissions/:id', isAuth, isAdmin, updateFeaturePermission);
-router.put('/permissions', isAuth, isAdmin, batchUpdatePermissions);
+// Feature permission endpoints - only softadmin can access
+router.get('/permissions', checkFeatureAccess('Permission Management'), settingController.getFeaturePermissions);
+router.get('/permissions/:moduleName', checkFeatureAccess('Permission Management'), settingController.getFeaturePermissions);
+router.put('/permissions/:id', checkFeatureAccess('Permission Management'), settingController.updateFeaturePermission);
+router.put('/permissions', checkFeatureAccess('Permission Management'), settingController.batchUpdatePermissions);
 
-// Import test data endpoint
-router.post('/import-test-data', isAuth, isAdmin, importTestData);
+// Import test data endpoint - restricted to admin/softadmin with General Settings permission
+router.post('/import-test-data', checkFeatureAccess('General Settings'), settingController.importTestData);
 
-// Import feature permissions
-router.post('/import-feature-permissions', async (req, res) => {
-    try {
-        const success = await importFeaturePermissions();
-        if (success) {
-            res.json({ success: true, message: 'Feature permissions imported successfully' });
-        } else {
-            res.status(500).json({ success: false, message: 'Failed to import feature permissions' });
-        }
-    } catch (error) {
-        console.error('Error importing feature permissions:', error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
+// Import feature permissions - only softadmin can access
+router.post('/import-feature-permissions', checkFeatureAccess('Permission Management'), settingController.importFeaturePermissions);
 
-module.exports = router; 
+module.exports = router;

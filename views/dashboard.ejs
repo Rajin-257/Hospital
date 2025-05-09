@@ -127,6 +127,7 @@
     </div>
     
     <!-- Quick Access Cards -->
+    <% if (locals.isFeatureVisible('Billing')) { %>
     <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
       <a href="/billing" class="text-decoration-none">
         <div class="card text-center border-0 shadow-sm hover-card py-3">
@@ -142,7 +143,9 @@
         </div>
       </a>
     </div>
+    <% } %>
     
+    <% if (locals.isFeatureVisible('Patients')) { %>
     <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
       <a href="/patients" class="text-decoration-none">
         <div class="card text-center border-0 shadow-sm hover-card py-3">
@@ -158,7 +161,9 @@
         </div>
       </a>
     </div>
+    <% } %>
     
+    <% if (locals.isFeatureVisible('Appointments')) { %>
     <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
       <a href="/appointments" class="text-decoration-none">
         <div class="card text-center border-0 shadow-sm hover-card py-3">
@@ -174,7 +179,9 @@
         </div>
       </a>
     </div>
+    <% } %>
     
+    <% if (locals.isFeatureVisible('Tests')) { %>
     <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
       <a href="/tests" class="text-decoration-none">
         <div class="card text-center border-0 shadow-sm hover-card py-3">
@@ -190,7 +197,9 @@
         </div>
       </a>
     </div>
+    <% } %>
     
+    <% if (locals.isFeatureVisible('Cabins')) { %>
     <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
       <a href="/cabins" class="text-decoration-none">
         <div class="card text-center border-0 shadow-sm hover-card py-3">
@@ -200,28 +209,31 @@
             </div>
             <div class="text-start">
               <h6 class="card-title mb-0">Cabins</h6>
-              <p class="text-muted small mb-0">Room bookings</p>
+              <p class="text-muted small mb-0">Room management</p>
             </div>
           </div>
         </div>
       </a>
     </div>
+    <% } %>
     
+    <% if (locals.isFeatureVisible('Reports')) { %>
     <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
       <a href="/reports" class="text-decoration-none">
         <div class="card text-center border-0 shadow-sm hover-card py-3">
           <div class="card-body d-flex align-items-center">
             <div class="rounded-circle bg-light p-3 me-3">
-              <i class="fas fa-chart-bar fa-lg text-secondary"></i>
+              <i class="fas fa-chart-bar fa-lg text-purple"></i>
             </div>
             <div class="text-start">
               <h6 class="card-title mb-0">Reports</h6>
-              <p class="text-muted small mb-0">View analytics</p>
+              <p class="text-muted small mb-0">View statistics</p>
             </div>
           </div>
         </div>
       </a>
     </div>
+    <% } %>
   </div>
   
   <!-- Bottom Row - Split Between Charts and Recent Invoices -->
