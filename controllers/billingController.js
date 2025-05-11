@@ -152,16 +152,35 @@ exports.createBilling = async (req, res) => {
     
     // Update appointment status
     if (appointmentIds) {
-      // Ensure appointmentIds is an array
-      const appointmentIdsArray = Array.isArray(appointmentIds) ? appointmentIds : 
-                                 (typeof appointmentIds === 'string' ? [appointmentIds] : []);
+      // Ensure appointmentIds is an array and properly parse JSON if needed
+      let appointmentIdsArray;
+      try {
+        if (typeof appointmentIds === 'string') {
+          appointmentIdsArray = JSON.parse(appointmentIds);
+        } else if (Array.isArray(appointmentIds)) {
+          appointmentIdsArray = appointmentIds;
+        } else {
+          appointmentIdsArray = [];
+        }
+      } catch (err) {
+        console.error('Error parsing appointment IDs:', err);
+        appointmentIdsArray = [];
+      }
       
       if (appointmentIdsArray.length > 0) {
         await Promise.all(appointmentIdsArray.map(async (id) => {
           try {
             const appointmentId = parseInt(id);
             if (!isNaN(appointmentId)) {
-              await updateAppointmentStatus(appointmentId, 'completed');
+              await Appointment.update(
+                {
+                  status: 'completed',
+                  billingStatus: 'billed'
+                },
+                {
+                  where: { id: appointmentId }
+                }
+              );
             }
           } catch (err) {
             console.error(`Error updating appointment ${id}:`, err);
@@ -172,18 +191,34 @@ exports.createBilling = async (req, res) => {
     
     // Update cabin booking status
     if (cabinBookingIds) {
-      // Ensure cabinBookingIds is an array
-      const cabinBookingIdsArray = Array.isArray(cabinBookingIds) ? cabinBookingIds : 
-                                  (typeof cabinBookingIds === 'string' ? [cabinBookingIds] : []);
+      // Ensure cabinBookingIds is an array and properly parse JSON if needed
+      let cabinBookingIdsArray;
+      try {
+        if (typeof cabinBookingIds === 'string') {
+          cabinBookingIdsArray = JSON.parse(cabinBookingIds);
+        } else if (Array.isArray(cabinBookingIds)) {
+          cabinBookingIdsArray = cabinBookingIds;
+        } else {
+          cabinBookingIdsArray = [];
+        }
+      } catch (err) {
+        console.error('Error parsing cabin booking IDs:', err);
+        cabinBookingIdsArray = [];
+      }
       
       if (cabinBookingIdsArray.length > 0) {
         await Promise.all(cabinBookingIdsArray.map(async (id) => {
           try {
             const cabinBookingId = parseInt(id);
             if (!isNaN(cabinBookingId)) {
-              // Here you would call a function to update cabin booking status
-              // This depends on how cabin bookings are managed in your system
-              // For example: await updateCabinBookingStatus(cabinBookingId, 'billed');
+              await CabinBooking.update(
+                {
+                  billingStatus: 'billed'
+                },
+                {
+                  where: { id: cabinBookingId }
+                }
+              );
             }
           } catch (err) {
             console.error(`Error updating cabin booking ${id}:`, err);
