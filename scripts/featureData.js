@@ -299,12 +299,6 @@ const featurePermissions = [
     },
     {
         moduleName: 'Marketing',
-        featureName: 'Referral Dashboard',
-        isVisible: true,
-        roles: ['softadmin', 'admin', 'marketing']
-    },
-    {
-        moduleName: 'Marketing',
         featureName: 'Commission Reports',
         isVisible: true,
         roles: ['softadmin', 'admin', 'marketing']

@@ -139,22 +139,8 @@
                     <ul class="dropdown-menu" aria-labelledby="marketingDropdown">
                         <% if (locals.isFeatureVisible('Doctor Commissions')) { %>
                         <li>
-                            <a class="dropdown-item <%= title === 'Doctor Commissions' ? 'active' : '' %>" href="/marketing/commissions">
+                            <a class="dropdown-item <%= title === 'Doctor Commissions' ? 'active' : '' %>" href="/commissions">
                                 <i class="fas fa-percentage me-1"></i>Doctor Commissions
-                            </a>
-                        </li>
-                        <% } %>
-                        <% if (locals.isFeatureVisible('Referral Dashboard')) { %>
-                        <li>
-                            <a class="dropdown-item <%= title === 'Referral Dashboard' ? 'active' : '' %>" href="/marketing/dashboard">
-                                <i class="fas fa-users me-1"></i>Referral Dashboard
-                            </a>
-                        </li>
-                        <% } %>
-                        <% if (locals.isFeatureVisible('Commission Reports')) { %>
-                        <li>
-                            <a class="dropdown-item <%= title === 'Commission Reports' ? 'active' : '' %>" href="/marketing/reports">
-                                <i class="fas fa-file-invoice-dollar me-1"></i>Commission Reports
                             </a>
                         </li>
                         <% } %>
