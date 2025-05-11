@@ -164,6 +164,7 @@ exports.getBillingStats = async (req, res) => {
     // Get total revenue
     const billings = await Billing.findAll();
     const totalRevenue = billings.reduce((sum, bill) => sum + Number(bill.totalAmount), 0);
+    const totalNet = billings.reduce((sum, bill) => sum + Number(bill.netPayable), 0);
     
     // Get due amount
     const dueAmount = billings.reduce((sum, bill) => sum + Number(bill.dueAmount), 0);
@@ -184,12 +185,15 @@ exports.getBillingStats = async (req, res) => {
     });
     
     const todayRevenue = todayBillings.reduce((sum, bill) => sum + Number(bill.totalAmount), 0);
+    const todayNet = todayBillings.reduce((sum, bill) => sum + Number(bill.netPayable), 0);
     const todayCount = todayBillings.length;
     
     res.json({
       totalRevenue,
+      totalNet,
       dueAmount,
       todayRevenue,
+      todayNet,
       todayCount
     });
   } catch (error) {
@@ -284,11 +288,13 @@ exports.getDailyBillingStats = async (req, res) => {
           }
         });
         
-        const amount = billings.reduce((sum, bill) => sum + Number(bill.totalAmount), 0);
+        const amount = billings.reduce((sum, bill) => sum + Number(bill.netPayable), 0);
+        const dueAmount = billings.reduce((sum, bill) => sum + Number(bill.dueAmount), 0);
         
         return {
           date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          amount
+          amount,
+          dueAmount
         };
       })
     );

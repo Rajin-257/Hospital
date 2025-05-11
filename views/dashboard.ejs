@@ -45,7 +45,7 @@
           <h5 class="card-title text-success fw-bold">Financial Overview</h5>
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-              <h6 class="mb-1 text-muted">Total Revenue</h6>
+              <h6 class="mb-1 text-muted">Total Revenue (Discounted)</h6>
               <h4 id="totalRevenue" class="mb-0 fw-bold">-</h4>
             </div>
             <div class="bg-light rounded-circle p-3">
@@ -243,7 +243,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-header bg-white">
           <div class="d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Revenue Trend</h5>
+            <h5 class="mb-0">Revenue & Due Amount Trend</h5>
             <div>
               <button class="btn btn-sm btn-primary" id="weeklyBtn">Weekly</button>
               <button class="btn btn-sm btn-outline-secondary" id="monthlyBtn">Monthly</button>
@@ -305,8 +305,8 @@ function fetchDashboardData() {
   fetch('/reports/billing-stats')
     .then(response => response.json())
     .then(data => {
-      document.getElementById('totalRevenue').textContent = formatCurrency(data.totalRevenue || 0);
-      document.getElementById('todayRevenue').textContent = formatCurrency(data.todayRevenue || 0);
+      document.getElementById('totalRevenue').textContent = formatCurrency(data.totalNet || 0);
+      document.getElementById('todayRevenue').textContent = formatCurrency(data.todayNet || 0);
       document.getElementById('dueAmount').textContent = formatCurrency(data.dueAmount || 0);
     })
     .catch(error => console.error('Error fetching billing stats:', error));
@@ -404,30 +404,59 @@ function setupRevenueChart() {
     type: 'line',
     data: {
       labels: [],
-      datasets: [{
-        label: 'Daily Revenue',
-        data: [],
-        borderColor: '#4361ee',
-        backgroundColor: 'rgba(67, 97, 238, 0.1)',
-        borderWidth: 3,
-        tension: 0.4,
-        fill: true,
-        pointBackgroundColor: '#ffffff',
-        pointBorderColor: '#4361ee',
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        pointHoverBackgroundColor: '#ffffff',
-        pointHoverBorderColor: '#4361ee',
-        pointHoverBorderWidth: 3
-      }]
+      datasets: [
+        {
+          label: 'Revenue',
+          data: [],
+          borderColor: '#4361ee',
+          backgroundColor: 'rgba(67, 97, 238, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#4361ee',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#ffffff',
+          pointHoverBorderColor: '#4361ee',
+          pointHoverBorderWidth: 3,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Due Amount',
+          data: [],
+          borderColor: '#ff6b6b',
+          backgroundColor: 'rgba(255, 107, 107, 0.1)',
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#ff6b6b',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#ffffff',
+          pointHoverBorderColor: '#ff6b6b',
+          pointHoverBorderWidth: 3,
+          yAxisID: 'y'
+        }
+      ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false
+          display: true,
+          position: 'top',
+          labels: {
+            boxWidth: 12,
+            padding: 20,
+            font: {
+              family: 'Poppins, sans-serif'
+            }
+          }
         },
         tooltip: {
           backgroundColor: '#ffffff',
@@ -446,7 +475,7 @@ function setupRevenueChart() {
           borderWidth: 1,
           callbacks: {
             label: function(context) {
-              return formatCurrency(context.raw);
+              return context.dataset.label + ': ' + formatCurrency(context.raw);
             }
           }
         }
@@ -503,10 +532,12 @@ function updateChartData(period) {
     .then(response => response.json())
     .then(data => {
       const labels = data.stats.map(item => item.date);
-      const values = data.stats.map(item => item.amount);
+      const revenueValues = data.stats.map(item => item.amount);
+      const dueValues = data.stats.map(item => item.dueAmount);
       
       window.revenueChart.data.labels = labels;
-      window.revenueChart.data.datasets[0].data = values;
+      window.revenueChart.data.datasets[0].data = revenueValues;
+      window.revenueChart.data.datasets[1].data = dueValues;
       window.revenueChart.update();
     })
     .catch(error => console.error('Error fetching chart data:', error));
