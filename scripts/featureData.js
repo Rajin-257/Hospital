@@ -211,7 +211,7 @@ const featurePermissions = [
         moduleName: 'Cabins',
         featureName: 'Cabin Management',
         isVisible: true,
-        roles: ['softadmin', 'admin']
+        roles: ['softadmin', 'admin','receptionist']
     },
     {
         moduleName: 'Cabins',

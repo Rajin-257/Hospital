@@ -1384,7 +1384,7 @@
             const formData = $(this).serialize() + '&role=marketing';
             
             $.ajax({
-                url: '/register',
+                url: '/billing/marketing-manager',
                 type: 'POST',
                 data: formData,
                 success: function(response) {
@@ -1534,7 +1534,7 @@
             e.preventDefault();
             
             $.ajax({
-                url: '/doctors',
+                url: '/billing/doctor',
                 type: 'POST',
                 data: $(this).serialize(),
                 success: function(response) {

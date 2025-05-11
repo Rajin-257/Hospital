@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const billingController = require('../controllers/billingController');
+const doctorController = require('../controllers/doctorController');
+const authController = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { getFeaturePermissions, checkFeatureAccess, checkAnyFeatureAccess } = require('../middleware/featurePermission');
 
@@ -42,5 +44,14 @@ router.put('/:id', checkFeatureAccess('Billing Management'), billingController.u
 
 // Delete billing route
 router.delete('/:id', checkFeatureAccess('Billing Management'), billingController.deleteBilling);
+
+// Special routes for doctor and marketing manager creation from billing page
+// These bypass the normal permission checks for these operations
+router.post('/doctor', protect, doctorController.createDoctor);
+router.post('/marketing-manager', protect, (req, res) => {
+  // Ensure the role is set to marketing
+  req.body.role = 'marketing';
+  authController.register(req, res);
+});
 
 module.exports = router;
