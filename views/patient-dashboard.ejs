@@ -154,9 +154,6 @@ function formatDate(date) {
                 <div class="tab-pane fade" id="tests" role="tabpanel" aria-labelledby="tests-tab">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0">Test Requests</h6>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestTestModal">
-                            <i class="fas fa-plus me-1"></i> Request New Test
-                        </button>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover">
@@ -169,7 +166,6 @@ function formatDate(date) {
                                     <th>Delivery Option</th>
                                     <th>Delivery Date</th>
                                     <th>Result</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="test-list">
@@ -188,17 +184,12 @@ function formatDate(date) {
                                             <td><%= test.deliveryDate ? formatDate(test.deliveryDate) : 'N/A' %></td>
                                             <td>
                                                 <% if (test.status === 'Completed') { %>
-                                                    <a href="/tests/request/<%= test.id %>/result" class="btn btn-sm btn-outline-primary">
+                                                    <a href="/tests/results/<%= test.id %>" class="btn btn-sm btn-outline-primary">
                                                         <i class="fas fa-file-medical me-1"></i> View
                                                     </a>
                                                 <% } else { %>
                                                     -
                                                 <% } %>
-                                            </td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info view-test" data-id="<%= test.id %>">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
                                             </td>
                                         </tr>
                                     <% }); %>
@@ -223,10 +214,8 @@ function formatDate(date) {
                                 <tr>
                                     <th>Appointment ID</th>
                                     <th>Doctor</th>
-                                    <th>Department</th>
                                     <th>Date & Time</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="appointment-list">
@@ -235,17 +224,11 @@ function formatDate(date) {
                                         <tr>
                                             <td><%= appointment.appointmentId %></td>
                                             <td><%= appointment.doctorName %></td>
-                                            <td><%= appointment.department %></td>
                                             <td><%= new Date(appointment.appointmentDateTime).toLocaleString() %></td>
                                             <td>
                                                 <span class="badge bg-<%= appointment.status === 'completed' ? 'success' : (appointment.status === 'scheduled' ? 'info' : (appointment.status === 'cancelled' ? 'danger' : 'warning')) %>">
                                                     <%= appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1) %>
                                                 </span>
-                                            </td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info view-appointment" data-id="<%= appointment.id %>">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
                                             </td>
                                         </tr>
                                     <% }); %>
@@ -274,7 +257,7 @@ function formatDate(date) {
                                     <th>Check-in</th>
                                     <th>Check-out</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
+                                    
                                 </tr>
                             </thead>
                             <tbody id="cabin-list">
@@ -290,11 +273,6 @@ function formatDate(date) {
                                                 <span class="badge bg-<%= booking.status === 'completed' ? 'success' : (booking.status === 'active' ? 'info' : (booking.status === 'cancelled' ? 'danger' : 'warning')) %>">
                                                     <%= booking.status.charAt(0).toUpperCase() + booking.status.slice(1) %>
                                                 </span>
-                                            </td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info view-booking" data-id="<%= booking.id %>">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
                                             </td>
                                         </tr>
                                     <% }); %>
@@ -369,54 +347,6 @@ function formatDate(date) {
 
 <%- include('partials/footer') %> 
 
-<!-- Test Request Modal -->
-<div class="modal fade" id="requestTestModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-vial me-2"></i>Request New Test</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="request-test-form">
-                <input type="hidden" name="patientId" value="<%= patient.id %>">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label required-label">Test</label>
-                        <select class="form-select select2" name="testId" required>
-                            <option value="">Select a test</option>
-                            <!-- Tests will be loaded here via AJAX -->
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Priority</label>
-                        <select class="form-select" name="priority">
-                            <option value="Normal">Normal</option>
-                            <option value="Urgent">Urgent</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Delivery Option</label>
-                        <select class="form-select" name="deliveryOption">
-                            <option value="Not Collected">Not Collected Yet</option>
-                            <option value="Collect">Collect in Person</option>
-                            <option value="Email">Email Results</option>
-                            <option value="Home Delivery">Home Delivery</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Delivery Date (if applicable)</label>
-                        <input type="date" class="form-control" name="deliveryDate">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Submit Request</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script>
     $(document).ready(function() {
         // Set default delivery date as 7 days from today
@@ -470,18 +400,6 @@ function formatDate(date) {
         $('.edit-patient-btn').on('click', function() {
             const patientId = $(this).data('id');
             window.location.href = `/patients/edit/${patientId}`;
-        });
-        
-        // View test details
-        $(document).on('click', '.view-test', function() {
-            const testId = $(this).data('id');
-            window.location.href = `/tests/request/${testId}`;
-        });
-        
-        // View appointment details
-        $(document).on('click', '.view-appointment', function() {
-            const appointmentId = $(this).data('id');
-            window.location.href = `/appointments/${appointmentId}`;
         });
         
         // View cabin booking details

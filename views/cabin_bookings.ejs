@@ -206,35 +206,24 @@
                     </span>
                   </td>
                   <td>
-                    <div class="dropdown">
-                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="actionDropdown<%= booking.id %>" data-bs-toggle="dropdown" aria-expanded="false">
-                        Actions
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-info view-booking" data-id="<%= booking.id %>" title="View Details">
+                        <i class="fas fa-eye"></i>
                       </button>
-                      <ul class="dropdown-menu" aria-labelledby="actionDropdown<%= booking.id %>">
-                        <li>
-                          <a class="dropdown-item view-booking" href="#" data-id="<%= booking.id %>">
-                            <i class="fas fa-eye me-1"></i> View Details
-                          </a>
-                        </li>
-                        
-                        <% if (booking.status === 'active') { %>
-                        <li>
-                          <a class="dropdown-item checkout-patient" href="#" data-id="<%= booking.id %>" 
-                             data-patient="<%= booking.Patient ? booking.Patient.name : 'Unknown' %>"
-                             data-cabin="<%= booking.Cabin ? booking.Cabin.cabinNumber : 'Unknown' %>">
-                            <i class="fas fa-sign-out-alt me-1"></i> Checkout Patient
-                          </a>
-                        </li>
-                        <% } %>
-                        
-                        <% if (booking.billingStatus === 'not_billed') { %>
-                        <li>
-                          <a class="dropdown-item" href="/billing?patientId=<%= booking.PatientId %>&cabinId=<%= booking.id %>">
-                            <i class="fas fa-file-invoice-dollar me-1"></i> Create Bill
-                          </a>
-                        </li>
-                        <% } %>
-                      </ul>
+                      
+                      <% if (booking.status === 'active') { %>
+                      <button class="btn btn-sm btn-outline-primary checkout-patient" data-id="<%= booking.id %>" 
+                         data-patient="<%= booking.Patient ? booking.Patient.name : 'Unknown' %>"
+                         data-cabin="<%= booking.Cabin ? booking.Cabin.cabinNumber : 'Unknown' %>" title="Checkout Patient">
+                        <i class="fas fa-sign-out-alt"></i>
+                      </button>
+                      <% } %>
+                      
+                      <% if (booking.billingStatus === 'not_billed') { %>
+                      <a href="/billing?patientId=<%= booking.PatientId %>&cabinId=<%= booking.id %>" class="btn btn-sm btn-outline-warning" title="Create Bill">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                      </a>
+                      <% } %>
                     </div>
                   </td>
                 </tr>
@@ -420,7 +409,7 @@
 <!-- Print Styles -->
 <style>
   @media print {
-    .btn, .navbar, .pagination, .no-print, form, .dropdown {
+    .btn, .navbar, .pagination, .no-print, form, .btn-group {
       display: none !important;
     }
     

@@ -179,6 +179,12 @@
 
 <script>
 $(document).ready(function() {
+    // Format date helper function for dynamic content
+    function formatDate(dateString) {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+    }
+    
     // Initialize Select2
     initializeSelects();
     

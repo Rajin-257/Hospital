@@ -521,76 +521,85 @@
         return isNaN(value) ? 0 : value;
       }
       
-      // Check patient card
-      const totalPatients = parseValue('totalPatients');
-      if (totalPatients === 0) {
-        document.getElementById('patient-card').style.display = 'none';
-      } else if (totalPatients > 0) {
-        document.getElementById('patient-card').style.display = 'block';
-      }
-      
-      // Check doctor card
-      const totalDoctors = parseValue('totalDoctors');
-      if (totalDoctors === 0) {
-        document.getElementById('doctor-card').style.display = 'none';
-      } else if (totalDoctors > 0) {
-        document.getElementById('doctor-card').style.display = 'block';
-      }
-      
-      // Check commission card
-      const totalCommissions = parseValue('totalCommissions');
-      if (totalCommissions === 0) {
-        document.getElementById('commission-card').style.display = 'none';
-      } else if (totalCommissions > 0) {
-        document.getElementById('commission-card').style.display = 'block';
-      }
-      
-      // Check appointment card
-      const totalAppointments = parseValue('totalAppointments');
-      if (totalAppointments === 0) {
-        document.getElementById('appointment-card').style.display = 'none';
-      } else if (totalAppointments > 0) {
-        document.getElementById('appointment-card').style.display = 'block';
-      }
-      
-      // Check test card
-      const totalTests = parseValue('totalTests');
-      if (totalTests === 0) {
-        document.getElementById('test-card').style.display = 'none';
-      } else if (totalTests > 0) {
-        document.getElementById('test-card').style.display = 'block';
-      }
-      
-      // Check billing card
-      const totalBillings = parseValue('totalBillings');
-      if (totalBillings === 0) {
-        document.getElementById('billing-card').style.display = 'none';
-      } else if (totalBillings > 0) {
-        document.getElementById('billing-card').style.display = 'block';
-      }
-      
-      // Check daily billing card
-      const dailyBillingCount = parseValue('dailyBillingCount');
-      if (dailyBillingCount === 0) {
-        document.getElementById('daily-billing-card').style.display = 'none';
-      } else if (dailyBillingCount > 0) {
-        document.getElementById('daily-billing-card').style.display = 'block';
-      }
-      
-      // Check due invoice card
-      const dueInvoiceCount = parseValue('dueInvoiceCount');
-      if (dueInvoiceCount === 0) {
-        document.getElementById('due-invoice-card').style.display = 'none';
-      } else if (dueInvoiceCount > 0) {
-        document.getElementById('due-invoice-card').style.display = 'block';
-      }
-      
-      // Check cabin card
-      const totalBookings = parseValue('totalBookings');
-      if (totalBookings === 0) {
-        document.getElementById('cabin-card').style.display = 'none';
-      } else if (totalBookings > 0) {
-        document.getElementById('cabin-card').style.display = 'block';
+      try {
+        // Get all values first
+        const totalBillings = parseValue('totalBillings');
+        const totalRevenue = parseValue('totalRevenue');
+        const dailyBillingCount = parseValue('dailyBillingCount');
+        const dueInvoiceCount = parseValue('dueInvoiceCount');
+        
+        // Force show billing card if there is revenue, even if count is 0
+        const billingCard = document.getElementById('billing-card');
+        if (billingCard) {
+          // Check both totalBillings and if there's any revenue
+          const hasBillingActivity = totalBillings > 0 || 
+                                     (totalRevenue && totalRevenue !== 'Tk 0' && totalRevenue !== 'Tk -');
+          
+          if (!hasBillingActivity) {
+            billingCard.style.display = 'none';
+          } else {
+            billingCard.style.display = 'block';
+          }
+        }
+        
+        // Force show daily billing card if there's activity today
+        const dailyBillingCard = document.getElementById('daily-billing-card');
+        if (dailyBillingCard) {
+          if (dailyBillingCount <= 0) {
+            dailyBillingCard.style.display = 'none';
+          } else {
+            dailyBillingCard.style.display = 'block';
+          }
+        }
+        
+        // Check due invoice card
+        const dueInvoiceCard = document.getElementById('due-invoice-card');
+        if (dueInvoiceCard) {
+          if (dueInvoiceCount <= 0) {
+            dueInvoiceCard.style.display = 'none';
+          } else {
+            dueInvoiceCard.style.display = 'block';
+          }
+        }
+        
+        // Check other cards
+        const patientCard = document.getElementById('patient-card');
+        const totalPatients = parseValue('totalPatients');
+        if (patientCard) {
+          patientCard.style.display = totalPatients === 0 ? 'none' : 'block';
+        }
+        
+        const doctorCard = document.getElementById('doctor-card');
+        const totalDoctors = parseValue('totalDoctors');
+        if (doctorCard) {
+          doctorCard.style.display = totalDoctors === 0 ? 'none' : 'block';
+        }
+        
+        const commissionCard = document.getElementById('commission-card');
+        const totalCommissions = parseValue('totalCommissions');
+        if (commissionCard) {
+          commissionCard.style.display = totalCommissions === 0 ? 'none' : 'block';
+        }
+        
+        const appointmentCard = document.getElementById('appointment-card');
+        const totalAppointments = parseValue('totalAppointments');
+        if (appointmentCard) {
+          appointmentCard.style.display = totalAppointments === 0 ? 'none' : 'block';
+        }
+        
+        const testCard = document.getElementById('test-card');
+        const totalTests = parseValue('totalTests');
+        if (testCard) {
+          testCard.style.display = totalTests === 0 ? 'none' : 'block';
+        }
+        
+        const cabinCard = document.getElementById('cabin-card');
+        const totalBookings = parseValue('totalBookings');
+        if (cabinCard) {
+          cabinCard.style.display = totalBookings === 0 ? 'none' : 'block';
+        }
+      } catch (error) {
+        console.error("Error in hideCardsWithZeroValue:", error);
       }
     }
     
@@ -605,118 +614,115 @@
     }
     
     // Run an initial check after all data has had a chance to load (3 seconds)
-    setTimeout(hideCardsWithZeroValue, 3000);
-    
-    // Fetch patient statistics
-    fetch('/reports/patient-stats')
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById('totalPatients').textContent = data.totalPatients;
-        document.getElementById('newPatients').textContent = data.newPatients;
-        dataLoaded.patients = true;
-        checkAllDataLoaded();
-      })
-      .catch(error => {
-        console.error('Error fetching patient stats:', error);
-        dataLoaded.patients = true;
-        checkAllDataLoaded();
-      });
-    
-    // Fetch doctor statistics
-    fetch('/reports/doctor-stats')
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById('totalDoctors').textContent = data.totalDoctors;
-        dataLoaded.doctors = true;
-        checkAllDataLoaded();
-      })
-      .catch(error => {
-        console.error('Error fetching doctor stats:', error);
-        dataLoaded.doctors = true;
-        checkAllDataLoaded();
-      });
-    
-    // Fetch commission statistics
-    fetch('/reports/commission-stats')
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById('totalCommissions').textContent = data.totalCommissions;
-        document.getElementById('totalCommissionAmount').textContent = 'Tk ' + data.totalCommissionAmount.toLocaleString();
-        dataLoaded.commissions = true;
-        checkAllDataLoaded();
-      })
-      .catch(error => {
-        console.error('Error fetching commission stats:', error);
-        dataLoaded.commissions = true;
-        checkAllDataLoaded();
-      });
-    
-    // Fetch appointment statistics
-    fetch('/reports/appointment-stats')
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById('totalAppointments').textContent = data.totalAppointments;
-        document.getElementById('pendingAppointments').textContent = data.pendingAppointments;
-        dataLoaded.appointments = true;
-        checkAllDataLoaded();
-      })
-      .catch(error => {
-        console.error('Error fetching appointment stats:', error);
-        dataLoaded.appointments = true;
-        checkAllDataLoaded();
-      });
-    
-    // Fetch test statistics
-    fetch('/reports/test-stats')
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById('totalTests').textContent = data.totalTests;
-        document.getElementById('pendingTests').textContent = data.pendingTests;
-        dataLoaded.tests = true;
-        checkAllDataLoaded();
-      })
-      .catch(error => {
-        console.error('Error fetching test stats:', error);
-        dataLoaded.tests = true;
-        checkAllDataLoaded();
-      });
+    setTimeout(function() {
+      hideCardsWithZeroValue();
+    }, 3000);
     
     // Fetch billing statistics
     fetch('/reports/billing-stats')
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then(data => {
-        document.getElementById('totalBillings').textContent = data.totalBillings;
-        document.getElementById('totalRevenue').textContent = 'Tk ' + data.totalRevenue.toLocaleString();
+        const totalBillingsElement = document.getElementById('totalBillings');
+        const totalRevenueElement = document.getElementById('totalRevenue');
+        
+        // The API returns totalRevenue but not totalBillings, so we need to calculate it
+        const billingCount = data.totalBillings || (data.todayCount !== undefined ? data.todayCount : 0);
+        
+        if (totalBillingsElement) {
+          totalBillingsElement.textContent = billingCount;
+        }
+        
+        const revenue = data.totalRevenue || 0;
+        if (totalRevenueElement) {
+          totalRevenueElement.textContent = 'Tk ' + revenue.toLocaleString();
+        }
+        
         dataLoaded.billings = true;
         checkAllDataLoaded();
       })
       .catch(error => {
         console.error('Error fetching billing stats:', error);
+        
+        // Set default values on error
+        const totalBillingsElement = document.getElementById('totalBillings');
+        const totalRevenueElement = document.getElementById('totalRevenue');
+        
+        if (totalBillingsElement) totalBillingsElement.textContent = '0';
+        if (totalRevenueElement) totalRevenueElement.textContent = 'Tk 0';
+        
         dataLoaded.billings = true;
         checkAllDataLoaded();
       });
     
     // Fetch daily billing statistics
     fetch('/reports/daily-billing-stats')
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then(data => {
-        document.getElementById('dailyBillingCount').textContent = data.dailyBillingCount;
-        document.getElementById('dailyBillingAmount').textContent = 'Tk ' + data.dailyBillingAmount.toLocaleString();
+        const dailyBillingCountElement = document.getElementById('dailyBillingCount');
+        const dailyBillingAmountElement = document.getElementById('dailyBillingAmount');
+        
+        // Handle stats, check if it's in a different format
+        const dailyCount = data.dailyBillingCount || 
+                          (data.stats && data.stats.length > 0 ? data.stats.reduce((sum, item) => sum + (item.count || 0), 0) : 0);
+        
+        const dailyAmount = data.dailyBillingAmount || 
+                           (data.stats && data.stats.length > 0 ? data.stats.reduce((sum, item) => sum + (item.amount || 0), 0) : 0);
+        
+        if (dailyBillingCountElement) {
+          dailyBillingCountElement.textContent = dailyCount;
+        }
+        
+        if (dailyBillingAmountElement) {
+          dailyBillingAmountElement.textContent = 'Tk ' + dailyAmount.toLocaleString();
+        }
+        
         dataLoaded.dailyBilling = true;
         checkAllDataLoaded();
       })
       .catch(error => {
         console.error('Error fetching daily billing stats:', error);
+        
+        // Set default values on error
+        const dailyBillingCountElement = document.getElementById('dailyBillingCount');
+        const dailyBillingAmountElement = document.getElementById('dailyBillingAmount');
+        
+        if (dailyBillingCountElement) dailyBillingCountElement.textContent = '0';
+        if (dailyBillingAmountElement) dailyBillingAmountElement.textContent = 'Tk 0';
+        
         dataLoaded.dailyBilling = true;
         checkAllDataLoaded();
       });
     
     // Fetch due invoice statistics
     fetch('/reports/due-invoice-stats')
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then(data => {
-        document.getElementById('dueInvoiceCount').textContent = data.dueInvoiceCount;
-        document.getElementById('dueInvoiceAmount').textContent = 'Tk ' + data.dueInvoiceAmount.toLocaleString();
+        const dueInvoiceCountElement = document.getElementById('dueInvoiceCount');
+        const dueInvoiceAmountElement = document.getElementById('dueInvoiceAmount');
+        
+        if (dueInvoiceCountElement) {
+          dueInvoiceCountElement.textContent = data.dueInvoiceCount;
+        }
+        
+        if (dueInvoiceAmountElement) {
+          dueInvoiceAmountElement.textContent = 'Tk ' + data.dueInvoiceAmount.toLocaleString();
+        }
+        
         dataLoaded.dueInvoices = true;
         checkAllDataLoaded();
       })
@@ -726,92 +732,271 @@
         checkAllDataLoaded();
       });
     
-    // Fetch cabin statistics
-    fetch('/reports/cabin-stats')
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById('totalBookings').textContent = data.totalBookings;
-        document.getElementById('activeBookings').textContent = data.activeBookings;
-        dataLoaded.cabins = true;
-        checkAllDataLoaded();
-      })
-      .catch(error => {
-        console.error('Error fetching cabin stats:', error);
-        dataLoaded.cabins = true;
-        checkAllDataLoaded();
-      });
+    // Fetch other statistics
+    // Patient statistics
+    fetchAndUpdateStats('patients', '/reports/patient-stats', {
+      'totalPatients': 'totalPatients',
+      'newPatients': 'newPatients'
+    });
+    
+    // Doctor statistics
+    fetchAndUpdateStats('doctors', '/reports/doctor-stats', {
+      'totalDoctors': 'totalDoctors'
+    });
+    
+    // Commission statistics
+    fetchAndUpdateStats('commissions', '/reports/commission-stats', {
+      'totalCommissions': 'totalCommissions',
+      'totalCommissionAmount': 'totalCommissionAmount',
+      formatter: {
+        'totalCommissionAmount': (val) => 'Tk ' + val.toLocaleString()
+      }
+    });
+    
+    // Appointment statistics
+    fetchAndUpdateStats('appointments', '/reports/appointment-stats', {
+      'totalAppointments': 'totalAppointments',
+      'pendingAppointments': 'pendingAppointments'
+    });
+    
+    // Test statistics
+    fetchAndUpdateStats('tests', '/reports/test-stats', {
+      'totalTests': 'totalTests',
+      'pendingTests': 'pendingTests'
+    });
+    
+    // Cabin statistics
+    fetchAndUpdateStats('cabins', '/reports/cabin-stats', {
+      'totalBookings': 'totalBookings',
+      'activeBookings': 'activeBookings'
+    });
+    
+    // Helper function to fetch stats and update elements
+    function fetchAndUpdateStats(key, endpoint, mapping) {
+      fetch(endpoint)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Loop through the mapping and update elements
+          for (const elementId in mapping) {
+            if (elementId === 'formatter') continue;
+            
+            const dataKey = mapping[elementId];
+            const element = document.getElementById(elementId);
+            
+            if (element && data[dataKey] !== undefined) {
+              // Check if we have a formatter for this element
+              if (mapping.formatter && mapping.formatter[elementId]) {
+                element.textContent = mapping.formatter[elementId](data[dataKey]);
+              } else {
+                element.textContent = data[dataKey];
+              }
+            }
+          }
+          
+          dataLoaded[key] = true;
+          checkAllDataLoaded();
+        })
+        .catch(error => {
+          console.error(`Error fetching ${key} stats:`, error);
+          dataLoaded[key] = true;
+          checkAllDataLoaded();
+        });
+    }
 
     // Load all billing records
     loadBillingRecords();
 
-    // Show billing records section when clicking on the billing card
-    $('.card h5.card-title.text-success').parent().parent().on('click', function(e) {
-      // Prevent triggering this if clicking on the dropdown
-      if ($(e.target).closest('.dropdown').length === 0) {
-        $('#billing-records-section').removeClass('d-none');
-        loadBillingRecords();
-      }
-    });
+    // Ensure billing cards are clickable
+    initializeBillingCardActions();
     
-    // Show daily billing records when clicking on the daily billing card
-    $('.card h5.card-title.text-primary').parent().parent().on('click', function(e) {
-      if ($(e.target).closest('a').length === 0) {
-        window.location.href = '/reports/billing/daily';
+    function initializeBillingCardActions() {
+      // Show billing records when clicking on the billing card
+      const billingCard = document.querySelector('#billing-card .card');
+      if (billingCard) {
+        billingCard.addEventListener('click', function(e) {
+          // Prevent triggering this if clicking on the dropdown
+          if (!e.target.closest('.dropdown')) {
+            const billingRecordsSection = document.getElementById('billing-records-section');
+            if (billingRecordsSection) {
+              billingRecordsSection.classList.remove('d-none');
+              loadBillingRecords();
+            }
+          }
+        });
       }
-    });
-    
-    // Show due invoice records when clicking on the due invoice card
-    $('.card h5.card-title.text-danger:contains("Due Invoices")').parent().parent().on('click', function(e) {
-      if ($(e.target).closest('a').length === 0) {
-        window.location.href = '/reports/billing/due';
+      
+      // Alternative approach using direct title selector
+      const billingCardTitle = document.querySelector('.card h5.card-title.text-success');
+      if (billingCardTitle) {
+        const parentCard = billingCardTitle.closest('.card');
+        if (parentCard) {
+          parentCard.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+              const billingRecordsSection = document.getElementById('billing-records-section');
+              if (billingRecordsSection) {
+                billingRecordsSection.classList.remove('d-none');
+                loadBillingRecords();
+              }
+            }
+          });
+        }
       }
-    });
+      
+      // Show daily billing records when clicking on the daily billing card
+      const dailyBillingCard = document.querySelector('#daily-billing-card .card');
+      if (dailyBillingCard) {
+        dailyBillingCard.addEventListener('click', function(e) {
+          if (!e.target.closest('a')) {
+            window.location.href = '/reports/billing/daily';
+          }
+        });
+      }
+      
+      // Show due invoice records when clicking on the due invoice card
+      const dueInvoiceCard = document.querySelector('#due-invoice-card .card');
+      if (dueInvoiceCard) {
+        dueInvoiceCard.addEventListener('click', function(e) {
+          if (!e.target.closest('a')) {
+            window.location.href = '/reports/billing/due';
+          }
+        });
+      }
+    }
     
+    // Show unbilled appointments
+    const showUnbilledAppointmentsButtons = document.querySelectorAll('.show-unbilled-appointments-btn');
+    showUnbilledAppointmentsButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const unbilledAppointmentsSection = document.getElementById('unbilled-appointments-section');
+        if (unbilledAppointmentsSection) {
+          unbilledAppointmentsSection.classList.remove('d-none');
+          loadUnbilledAppointments();
+        }
+      });
+    });
+
+    // Close unbilled appointments section
+    const closeAppointmentsBtn = document.getElementById('close-appointments-btn');
+    if (closeAppointmentsBtn) {
+      closeAppointmentsBtn.addEventListener('click', function() {
+        const unbilledAppointmentsSection = document.getElementById('unbilled-appointments-section');
+        if (unbilledAppointmentsSection) {
+          unbilledAppointmentsSection.classList.add('d-none');
+        }
+      });
+    }
+
+    // Show unbilled tests
+    const showUnbilledTestsButtons = document.querySelectorAll('.show-unbilled-tests-btn');
+    showUnbilledTestsButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const unbilledTestsSection = document.getElementById('unbilled-tests-section');
+        if (unbilledTestsSection) {
+          unbilledTestsSection.classList.remove('d-none');
+          loadUnbilledTests();
+        }
+      });
+    });
+
+    // Close unbilled tests section
+    const closeTestsBtn = document.getElementById('close-tests-btn');
+    if (closeTestsBtn) {
+      closeTestsBtn.addEventListener('click', function() {
+        const unbilledTestsSection = document.getElementById('unbilled-tests-section');
+        if (unbilledTestsSection) {
+          unbilledTestsSection.classList.add('d-none');
+        }
+      });
+    }
+
     // Close billing records section
-    $('#close-billings-btn').on('click', function() {
-      $('#billing-records-section').addClass('d-none');
-    });
+    const closeBillingsBtn = document.getElementById('close-billings-btn');
+    if (closeBillingsBtn) {
+      closeBillingsBtn.addEventListener('click', function() {
+        const billingRecordsSection = document.getElementById('billing-records-section');
+        if (billingRecordsSection) {
+          billingRecordsSection.classList.add('d-none');
+        }
+      });
+    }
     
-    // Print billing records
-    $('#print-billings-btn').on('click', function() {
-      printSection('billing-records-section');
-    });
+    // Print buttons
+    const printBillingsBtn = document.getElementById('print-billings-btn');
+    if (printBillingsBtn) {
+      printBillingsBtn.addEventListener('click', function() {
+        printSection('billing-records-section');
+      });
+    }
+    
+    const printAppointmentsBtn = document.getElementById('print-appointments-btn');
+    if (printAppointmentsBtn) {
+      printAppointmentsBtn.addEventListener('click', function() {
+        printSection('unbilled-appointments-section');
+      });
+    }
+    
+    const printTestsBtn = document.getElementById('print-tests-btn');
+    if (printTestsBtn) {
+      printTestsBtn.addEventListener('click', function() {
+        printSection('unbilled-tests-section');
+      });
+    }
 
     // Function to load all billing records
     function loadBillingRecords() {
       fetch('/reports/all-billings')
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
         .then(data => {
-          $('#billing-list').empty();
+          const billingList = document.getElementById('billing-list');
           
-          if (data.length > 0) {
-            data.forEach(bill => {
-              const date = new Date(bill.billDate || bill.createdAt);
-              const formattedDate = date.toLocaleDateString();
-              
-              const subTotal = parseFloat(bill.subtotalAmount || 0);
-              const discount = parseFloat(bill.discountAmount || 0);
-              const total = parseFloat(bill.totalAmount || 0);
-              const paid = parseFloat(bill.paidAmount || 0);
-              const due = parseFloat(bill.dueAmount || 0);
-              
-              // Check if Patient exists before accessing properties
-              const patientName = bill.Patient ? bill.Patient.name : 'Unknown';
-              
-              // Check if items exists and is valid JSON
-              let itemsLength = 0;
+          if (!billingList) {
+            return;
+          }
+          
+          billingList.innerHTML = '';
+          
+          // Make sure data is an array
+          const billingData = Array.isArray(data) ? data : [];
+          
+          if (billingData.length > 0) {
+            billingData.forEach(bill => {
               try {
-                if (bill.items) {
-                  const itemsArray = typeof bill.items === 'string' ? JSON.parse(bill.items) : bill.items;
-                  itemsLength = itemsArray.length;
+                const date = new Date(bill.billDate || bill.createdAt || new Date());
+                const formattedDate = date.toLocaleDateString();
+                
+                const subTotal = parseFloat(bill.subtotalAmount || 0);
+                const discount = parseFloat(bill.discountAmount || 0);
+                const total = parseFloat(bill.totalAmount || 0);
+                const paid = parseFloat(bill.paidAmount || 0);
+                const due = parseFloat(bill.dueAmount || 0);
+                
+                // Check if Patient exists before accessing properties
+                const patientName = bill.Patient ? bill.Patient.name : 'Unknown';
+                
+                // Check if items exists and is valid JSON
+                let itemsLength = 0;
+                try {
+                  if (bill.items) {
+                    const itemsArray = typeof bill.items === 'string' ? JSON.parse(bill.items) : bill.items;
+                    itemsLength = Array.isArray(itemsArray) ? itemsArray.length : 0;
+                  }
+                } catch (e) {
+                  console.error('Error parsing items:', e);
                 }
-              } catch (e) {
-                console.error('Error parsing items:', e);
-              }
-              
-              const row = `
-                <tr>
-                  <td><strong>#${bill.billNumber || 'N/A'}</strong></td>
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                  <td><strong>#${bill.billNumber || bill.id || 'N/A'}</strong></td>
                   <td>${formattedDate}</td>
                   <td>${patientName}</td>
                   <td>${itemsLength}</td>
@@ -825,74 +1010,54 @@
                       <i class="fas fa-eye"></i> View
                     </a>
                   </td>
-                </tr>
-              `;
-              
-              $('#billing-list').append(row);
+                `;
+                
+                billingList.appendChild(row);
+              } catch (error) {
+                console.error('Error processing billing record:', error, bill);
+              }
             });
           } else {
-            $('#billing-list').html('<tr><td colspan="10" class="text-center">No billing records found</td></tr>');
+            billingList.innerHTML = '<tr><td colspan="10" class="text-center">No billing records found</td></tr>';
           }
         })
         .catch(error => {
           console.error('Error loading billing records:', error);
-          $('#billing-list').html('<tr><td colspan="10" class="text-center text-danger">Error loading billing records</td></tr>');
+          const billingList = document.getElementById('billing-list');
+          if (billingList) {
+            billingList.innerHTML = '<tr><td colspan="10" class="text-center text-danger">Error loading billing records</td></tr>';
+          }
         });
     }
-
-    // Show unbilled appointments
-    $('.show-unbilled-appointments-btn').on('click', function() {
-      $('#unbilled-appointments-section').removeClass('d-none');
-      loadUnbilledAppointments();
-    });
-
-    // Close unbilled appointments section
-    $('#close-appointments-btn').on('click', function() {
-      $('#unbilled-appointments-section').addClass('d-none');
-    });
-
-    // Show unbilled tests
-    $('.show-unbilled-tests-btn').on('click', function() {
-      $('#unbilled-tests-section').removeClass('d-none');
-      loadUnbilledTests();
-    });
-
-    // Close unbilled tests section
-    $('#close-tests-btn').on('click', function() {
-      $('#unbilled-tests-section').addClass('d-none');
-    });
-
-    // Print unbilled appointments
-    $('#print-appointments-btn').on('click', function() {
-      printSection('unbilled-appointments-section');
-    });
-
-    // Print unbilled tests
-    $('#print-tests-btn').on('click', function() {
-      printSection('unbilled-tests-section');
-    });
 
     // Function to load unbilled appointments
     function loadUnbilledAppointments() {
       fetch('/reports/unbilled-appointments')
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
         .then(data => {
-          $('#unbilled-appointments-list').empty();
+          const unbilledAppointmentsList = document.getElementById('unbilled-appointments-list');
+          if (unbilledAppointmentsList) {
+            unbilledAppointmentsList.innerHTML = '';
           
-          if (data.length > 0) {
-            data.forEach(appointment => {
-              const appointmentDate = new Date(appointment.appointmentDate);
-              const formattedDate = appointmentDate.toLocaleDateString();
-              const formattedTime = appointment.appointmentTime;
-              
-              const fee = parseFloat(appointment.Doctor.consultationFee || 0);
-              
-              const row = `
-                <tr>
+            if (data.length > 0) {
+              data.forEach(appointment => {
+                const appointmentDate = new Date(appointment.appointmentDate);
+                const formattedDate = appointmentDate.toLocaleDateString();
+                const formattedTime = appointment.appointmentTime;
+                
+                const fee = parseFloat(appointment.Doctor?.consultationFee || 0);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
                   <td>${formattedDate}</td>
                   <td>${formattedTime}</td>
-                  <td>${appointment.Patient.name}</td>
-                  <td>Dr. ${appointment.Doctor.name}</td>
+                  <td>${appointment.Patient?.name || 'Unknown'}</td>
+                  <td>Dr. ${appointment.Doctor?.name || 'Unknown'}</td>
                   <td><span class="badge bg-warning">${appointment.status}</span></td>
                   <td>Tk ${fee.toFixed(2)}</td>
                   <td class="no-print">
@@ -900,49 +1065,59 @@
                       <i class="fas fa-file-invoice"></i> Bill Now
                     </a>
                   </td>
-                </tr>
-              `;
-              
-              $('#unbilled-appointments-list').append(row);
-            });
-          } else {
-            $('#unbilled-appointments-list').html('<tr><td colspan="7" class="text-center">No unbilled appointments found</td></tr>');
+                `;
+                
+                unbilledAppointmentsList.appendChild(row);
+              });
+            } else {
+              unbilledAppointmentsList.innerHTML = '<tr><td colspan="7" class="text-center">No unbilled appointments found</td></tr>';
+            }
           }
         })
         .catch(error => {
           console.error('Error loading unbilled appointments:', error);
-          $('#unbilled-appointments-list').html('<tr><td colspan="7" class="text-center text-danger">Error loading unbilled appointments</td></tr>');
+          const unbilledAppointmentsList = document.getElementById('unbilled-appointments-list');
+          if (unbilledAppointmentsList) {
+            unbilledAppointmentsList.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading unbilled appointments</td></tr>';
+          }
         });
     }
 
     // Function to load unbilled tests
     function loadUnbilledTests() {
       fetch('/reports/unbilled-tests')
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
         .then(data => {
-          $('#unbilled-tests-list').empty();
+          const unbilledTestsList = document.getElementById('unbilled-tests-list');
+          if (unbilledTestsList) {
+            unbilledTestsList.innerHTML = '';
           
-          if (data.length > 0) {
-            data.forEach(test => {
-              const requestDate = new Date(test.requestDate);
-              const formattedDate = requestDate.toLocaleDateString();
-              
-              // Process delivery date
-              let deliveryDate = 'N/A';
-              if (test.deliveryDate) {
-                const dateObj = new Date(test.deliveryDate);
-                if (!isNaN(dateObj.getTime())) {
-                  deliveryDate = dateObj.toLocaleDateString();
+            if (data.length > 0) {
+              data.forEach(test => {
+                const requestDate = new Date(test.requestDate);
+                const formattedDate = requestDate.toLocaleDateString();
+                
+                // Process delivery date
+                let deliveryDate = 'N/A';
+                if (test.deliveryDate) {
+                  const dateObj = new Date(test.deliveryDate);
+                  if (!isNaN(dateObj.getTime())) {
+                    deliveryDate = dateObj.toLocaleDateString();
+                  }
                 }
-              }
-              
-              const fee = parseFloat(test.Test.price || 0);
-              
-              const row = `
-                <tr>
+                
+                const fee = parseFloat(test.Test?.price || 0);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
                   <td>${formattedDate}</td>
-                  <td>${test.Patient.name}</td>
-                  <td>${test.Test.name}</td>
+                  <td>${test.Patient?.name || 'Unknown'}</td>
+                  <td>${test.Test?.name || 'Unknown'}</td>
                   <td><span class="badge ${test.priority === 'Urgent' ? 'bg-danger' : 'bg-info'}">${test.priority}</span></td>
                   <td><span class="badge bg-warning">${test.status}</span></td>
                   <td>${test.deliveryOption || 'Not Collected'}</td>
@@ -953,31 +1128,45 @@
                       <i class="fas fa-file-invoice"></i> Bill Now
                     </a>
                   </td>
-                </tr>
-              `;
-              
-              $('#unbilled-tests-list').append(row);
-            });
-          } else {
-            $('#unbilled-tests-list').html('<tr><td colspan="9" class="text-center">No unbilled test requests found</td></tr>');
+                `;
+                
+                unbilledTestsList.appendChild(row);
+              });
+            } else {
+              unbilledTestsList.innerHTML = '<tr><td colspan="9" class="text-center">No unbilled test requests found</td></tr>';
+            }
           }
         })
         .catch(error => {
           console.error('Error loading unbilled tests:', error);
-          $('#unbilled-tests-list').html('<tr><td colspan="9" class="text-center text-danger">Error loading unbilled tests</td></tr>');
+          const unbilledTestsList = document.getElementById('unbilled-tests-list');
+          if (unbilledTestsList) {
+            unbilledTestsList.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error loading unbilled tests</td></tr>';
+          }
         });
     }
 
     // Function to print a specific section
     function printSection(sectionId) {
       // Add print-keep class to the card header
-      const cardHeader = document.getElementById(sectionId).querySelector('.card-header');
+      const sectionElement = document.getElementById(sectionId);
+      if (!sectionElement) {
+        return;
+      }
+      
+      const cardHeader = sectionElement.querySelector('.card-header');
       if (cardHeader) {
         cardHeader.classList.add('print-keep');
       }
       
-      const printContents = document.getElementById(sectionId).innerHTML;
+      const printContents = sectionElement.innerHTML;
       const originalContents = document.body.innerHTML;
+      
+      let headerTitle = 'Report';
+      const cardHeaderH5 = sectionElement.querySelector('.card-header h5');
+      if (cardHeaderH5) {
+        headerTitle = cardHeaderH5.innerText;
+      }
 
       document.body.innerHTML = `
         <div class="container">
@@ -987,7 +1176,7 @@
               <p>123 Medical Center Avenue, Healthcare City</p>
               <p>Phone: +880 1234-567890 | Email: info@hospital.com</p>
               <hr>
-              <h4>${document.getElementById(sectionId).querySelector('.card-header h5').innerText}</h4>
+              <h4>${headerTitle}</h4>
               <p class="text-muted">Generated on ${new Date().toLocaleString()}</p>
             </div>
           </div>
@@ -1028,7 +1217,10 @@
       }
       
       // Update the total records in the print view
-      document.getElementById('print-total-records').textContent = totalRecords;
+      const printTotalRecordsElement = document.getElementById('print-total-records');
+      if (printTotalRecordsElement) {
+        printTotalRecordsElement.textContent = totalRecords;
+      }
 
       window.print();
       document.body.innerHTML = originalContents;

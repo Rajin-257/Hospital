@@ -1,0 +1,285 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="/tests/requisitions">Test Requisitions</a></li>
+          <li class="breadcrumb-item active">Test Results</li>
+        </ol>
+      </nav>
+      <h2>
+        <i class="fas fa-file-medical me-2"></i>Test Results
+      </h2>
+      <p class="text-muted">Results for Test Requisition #<%= requisition.id %></p>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <button id="print-btn" class="btn btn-outline-secondary">
+        <i class="fas fa-print me-1"></i> Print
+      </button>
+      <a href="/tests/requisitions" class="btn btn-outline-primary ms-2">
+        <i class="fas fa-arrow-left me-1"></i> Back
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4">
+      <!-- Test Requisition Info -->
+      <div class="card mb-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-info-circle me-2"></i>Requisition Details
+          </h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Requisition ID:</span>
+              <span>#<%= requisition.id %></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Patient:</span>
+              <span>
+                <%= requisition.Patient ? requisition.Patient.name : 'Unknown' %>
+                <small class="d-block text-muted"><%= requisition.Patient ? requisition.Patient.patientId : '' %></small>
+              </span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Test:</span>
+              <span><%= requisition.Test ? requisition.Test.name : 'Unknown' %></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Date Requested:</span>
+              <span><%= new Date(requisition.requestDate).toLocaleDateString() %></span>
+            </li>
+            <% if (requisition.completedDate) { %>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Date Completed:</span>
+              <span><%= new Date(requisition.completedDate).toLocaleDateString() %></span>
+            </li>
+            <% } %>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Status:</span>
+              <span class="badge rounded-pill <%= 
+                requisition.status === 'Pending' ? 'bg-warning' : 
+                requisition.status === 'In Progress' ? 'bg-info' : 
+                requisition.status === 'Completed' ? 'bg-success' : 
+                requisition.status === 'Delivered' ? 'bg-primary' : 
+                'bg-secondary' %>">
+                <%= requisition.status %>
+              </span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Priority:</span>
+              <span class="badge rounded-pill <%= requisition.priority === 'Urgent' ? 'bg-danger' : 'bg-info' %>">
+                <%= requisition.priority %>
+              </span>
+            </li>
+            <% if (requisition.Doctor) { %>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Referring Doctor:</span>
+              <span>Dr. <%= requisition.Doctor.name %></span>
+            </li>
+            <% } %>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <!-- Result Files -->
+      <h5 class="mb-3">
+        <i class="fas fa-file-medical me-2"></i>Result Files
+      </h5>
+      
+      <% if (resultFiles && resultFiles.length > 0) { %>
+        <div class="mb-4">
+          <% resultFiles.forEach((file, index) => { %>
+            <% 
+              const extension = file.split('.').pop().toLowerCase();
+              let icon = 'fas fa-file';
+              let colorClass = 'text-secondary';
+              let fileType = 'Document';
+              
+              if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
+                icon = 'fas fa-file-image';
+                colorClass = 'text-info';
+                fileType = 'Image';
+              } else if (extension === 'pdf') {
+                icon = 'fas fa-file-pdf';
+                colorClass = 'text-danger';
+                fileType = 'PDF Document';
+              } else if (['doc', 'docx'].includes(extension)) {
+                icon = 'fas fa-file-word';
+                colorClass = 'text-primary';
+                fileType = 'Word Document';
+              } else if (['xls', 'xlsx'].includes(extension)) {
+                icon = 'fas fa-file-excel';
+                colorClass = 'text-success';
+                fileType = 'Excel Spreadsheet';
+              }
+              
+              const fileName = file.split('/').pop();
+            %>
+            <div class="d-flex justify-content-between align-items-center p-2 border-bottom mb-2">
+              <div class="d-flex align-items-center">
+                <i class="<%= icon %> fa-lg me-3 <%= colorClass %>"></i>
+                <div>
+                  <div class="fw-bold"><%= fileName %></div>
+                  <small class="text-muted"><%= fileType %></small>
+                </div>
+              </div>
+              
+              <div>
+                <a href="<%= file %>" target="_blank" class="btn btn-sm btn-outline-primary view-file" data-file="<%= file %>" data-type="<%= fileType.toLowerCase() %>">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <a href="<%= file %>" download class="btn btn-sm btn-outline-success ms-2">
+                  <i class="fas fa-download"></i>
+                </a>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle me-2"></i> No result files have been uploaded for this test requisition.
+        </div>
+      <% } %>
+      
+      <!-- Result Notes -->
+      <% if (requisition.resultNotes) { %>
+        <h5 class="mt-4 mb-3">Result Notes</h5>
+        <div class="bg-light p-3 mb-4">
+          <%= requisition.resultNotes %>
+        </div>
+      <% } %>
+
+      <!-- File Preview Modal -->
+      <div class="modal fade" id="filePreviewModal" tabindex="-1" aria-labelledby="filePreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="filePreviewModalLabel">File Preview</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="filePreviewModalBody">
+              <div class="text-center p-5">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading preview...</p>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <a href="#" class="btn btn-outline-success" id="downloadBtn">
+                <i class="fas fa-download me-1"></i> Download
+              </a>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Handle print button
+    document.getElementById('print-btn').addEventListener('click', function() {
+      window.print();
+    });
+    
+    // Handle file preview
+    const viewFileButtons = document.querySelectorAll('.view-file');
+    const filePreviewModal = new bootstrap.Modal(document.getElementById('filePreviewModal'));
+    const filePreviewModalBody = document.getElementById('filePreviewModalBody');
+    const filePreviewModalLabel = document.getElementById('filePreviewModalLabel');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    viewFileButtons.forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const filePath = this.getAttribute('data-file');
+        const fileType = this.getAttribute('data-type');
+        const fileName = filePath.split('/').pop();
+        
+        filePreviewModalLabel.textContent = fileName;
+        downloadBtn.href = filePath;
+        
+        // Clear previous content
+        filePreviewModalBody.innerHTML = '';
+        
+        // Show appropriate preview based on file type
+        if (fileType.includes('image')) {
+          const img = document.createElement('img');
+          img.src = filePath;
+          img.className = 'img-fluid';
+          img.alt = fileName;
+          filePreviewModalBody.appendChild(img);
+        } else if (fileType.includes('pdf')) {
+          const embed = document.createElement('embed');
+          embed.src = filePath;
+          embed.type = 'application/pdf';
+          embed.width = '100%';
+          embed.height = '500px';
+          filePreviewModalBody.appendChild(embed);
+        } else {
+          // For other file types, show a download message
+          filePreviewModalBody.innerHTML = `
+            <div class="text-center p-5">
+              <i class="fas fa-file fa-4x mb-3 text-primary"></i>
+              <h5>Preview not available</h5>
+              <p>This file type (${fileType}) cannot be previewed directly. Please download the file to view it.</p>
+              <a href="${filePath}" download class="btn btn-primary mt-3">
+                <i class="fas fa-download me-1"></i> Download File
+              </a>
+            </div>
+          `;
+        }
+        
+        filePreviewModal.show();
+      });
+    });
+  });
+</script>
+
+<style>
+  @media print {
+    .btn, .navbar, .no-print {
+      display: none !important;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 100%;
+      padding: 0;
+    }
+    
+    .card {
+      border: none !important;
+      box-shadow: none !important;
+    }
+    
+    body {
+      font-size: 12pt;
+    }
+    
+    a {
+      text-decoration: none !important;
+      color: #000 !important;
+    }
+    
+    .view-file, .download-file {
+      display: none !important;
+    }
+  }
+</style>
+
+<%- include('partials/footer') %> 

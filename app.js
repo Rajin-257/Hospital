@@ -21,6 +21,7 @@ const billingRoutes = require('./routes/billingRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const settingRoutes = require('./routes/settingRoutes');
 const commissionRoutes = require('./routes/commissionRoutes');
+const marketingCommissionRoutes = require('./routes/marketingCommissionRoutes');
 const userRoutes = require('./routes/userRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
@@ -129,6 +130,7 @@ app.use('/billing', billingRoutes);
 app.use('/reports', reportRoutes);
 app.use('/settings', settingRoutes);
 app.use('/commissions', commissionRoutes);
+app.use('/marketing-commissions', marketingCommissionRoutes);
 app.use('/', userRoutes);
 
 // Redirect root to dashboard

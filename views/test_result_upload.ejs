@@ -1,0 +1,291 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container py-4">
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="/tests/requisitions">Test Requisitions</a></li>
+          <li class="breadcrumb-item active">Upload Results</li>
+        </ol>
+      </nav>
+      <h2>
+        <i class="fas fa-file-upload me-2"></i>Upload Test Results
+      </h2>
+      <p class="text-muted">Upload results for Test Requisition #<%= requisition.id %></p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4">
+      <!-- Test Requisition Info -->
+      <div class="card mb-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-info-circle me-2"></i>Requisition Details
+          </h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Requisition ID:</span>
+              <span>#<%= requisition.id %></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Patient:</span>
+              <span>
+                <%= requisition.Patient ? requisition.Patient.name : 'Unknown' %>
+                <small class="d-block text-muted"><%= requisition.Patient ? requisition.Patient.patientId : '' %></small>
+              </span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Test:</span>
+              <span><%= requisition.Test ? requisition.Test.name : 'Unknown' %></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Date Requested:</span>
+              <span><%= new Date(requisition.requestDate).toLocaleDateString() %></span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Status:</span>
+              <span class="badge rounded-pill <%= 
+                requisition.status === 'Pending' ? 'bg-warning' : 
+                requisition.status === 'In Progress' ? 'bg-info' : 
+                requisition.status === 'Completed' ? 'bg-success' : 
+                requisition.status === 'Delivered' ? 'bg-primary' : 
+                'bg-secondary' %>">
+                <%= requisition.status %>
+              </span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Priority:</span>
+              <span class="badge rounded-pill <%= requisition.priority === 'Urgent' ? 'bg-danger' : 'bg-info' %>">
+                <%= requisition.priority %>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <!-- Upload Form -->
+      <div class="card">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-file-medical me-2"></i>Upload Results
+          </h5>
+        </div>
+        <div class="card-body">
+          <form action="/tests/results/upload/<%= requisition.id %>" method="POST" enctype="multipart/form-data" id="upload-form">
+            <div class="mb-4">
+              <label for="result_files" class="form-label">Select Result Files</label>
+              <div class="file-upload-wrapper">
+                <div class="file-upload-zone p-5 text-center border rounded mb-3 bg-light" id="drop-zone">
+                  <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-primary"></i>
+                  <p>Drag and drop files here or click to select files</p>
+                  <p class="text-muted small">Supported formats: PDF, Word (DOC/DOCX), Excel (XLS/XLSX), Images (JPG, PNG, GIF)</p>
+                  <input type="file" id="result_files" name="result_files" class="d-none" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif">
+                  <button type="button" class="btn btn-outline-primary mt-2" id="select-files-btn">
+                    <i class="fas fa-file me-1"></i> Select Files
+                  </button>
+                </div>
+                <div id="file-preview-container" class="mb-3 d-none">
+                  <h6 class="mb-3">Selected Files:</h6>
+                  <div id="file-preview-list" class="list-group">
+                    <!-- File previews will be added here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="notes" class="form-label">Result Notes</label>
+              <textarea class="form-control" id="notes" name="notes" rows="4" placeholder="Enter any additional notes about the test results..."></textarea>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <a href="/tests/requisitions" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Requisitions
+              </a>
+              <button type="submit" class="btn btn-primary" id="upload-btn" disabled>
+                <i class="fas fa-save me-1"></i> Upload Results
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('result_files');
+    const selectFilesBtn = document.getElementById('select-files-btn');
+    const filePreviewContainer = document.getElementById('file-preview-container');
+    const filePreviewList = document.getElementById('file-preview-list');
+    const uploadBtn = document.getElementById('upload-btn');
+    const uploadForm = document.getElementById('upload-form');
+
+    // Open file dialog when clicking on the select button or drop zone
+    selectFilesBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+    
+    dropZone.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    // Handle file selection
+    fileInput.addEventListener('change', handleFileSelection);
+
+    // Handle drag and drop events
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight() {
+      dropZone.classList.add('bg-light-hover', 'border-primary');
+    }
+
+    function unhighlight() {
+      dropZone.classList.remove('bg-light-hover', 'border-primary');
+    }
+
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      fileInput.files = files;
+      handleFileSelection();
+    }
+
+    function handleFileSelection() {
+      if (fileInput.files.length > 0) {
+        filePreviewContainer.classList.remove('d-none');
+        uploadBtn.disabled = false;
+        updateFilePreviewList();
+      } else {
+        filePreviewContainer.classList.add('d-none');
+        uploadBtn.disabled = true;
+      }
+    }
+
+    function updateFilePreviewList() {
+      filePreviewList.innerHTML = '';
+      
+      Array.from(fileInput.files).forEach((file, index) => {
+        const fileSize = formatFileSize(file.size);
+        const fileType = getFileTypeIcon(file.name);
+        
+        const fileItem = document.createElement('div');
+        fileItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+        fileItem.innerHTML = `
+          <div class="d-flex align-items-center">
+            <i class="${fileType.icon} fa-lg me-3 text-${fileType.color}"></i>
+            <div>
+              <div class="fw-bold">${file.name}</div>
+              <small class="text-muted">${fileType.type} · ${fileSize}</small>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger remove-file" data-index="${index}">
+            <i class="fas fa-times"></i>
+          </button>
+        `;
+        
+        filePreviewList.appendChild(fileItem);
+      });
+      
+      // Add event listeners to remove buttons
+      document.querySelectorAll('.remove-file').forEach(button => {
+        button.addEventListener('click', function() {
+          const dt = new DataTransfer();
+          const files = fileInput.files;
+          const index = parseInt(this.getAttribute('data-index'));
+          
+          for (let i = 0; i < files.length; i++) {
+            if (i !== index) {
+              dt.items.add(files[i]);
+            }
+          }
+          
+          fileInput.files = dt.files;
+          handleFileSelection();
+        });
+      });
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function getFileTypeIcon(filename) {
+      const ext = filename.split('.').pop().toLowerCase();
+      
+      const fileTypes = {
+        pdf: { icon: 'fas fa-file-pdf', color: 'danger', type: 'PDF Document' },
+        doc: { icon: 'fas fa-file-word', color: 'primary', type: 'Word Document' },
+        docx: { icon: 'fas fa-file-word', color: 'primary', type: 'Word Document' },
+        xls: { icon: 'fas fa-file-excel', color: 'success', type: 'Excel Spreadsheet' },
+        xlsx: { icon: 'fas fa-file-excel', color: 'success', type: 'Excel Spreadsheet' },
+        jpg: { icon: 'fas fa-file-image', color: 'info', type: 'Image' },
+        jpeg: { icon: 'fas fa-file-image', color: 'info', type: 'Image' },
+        png: { icon: 'fas fa-file-image', color: 'info', type: 'Image' },
+        gif: { icon: 'fas fa-file-image', color: 'info', type: 'Image' }
+      };
+      
+      return fileTypes[ext] || { icon: 'fas fa-file', color: 'secondary', type: 'Unknown' };
+    }
+
+    // Form validation before submit
+    uploadForm.addEventListener('submit', function(e) {
+      if (fileInput.files.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one file to upload.');
+        return false;
+      }
+    });
+  });
+</script>
+
+<style>
+  .file-upload-zone {
+    border: 2px dashed #ccc;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .file-upload-zone:hover, .bg-light-hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd;
+  }
+
+  .border-primary {
+    border-color: #0d6efd !important;
+    border-style: dashed !important;
+  }
+</style>
+
+<%- include('partials/footer') %> 

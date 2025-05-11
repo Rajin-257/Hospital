@@ -514,6 +514,28 @@
                                 </div>
                             </div>
                             
+                            <!-- Marketing Commission Section -->
+                            <div id="commission-section" style="display: none;">
+                                <div class="row mb-2">
+                                    <div class="col-7 fw-bold">Commission (%):</div>
+                                    <div class="col-5">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" class="form-control" id="commission-percentage" name="commissionPercentage" min="0" max="100" step="0.01" value="0">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-7 fw-bold">Commission Amount:</div>
+                                    <div class="col-5">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">Tk </span>
+                                            <input type="number" class="form-control" id="commission-amount" name="commissionAmount" min="0" value="0">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="row mb-3">
                                 <div class="col-7 fw-bold">Delivery Date:</div>
                                 <div class="col-5">
@@ -1043,6 +1065,11 @@
             
             // Update billing summary
             updateBillingSummary();
+            
+            // Update commission amount if marketing manager is selected
+            if ($('#marketing-manager').val()) {
+                calculateCommission();
+            }
         }
         
         // Update the billing summary function to include cabin bookings
@@ -1197,6 +1224,11 @@
                 $('#payment-status').html('<span class="badge bg-success">Paid</span>');
             } else {
                 $('#payment-status').html('<span class="badge bg-danger">Due</span>');
+            }
+            
+            // Also update commission if marketing manager is selected
+            if ($('#marketing-manager').val()) {
+                calculateCommission();
             }
         }
         
@@ -1399,6 +1431,44 @@
                 }
             });
         });
+
+        // Handle marketing manager selection to show/hide commission section
+        $('#marketing-manager').on('change', function() {
+            const selectedManagerId = $(this).val();
+            if (selectedManagerId) {
+                $('#commission-section').show();
+                calculateCommission();
+            } else {
+                $('#commission-section').hide();
+                $('#commission-percentage').val(0);
+                $('#commission-amount').val(0);
+            }
+        });
+        
+        // Handle commission percentage change
+        $('#commission-percentage').on('input', function() {
+            calculateCommission();
+        });
+        
+        // Handle direct commission amount change
+        $('#commission-amount').on('input', function() {
+            const commissionAmount = parseFloat($(this).val()) || 0;
+            const netPayable = parseFloat($('#net-payable-input').val()) || 0;
+            
+            if (netPayable > 0) {
+                const commissionPercentage = (commissionAmount / netPayable) * 100;
+                $('#commission-percentage').val(commissionPercentage.toFixed(2));
+            }
+        });
+        
+        // Calculate commission amount based on percentage
+        function calculateCommission() {
+            const netPayable = parseFloat($('#net-payable-input').val()) || 0;
+            const commissionPercentage = parseFloat($('#commission-percentage').val()) || 0;
+            const commissionAmount = (netPayable * commissionPercentage / 100);
+            
+            $('#commission-amount').val(commissionAmount.toFixed(2));
+        }
 
         // Calculate date of birth from age
         function calculateDOB() {

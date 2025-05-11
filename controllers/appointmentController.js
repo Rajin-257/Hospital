@@ -3,6 +3,12 @@ const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const { Op } = require('sequelize');
 
+// Helper function to format dates
+function formatDate(dateString) {
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+}
+
 // Get all appointments
 exports.getAllAppointments = async (req, res) => {
   try {
@@ -31,7 +37,8 @@ exports.getAllAppointments = async (req, res) => {
       title: 'Appointments',
       appointments,
       patients,
-      doctors
+      doctors,
+      formatDate
     });
   } catch (error) {
     console.error(error);

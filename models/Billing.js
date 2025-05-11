@@ -67,9 +67,10 @@ const Billing = sequelize.define('Billing', {
       key: 'id'
     }
   },
-  referralNote: {
-    type: DataTypes.STRING,
-    allowNull: true
+  marketingcommission: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    defaultValue : 0
   }
 });
 

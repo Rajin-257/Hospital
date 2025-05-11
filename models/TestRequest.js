@@ -20,11 +20,21 @@ const TestRequest = sequelize.define('TestRequest', {
     defaultValue: 'Normal'
   },
   status: {
-    type: DataTypes.ENUM('Requested', 'In Progress', 'Completed'),
-    defaultValue: 'Requested'
+    type: DataTypes.ENUM('Pending', 'In Progress', 'Completed', 'Delivered', 'Cancelled'),
+    defaultValue: 'Pending'
   },
-  result: {
-    type: DataTypes.TEXT
+  resultFile: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'JSON string of file paths or single path'
+  },
+  resultNotes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  completedDate: {
+    type: DataTypes.DATE,
+    allowNull: true
   },
   billingStatus: {
     type: DataTypes.ENUM('billed', 'not_billed'),
@@ -42,6 +52,10 @@ const TestRequest = sequelize.define('TestRequest', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
     defaultValue: 0
+  },
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 });
 

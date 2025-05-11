@@ -55,6 +55,22 @@
                 </div>
             </div>
             
+            <!-- Unbilled Appointments Section -->
+            <div class="card mb-3">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Unbilled Appointments</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="refresh-appointments">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="unbilled-appointments-container">
+                        <p class="text-muted text-center" id="no-appointments-msg">No unbilled appointments found</p>
+                        <div id="appointment-list" class="list-group"></div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Bill Summary -->
             <div class="card">
                 <div class="card-header bg-light">
@@ -125,10 +141,8 @@
                             <thead class="table-light">
                                 <tr>
                                     <th width="15%">Type</th>
-                                    <th width="45%">Description</th>
-                                    <th width="15%" class="text-end">Price</th>
-                                    <th width="10%">Qty</th>
-                                    <th width="15%" class="text-end">Amount</th>
+                                    <th width="55%">Description</th>
+                                    <th width="25%" class="text-end">Price</th>
                                     <th width="5%"></th>
                                 </tr>
                             </thead>
@@ -140,17 +154,11 @@
                                                 <%= item.type.charAt(0).toUpperCase() + item.type.slice(1) %>
                                                 <input type="hidden" class="item-type" value="<%= item.type %>">
                                                 <input type="hidden" class="item-id" value="<%= item.id %>">
+                                                <input type="hidden" class="item-quantity" value="1">
                                             </td>
                                             <td><%= item.name %></td>
                                             <td class="text-end">
-                                                <span class="item-price"><%= parseFloat(item.price).toFixed(2) %></span>
-                                            </td>
-                                            <td>
-                                                <input type="number" class="form-control form-control-sm item-quantity" 
-                                                    value="<%= item.quantity %>" min="1">
-                                            </td>
-                                            <td class="text-end">
-                                                <span class="item-amount"><%= parseFloat(item.amount).toFixed(2) %></span>
+                                                <span class="item-price item-amount"><%= parseFloat(item.price).toFixed(2) %></span>
                                             </td>
                                             <td class="text-center">
                                                 <button type="button" class="btn btn-sm btn-outline-danger remove-item">
@@ -161,7 +169,7 @@
                                     <% }); %>
                                 <% } else { %>
                                     <tr id="no-items-row">
-                                        <td colspan="6" class="text-center text-muted py-3">
+                                        <td colspan="4" class="text-center text-muted py-3">
                                             <i class="fas fa-info-circle me-1"></i> No items added yet
                                         </td>
                                     </tr>
@@ -189,7 +197,7 @@
                         <label class="form-label fw-bold">Item Type</label>
                         <select class="form-select" id="item-type" required>
                             <option value="">-- Select Type --</option>
-                            <option value="doctor">Doctor Fee</option>
+                            <option value="appointment">Doctor Fee</option>
                             <option value="test">Test</option>
                             <option value="cabin">Cabin</option>
                             <!-- <option value="medicine">Medicine</option>
@@ -206,7 +214,7 @@
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label class="form-label">Select Doctor</label>
-                                    <select class="form-select" id="doctor-select-modal">
+                                    <select class="form-select" id="doctor-select-modal" size="5">
                                         <option value="">Select Doctor</option>
                                         <% doctors.forEach(doctor => { %>
                                             <option value="<%= doctor.id %>" 
@@ -245,7 +253,8 @@
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label class="form-label">Select Test</label>
-                                    <select class="form-select" id="test-select-modal">
+                                    <input type="text" class="form-control mb-2" id="test-search" placeholder="Search tests...">
+                                    <select class="form-select" id="test-select-modal" size="5">
                                         <option value="">Select Test</option>
                                         <% tests.forEach(test => { %>
                                             <option value="<%= test.id %>" 
@@ -330,21 +339,9 @@
                                     <label class="form-label">Item Description</label>
                                     <input type="text" class="form-control" id="item-description">
                                 </div>
-                                <div class="row g-3 mb-3">
-                                    <div class="col-6">
-                                        <label class="form-label">Price (Tk )</label>
-                                        <input type="number" class="form-control" id="item-price" min="0" step="0.01">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label">Quantity</label>
-                                        <input type="number" class="form-control" id="item-quantity" min="1" value="1">
-                                    </div>
-                                </div>
-                                <div class="mb-2 border-top pt-2">
-                                    <div class="row mb-1">
-                                        <div class="col-4 text-muted">Total Amount:</div>
-                                        <div class="col-8 fw-bold">Tk  <span id="item-total">0.00</span></div>
-                                    </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Price (Tk )</label>
+                                    <input type="number" class="form-control" id="item-price" min="0" step="0.01">
                                 </div>
                             </div>
                         </div>
@@ -359,6 +356,20 @@
     </div>
 </div>
 
+<!-- Loading Spinner Modal -->
+<div class="modal fade" id="loadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mb-0">Processing your request...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 $(document).ready(function() {
     // Initial setup of values from existing bill data
@@ -367,11 +378,17 @@ $(document).ready(function() {
     // Track if items have been modified
     let itemsModified = false;
     
+    // Function to safely parse float values
+    function safeParseFloat(value) {
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    
     // Function to recalculate the totals based on items in the table
     function recalculateItemsTotal() {
         let itemsTotal = 0;
-        $('.item-amount').each(function() {
-            itemsTotal += parseFloat($(this).text()) || 0;
+        $('.item-price').each(function() {
+            itemsTotal += safeParseFloat($(this).text());
         });
         return itemsTotal;
     }
@@ -392,12 +409,160 @@ $(document).ready(function() {
     // Call this once at the beginning to ensure values are displayed correctly
     initializeOrUpdateTotals();
     
+    // Load unbilled appointments for the selected patient
+    function loadUnbilledAppointments() {
+        const patientId = $('#patient-select').val();
+        if (!patientId) {
+            $('#appointment-list').empty();
+            $('#no-appointments-msg').show();
+            return;
+        }
+        
+        $('#appointment-list').empty();
+        $('#no-appointments-msg').text('Loading appointments...');
+        
+        $.ajax({
+            url: `/billing/patient/${patientId}/unbilled-appointments`,
+            type: 'GET',
+            success: function(appointments) {
+                $('#appointment-list').empty();
+                
+                if (appointments && appointments.length > 0) {
+                    $('#no-appointments-msg').hide();
+                    
+                    appointments.forEach(appointment => {
+                        const appointmentDate = new Date(appointment.appointmentDate);
+                        const formattedDate = appointmentDate.toLocaleDateString();
+                        
+                        const appointmentItem = `
+                            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div><strong>Dr. ${appointment.Doctor.name}</strong></div>
+                                    <div class="small text-muted">${formattedDate} at ${appointment.appointmentTime}</div>
+                                </div>
+                                <button class="btn btn-sm btn-outline-success add-appointment-btn" 
+                                    data-id="${appointment.id}"
+                                    data-doctor-id="${appointment.DoctorId}"
+                                    data-doctor-name="Dr. ${appointment.Doctor.name}"
+                                    data-doctor-fee="${appointment.Doctor.consultationFee || 0}"
+                                    data-specialization="${appointment.Doctor.specialization || ''}">
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
+                            </div>
+                        `;
+                        
+                        $('#appointment-list').append(appointmentItem);
+                    });
+                    
+                    // Add event handlers for the add buttons
+                    $('.add-appointment-btn').click(function() {
+                        const appointmentId = $(this).data('id');
+                        const doctorId = $(this).data('doctor-id');
+                        const doctorName = $(this).data('doctor-name');
+                        const doctorFee = parseFloat($(this).data('doctor-fee')) || 0;
+                        const specialization = $(this).data('specialization') || '';
+                        
+                        // Add this appointment as an item to the bill
+                        addDoctorAppointmentToBill(appointmentId, doctorId, doctorName, doctorFee, specialization);
+                        
+                        // Remove this appointment from the list
+                        $(this).closest('.list-group-item').fadeOut(300, function() { 
+                            $(this).remove();
+                            if ($('#appointment-list').children().length === 0) {
+                                $('#no-appointments-msg').text('No unbilled appointments found').show();
+                            }
+                        });
+                    });
+                    
+                } else {
+                    $('#no-appointments-msg').text('No unbilled appointments found').show();
+                }
+            },
+            error: function(xhr) {
+                console.error('Error loading appointments:', xhr);
+                $('#no-appointments-msg').text('Failed to load appointments').show();
+            }
+        });
+    }
+    
+    // Function to add a doctor appointment to the bill
+    function addDoctorAppointmentToBill(appointmentId, doctorId, doctorName, doctorFee, specialization) {
+        // Check if this appointment is already added
+        let isAlreadyAdded = false;
+        $('.item-row').each(function() {
+            const type = $(this).find('.item-type').val();
+            const id = $(this).find('.item-id').val();
+            if (type === 'appointment' && id === doctorId.toString()) {
+                isAlreadyAdded = true;
+                return false; // Break the loop
+            }
+        });
+        
+        if (isAlreadyAdded) {
+            if (!confirm('This doctor is already added to the bill. Do you want to add again?')) {
+                return;
+            }
+        }
+        
+        // Remove "no items" row if it exists
+        if ($('#no-items-row').length) {
+            $('#no-items-row').remove();
+        }
+        
+        const newRow = `
+            <tr class="item-row">
+                <td>
+                    Appointment
+                    <input type="hidden" class="item-type" value="appointment">
+                    <input type="hidden" class="item-id" value="${doctorId}">
+                    <input type="hidden" class="item-appointment-id" value="${appointmentId}">
+                    <input type="hidden" class="item-quantity" value="1">
+                </td>
+                <td>${doctorName} (${specialization})</td>
+                <td class="text-end">
+                    <span class="item-price">${doctorFee.toFixed(2)}</span>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        
+        $('#bill-items-list').append(newRow);
+        
+        // Mark that items have been modified
+        itemsModified = true;
+        
+        // Recalculate totals
+        initializeOrUpdateTotals();
+        
+        // Alert success
+        alert(`Added ${doctorName}'s appointment to the bill`);
+    }
+    
+    // Load unbilled appointments when patient is selected
+    $('#patient-select').change(function() {
+        loadUnbilledAppointments();
+    });
+    
+    // Refresh appointments button
+    $('#refresh-appointments').click(function() {
+        loadUnbilledAppointments();
+    });
+    
+    // Initial load of appointments if a patient is already selected
+    if ($('#patient-select').val()) {
+        loadUnbilledAppointments();
+    }
+    
     // Show/hide appropriate section based on item type
     $('#item-type').change(function() {
         const itemType = $(this).val();
         $('.item-section').hide();
         
-        if (itemType === 'doctor') {
+        if (itemType === 'appointment') {
             $('#doctor-section').show();
         } else if (itemType === 'test') {
             $('#test-section').show();
@@ -408,6 +573,34 @@ $(document).ready(function() {
         }
     });
     
+    // Doctor search functionality
+    $('#doctor-search').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase().trim();
+        
+        $('#doctor-select-modal option').each(function() {
+            const optionText = $(this).text().toLowerCase();
+            if (searchTerm === '' || optionText.indexOf(searchTerm) > -1) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    });
+    
+    // Test search functionality
+    $('#test-search').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase().trim();
+        
+        $('#test-select-modal option').each(function() {
+            const optionText = $(this).text().toLowerCase();
+            if (searchTerm === '' || optionText.indexOf(searchTerm) > -1) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    });
+    
     // Doctor selection
     $('#doctor-select-modal').change(function() {
         const selected = $(this).find('option:selected');
@@ -415,7 +608,7 @@ $(document).ready(function() {
         if (selected.val()) {
             const name = selected.attr('data-name');
             const specialization = selected.attr('data-specialization');
-            const fee = parseFloat(selected.attr('data-fee'));
+            const fee = safeParseFloat(selected.attr('data-fee'));
             
             $('#doctor-name-display').text(name);
             $('#doctor-specialization-display').text(specialization);
@@ -433,7 +626,7 @@ $(document).ready(function() {
         
         if (selected.val()) {
             const name = selected.attr('data-name');
-            const price = parseFloat(selected.attr('data-price'));
+            const price = safeParseFloat(selected.attr('data-price'));
             
             $('#test-name-display').text(name);
             $('#test-price-display').text('Tk  ' + price.toFixed(2));
@@ -450,7 +643,7 @@ $(document).ready(function() {
         if (selected.val()) {
             const number = selected.attr('data-number');
             const type = selected.attr('data-type');
-            const rate = parseFloat(selected.attr('data-rate'));
+            const rate = safeParseFloat(selected.attr('data-rate'));
             const days = parseInt($('#cabin-days').val()) || 1;
             const total = rate * days;
             
@@ -465,12 +658,15 @@ $(document).ready(function() {
             $('#cabin-total-display').text('-');
         }
     });
-    
-    // Other item calculation
-    $('#item-price, #item-quantity').on('input', function() {
-        const price = parseFloat($('#item-price').val()) || 0;
-        const quantity = parseInt($('#item-quantity').val()) || 0;
-        $('#item-total').text((price * quantity).toFixed(2));
+
+    // Ensure cabin days is a positive number
+    $('#cabin-days').on('change', function() {
+        const value = parseInt($(this).val()) || 1;
+        if (value < 1) {
+            $(this).val(1);
+            // Trigger change event to update displays
+            $(this).trigger('change');
+        }
     });
 
     // Show add item modal
@@ -489,289 +685,344 @@ $(document).ready(function() {
             return;
         }
         
-        let itemId, itemName, itemPrice, itemQuantity, itemAmount;
+        let itemId, itemName, itemPrice;
         
-        // Process based on item type
-        if (itemType === 'doctor') {
-            const selected = $('#doctor-select-modal').find('option:selected');
-            if (!selected.val()) {
-                alert('Please select a doctor');
-                return;
+        try {
+            // Process based on item type
+            if (itemType === 'appointment') {
+                const selected = $('#doctor-select-modal').find('option:selected');
+                if (!selected.val()) {
+                    alert('Please select a doctor');
+                    return;
+                }
+                
+                itemId = selected.val();
+                itemName = selected.attr('data-name');
+                itemPrice = safeParseFloat(selected.attr('data-fee'));
+                
+                // Check if doctor is already added
+                const existingDoctorItems = [];
+                $('.item-row').each(function() {
+                    const type = $(this).find('.item-type').val();
+                    const id = $(this).find('.item-id').val();
+                    if (type === 'appointment' && id === itemId) {
+                        existingDoctorItems.push($(this));
+                    }
+                });
+                
+                if (existingDoctorItems.length > 0) {
+                    if (!confirm('This doctor is already added to the bill. Do you want to add again?')) {
+                        return;
+                    }
+                }
+                
+            } else if (itemType === 'test') {
+                const selected = $('#test-select-modal').find('option:selected');
+                if (!selected.val()) {
+                    alert('Please select a test');
+                    return;
+                }
+                
+                itemId = selected.val();
+                itemName = selected.attr('data-name');
+                itemPrice = safeParseFloat(selected.attr('data-price'));
+                
+                // Check if test is already added
+                const existingTestItems = [];
+                $('.item-row').each(function() {
+                    const type = $(this).find('.item-type').val();
+                    const id = $(this).find('.item-id').val();
+                    if (type === 'test' && id === itemId) {
+                        existingTestItems.push($(this));
+                    }
+                });
+                
+                if (existingTestItems.length > 0) {
+                    if (!confirm('This test is already added to the bill. Do you want to add again?')) {
+                        return;
+                    }
+                }
+                
+            } else if (itemType === 'cabin') {
+                const selected = $('#cabin-select-modal').find('option:selected');
+                if (!selected.val()) {
+                    alert('Please select a cabin');
+                    return;
+                }
+                
+                itemId = selected.val();
+                const cabinNumber = selected.attr('data-number');
+                const cabinType = selected.attr('data-type');
+                const days = parseInt($('#cabin-days').val()) || 1;
+                const rate = safeParseFloat(selected.attr('data-rate'));
+                
+                if (days < 1) {
+                    alert('Stay duration must be at least 1 day');
+                    return;
+                }
+                
+                itemName = `Cabin #${cabinNumber} (${cabinType}) - ${days} day${days > 1 ? 's' : ''}`;
+                itemPrice = rate * days;
+                
+                // Check if cabin is already added
+                const existingCabinItems = [];
+                $('.item-row').each(function() {
+                    const type = $(this).find('.item-type').val();
+                    const id = $(this).find('.item-id').val();
+                    if (type === 'cabin' && id === itemId) {
+                        existingCabinItems.push($(this));
+                    }
+                });
+                
+                if (existingCabinItems.length > 0) {
+                    if (!confirm('This cabin is already added to the bill. Do you want to add again?')) {
+                        return;
+                    }
+                }
+                
+            } else if (itemType === 'medicine' || itemType === 'other') {
+                itemId = 'custom-' + Date.now();
+                itemName = $('#item-description').val();
+                if (!itemName) {
+                    alert('Please enter item description');
+                    return;
+                }
+                
+                itemPrice = safeParseFloat($('#item-price').val());
+                if (isNaN(itemPrice) || itemPrice <= 0) {
+                    alert('Please enter a valid price');
+                    return;
+                }
             }
             
-            itemId = selected.val();
-            itemName = selected.attr('data-name');
-            itemPrice = parseFloat(selected.attr('data-fee'));
-            itemQuantity = 1; // Ensure default is 1
-            itemAmount = itemPrice * itemQuantity;
-            
-        } else if (itemType === 'test') {
-            const selected = $('#test-select-modal').find('option:selected');
-            if (!selected.val()) {
-                alert('Please select a test');
-                return;
+            // Add item to table
+            if ($('#no-items-row').length) {
+                $('#no-items-row').remove();
             }
             
-            itemId = selected.val();
-            itemName = selected.attr('data-name');
-            itemPrice = parseFloat(selected.attr('data-price'));
-            itemQuantity = 1; // Ensure default is 1
-            itemAmount = itemPrice * itemQuantity;
+            const newRow = `
+                <tr class="item-row">
+                    <td>
+                        ${itemType.charAt(0).toUpperCase() + itemType.slice(1)}
+                        <input type="hidden" class="item-type" value="${itemType}">
+                        <input type="hidden" class="item-id" value="${itemId}">
+                        <input type="hidden" class="item-quantity" value="1">
+                    </td>
+                    <td>${itemName}</td>
+                    <td class="text-end">
+                        <span class="item-price">${itemPrice.toFixed(2)}</span>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-item">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
             
-        } else if (itemType === 'cabin') {
-            const selected = $('#cabin-select-modal').find('option:selected');
-            if (!selected.val()) {
-                alert('Please select a cabin');
-                return;
-            }
+            $('#bill-items-list').append(newRow);
             
-            itemId = selected.val();
-            const cabinNumber = selected.attr('data-number');
-            const cabinType = selected.attr('data-type');
-            itemName = `Cabin #${cabinNumber} (${cabinType})`;
+            // Mark that items have been modified
+            itemsModified = true;
             
-            const days = parseInt($('#cabin-days').val()) || 1;
-            itemPrice = parseFloat(selected.attr('data-rate'));
+            // Recalculate totals
+            initializeOrUpdateTotals();
             
-            // Print the raw attribute value for debugging
-            console.log('Raw cabin rate attribute:', selected.attr('data-rate'));
-            
-            itemQuantity = days < 1 ? 1 : days; // Ensure minimum of 1
-            itemAmount = itemPrice * itemQuantity;
-            
-            console.log('Cabin data:', {
-                cabinId: itemId,
-                cabinNumber,
-                cabinType,
-                rate: itemPrice,
-                days: itemQuantity,
-                amount: itemAmount
-            });
-            
-        } else if (itemType === 'medicine' || itemType === 'other') {
-            itemId = 'custom-' + Date.now();
-            itemName = $('#item-description').val();
-            if (!itemName) {
-                alert('Please enter item description');
-                return;
-            }
-            
-            itemPrice = parseFloat($('#item-price').val());
-            if (isNaN(itemPrice) || itemPrice <= 0) {
-                alert('Please enter a valid price');
-                return;
-            }
-            
-            itemQuantity = parseInt($('#item-quantity').val()) || 1; // Default to 1 if invalid
-            if (itemQuantity < 1) {
-                itemQuantity = 1; // Ensure minimum of 1
-                $('#item-quantity').val(1);
-            }
-            
-            itemAmount = itemPrice * itemQuantity;
+            // Close modal
+            $('#addItemModal').modal('hide');
+        } catch (error) {
+            console.error('Error adding item:', error);
+            alert('An error occurred while adding the item. Please try again.');
         }
-        
-        // Add item to table
-        if ($('#no-items-row').length) {
-            $('#no-items-row').remove();
-        }
-        
-        const newRow = `
-            <tr class="item-row">
-                <td>
-                    ${itemType.charAt(0).toUpperCase() + itemType.slice(1)}
-                    <input type="hidden" class="item-type" value="${itemType}">
-                    <input type="hidden" class="item-id" value="${itemId}">
-                </td>
-                <td>${itemName}</td>
-                <td class="text-end">
-                    <span class="item-price">${itemPrice.toFixed(2)}</span>
-                </td>
-                <td>
-                    <input type="number" class="form-control form-control-sm item-quantity" 
-                        value="${itemQuantity}" min="1">
-                </td>
-                <td class="text-end">
-                    <span class="item-amount">${itemAmount.toFixed(2)}</span>
-                </td>
-                <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-danger remove-item">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-        
-        $('#bill-items-list').append(newRow);
-        
-        // Mark that items have been modified
-        itemsModified = true;
-        
-        // Recalculate totals
-        initializeOrUpdateTotals();
-        
-        // Close modal
-        $('#addItemModal').modal('hide');
     });
 
     // Remove item
     $(document).on('click', '.remove-item', function() {
-        // Mark items as modified
-        itemsModified = true;
-        
-        $(this).closest('tr').remove();
-        
-        if ($('#bill-items-list tr').length === 0) {
-            $('#bill-items-list').append(`
-                <tr id="no-items-row">
-                    <td colspan="6" class="text-center text-muted py-3">
-                        <i class="fas fa-info-circle me-1"></i> No items added yet
-                    </td>
-                </tr>
-            `);
+        try {
+            // Mark items as modified
+            itemsModified = true;
+            
+            $(this).closest('tr').remove();
+            
+            if ($('#bill-items-list tr').length === 0) {
+                $('#bill-items-list').append(`
+                    <tr id="no-items-row">
+                        <td colspan="4" class="text-center text-muted py-3">
+                            <i class="fas fa-info-circle me-1"></i> No items added yet
+                        </td>
+                    </tr>
+                `);
+            }
+            
+            // Recalculate totals
+            initializeOrUpdateTotals();
+        } catch (error) {
+            console.error('Error removing item:', error);
+            alert('An error occurred while removing the item. Please try again.');
         }
-        
-        // Recalculate totals
-        initializeOrUpdateTotals();
-    });
-
-    // Update item quantity
-    $(document).on('input', '.item-quantity', function() {
-        const row = $(this).closest('tr');
-        const price = parseFloat(row.find('.item-price').text());
-        const quantity = parseInt($(this).val()) || 0;
-        const amount = price * quantity;
-        
-        row.find('.item-amount').text(amount.toFixed(2));
-        
-        // Mark items as modified
-        itemsModified = true;
-        
-        // Recalculate totals
-        initializeOrUpdateTotals();
     });
 
     // Update discount percentage
     $('#discount-percent').on('input', function() {
-        const percent = parseFloat($(this).val()) || 0;
-        const subtotal = parseFloat($('#subtotal').text());
-        const amount = (subtotal * percent / 100).toFixed(2);
-        
-        $('#discount-amount').val(amount);
-        updateNetAndDue();
+        try {
+            const percent = safeParseFloat($(this).val());
+            const subtotal = safeParseFloat($('#subtotal').text());
+            const amount = (subtotal * percent / 100).toFixed(2);
+            
+            $('#discount-amount').val(amount);
+            updateNetAndDue();
+        } catch (error) {
+            console.error('Error updating discount percent:', error);
+        }
     });
 
     // Update discount amount
     $('#discount-amount').on('input', function() {
-        const amount = parseFloat($(this).val()) || 0;
-        const subtotal = parseFloat($('#subtotal').text());
-        
-        if (subtotal > 0) {
-            const percent = ((amount / subtotal) * 100).toFixed(1);
-            $('#discount-percent').val(percent);
-        } else {
-            $('#discount-percent').val(0);
+        try {
+            const amount = safeParseFloat($(this).val());
+            const subtotal = safeParseFloat($('#subtotal').text());
+            
+            if (subtotal > 0) {
+                const percent = ((amount / subtotal) * 100).toFixed(1);
+                $('#discount-percent').val(percent);
+            } else {
+                $('#discount-percent').val(0);
+            }
+            
+            updateNetAndDue();
+        } catch (error) {
+            console.error('Error updating discount amount:', error);
         }
-        
-        updateNetAndDue();
     });
 
     // Update due amount when paid amount changes
     $('#paid-amount').on('input', function() {
-        updateDueAmount();
+        try {
+            updateDueAmount();
+        } catch (error) {
+            console.error('Error updating paid amount:', error);
+        }
     });
-
-    // Update totals (subtotal, net payable, due)
-    function updateTotals() {
-        initializeOrUpdateTotals();
-    }
 
     // Update net payable and due amount
     function updateNetAndDue() {
-        const subtotal = parseFloat($('#subtotal').text());
-        const discount = parseFloat($('#discount-amount').val()) || 0;
-        const netPayable = Math.max(0, subtotal - discount);
-        
-        $('#net-payable').text(netPayable.toFixed(2));
-        updateDueAmount();
+        try {
+            const subtotal = safeParseFloat($('#subtotal').text());
+            const discount = safeParseFloat($('#discount-amount').val());
+            const netPayable = Math.max(0, subtotal - discount);
+            
+            $('#net-payable').text(netPayable.toFixed(2));
+            updateDueAmount();
+        } catch (error) {
+            console.error('Error in updateNetAndDue:', error);
+        }
     }
 
     // Update due amount
     function updateDueAmount() {
-        const netPayable = parseFloat($('#net-payable').text());
-        const paidAmount = parseFloat($('#paid-amount').val()) || 0;
-        const dueAmount = Math.max(0, netPayable - paidAmount);
-        
-        $('#due-amount').text(dueAmount.toFixed(2));
+        try {
+            const netPayable = safeParseFloat($('#net-payable').text());
+            const paidAmount = safeParseFloat($('#paid-amount').val());
+            const dueAmount = Math.max(0, netPayable - paidAmount);
+            
+            $('#due-amount').text(dueAmount.toFixed(2));
+        } catch (error) {
+            console.error('Error in updateDueAmount:', error);
+        }
     }
 
     // Handle update bill button
     $('#update-bill-btn').click(function() {
-        // Validate items
-        if ($('#bill-items-list .item-row').length === 0) {
-            alert('Please add at least one item to the bill');
-            return;
-        }
-        
-        // Validate patient
-        const patientId = $('#patient-select').val();
-        if (!patientId) {
-            alert('Please select a patient');
-            $('#patient-select').focus();
-            return;
-        }
-        
-        // Collect all items
-        const items = [];
-        $('#bill-items-list .item-row').each(function() {
-            const row = $(this);
-            const item = {
-                type: row.find('.item-type').val(),
-                id: row.find('.item-id').val(),
-                name: row.find('td:nth-child(2)').text().trim(),
-                price: parseFloat(row.find('.item-price').text()),
-                quantity: parseInt(row.find('.item-quantity').val()),
-                amount: parseFloat(row.find('.item-amount').text())
-            };
-            
-            items.push(item);
-        });
-        
-        // Collect billing details
-        const totalAmount = parseFloat($('#subtotal').text());
-        const discountPercentage = parseFloat($('#discount-percent').val()) || 0;
-        const discountAmount = parseFloat($('#discount-amount').val()) || 0;
-        const netPayable = parseFloat($('#net-payable').text());
-        const paidAmount = parseFloat($('#paid-amount').val()) || 0;
-        const dueAmount = parseFloat($('#due-amount').text());
-        const paymentMethod = $('#payment-method').val();
-        const billdelivaridate = $('#bill-delivari-date').val();
-        
-        // Submit update request
-        $.ajax({
-            url: `/billing/<%= billing.id %>`,
-            type: 'PUT',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                patientId,
-                totalAmount,
-                discountPercentage,
-                discountAmount,
-                netPayable,
-                paymentMethod,
-                paidAmount,
-                dueAmount,
-                items: JSON.stringify(items),
-                billdelivaridate
-            }),
-            success: function(response) {
-                alert('Bill updated successfully!');
-                window.location.href = `/billing/receipt/${response.billing.id}`;
-            },
-            error: function(xhr) {
-                alert('Error updating bill: ' + (xhr.responseJSON?.message || 'Unknown error'));
+        try {
+            // Validate items
+            if ($('#bill-items-list .item-row').length === 0) {
+                alert('Please add at least one item to the bill');
+                return;
             }
-        });
+            
+            // Validate patient
+            const patientId = $('#patient-select').val();
+            if (!patientId) {
+                alert('Please select a patient');
+                $('#patient-select').focus();
+                return;
+            }
+            
+            // Collect all items
+            const items = [];
+            const appointmentIds = [];
+            
+            $('#bill-items-list .item-row').each(function() {
+                const row = $(this);
+                const itemType = row.find('.item-type').val();
+                
+                const item = {
+                    type: itemType,
+                    id: row.find('.item-id').val(),
+                    name: row.find('td:nth-child(2)').text().trim(),
+                    price: safeParseFloat(row.find('.item-price').text()),
+                    quantity: 1,
+                    amount: safeParseFloat(row.find('.item-price').text())
+                };
+                
+                // If it's a doctor appointment, collect the appointment ID
+                if (itemType === 'appointment') {
+                    const appointmentId = row.find('.item-appointment-id').val();
+                    if (appointmentId) {
+                        appointmentIds.push(appointmentId);
+                    }
+                }
+                
+                items.push(item);
+            });
+            
+            // Collect billing details
+            const totalAmount = safeParseFloat($('#subtotal').text());
+            const discountPercentage = safeParseFloat($('#discount-percent').val());
+            const discountAmount = safeParseFloat($('#discount-amount').val());
+            const netPayable = safeParseFloat($('#net-payable').text());
+            const paidAmount = safeParseFloat($('#paid-amount').val());
+            const dueAmount = safeParseFloat($('#due-amount').text());
+            const paymentMethod = $('#payment-method').val();
+            const billdelivaridate = $('#bill-delivari-date').val();
+            
+            // Show loading spinner
+            $('#loadingModal').modal('show');
+            
+            // Submit update request
+            $.ajax({
+                url: `/billing/<%= billing.id %>`,
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    patientId,
+                    totalAmount,
+                    discountPercentage,
+                    discountAmount,
+                    netPayable,
+                    paymentMethod,
+                    paidAmount,
+                    dueAmount,
+                    items: JSON.stringify(items),
+                    appointmentIds: JSON.stringify(appointmentIds),
+                    billdelivaridate
+                }),
+                success: function(response) {
+                    $('#loadingModal').modal('hide');
+                    alert('Bill updated successfully!');
+                    window.location.href = `/billing/receipt/${response.billing.id}`;
+                },
+                error: function(xhr) {
+                    $('#loadingModal').modal('hide');
+                    alert('Error updating bill: ' + (xhr.responseJSON?.message || 'Unknown error'));
+                    console.error('Error updating bill:', xhr);
+                }
+            });
+        } catch (error) {
+            $('#loadingModal').modal('hide');
+            console.error('Error in update bill process:', error);
+            alert('An error occurred while updating the bill. Please check the console for details.');
+        }
     });
 });
 </script>

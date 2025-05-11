@@ -407,3 +407,245 @@ exports.deleteTestRequisition = async (req, res) => {
     });
   }
 };
+
+// Get single test requisition
+exports.getTestRequisition = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const testRequisition = await TestRequest.findByPk(id, {
+      include: [
+        { model: Patient },
+        { model: Test },
+        { model: Doctor }
+      ]
+    });
+    
+    if (!testRequisition) {
+      return res.status(404).render('error', {
+        title: 'Error',
+        message: 'Test requisition not found'
+      });
+    }
+    
+    res.render('test_requisition_detail', {
+      title: 'Test Requisition Details',
+      requisition: testRequisition
+    });
+  } catch (error) {
+    console.error('Error getting test requisition:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to fetch test requisition details'
+    });
+  }
+};
+
+// Show edit test requisition page
+exports.editTestRequisitionPage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const testRequisition = await TestRequest.findByPk(id, {
+      include: [
+        { model: Patient },
+        { model: Test },
+        { model: Doctor }
+      ]
+    });
+    
+    if (!testRequisition) {
+      return res.status(404).render('error', {
+        title: 'Error',
+        message: 'Test requisition not found'
+      });
+    }
+    
+    // Get all doctors for dropdown
+    const doctors = await Doctor.findAll({
+      order: [['name', 'ASC']]
+    });
+    
+    res.render('test_requisition_edit', {
+      title: 'Edit Test Requisition',
+      requisition: testRequisition,
+      doctors
+    });
+  } catch (error) {
+    console.error('Error preparing edit page:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to load edit page'
+    });
+  }
+};
+
+// Update test requisition
+exports.updateTestRequisition = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      status, 
+      priority, 
+      doctorId, 
+      deliveryOption, 
+      deliveryDate,
+      notes
+    } = req.body;
+    
+    const testRequisition = await TestRequest.findByPk(id);
+    
+    if (!testRequisition) {
+      return res.status(404).render('error', {
+        title: 'Error',
+        message: 'Test requisition not found'
+      });
+    }
+    
+    // Update test requisition
+    await testRequisition.update({
+      status,
+      priority,
+      DoctorId: doctorId || null,
+      deliveryOption,
+      deliveryDate: deliveryDate || null,
+      notes: notes || null
+    });
+    
+    // Redirect to test requisition list with success message
+    res.redirect('/tests/requisitions?message=Test requisition updated successfully');
+  } catch (error) {
+    console.error('Error updating test requisition:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to update test requisition'
+    });
+  }
+};
+
+// Show upload result page
+exports.showResultUploadPage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const testRequisition = await TestRequest.findByPk(id, {
+      include: [
+        { model: Patient },
+        { model: Test }
+      ]
+    });
+    
+    if (!testRequisition) {
+      return res.status(404).render('error', {
+        title: 'Error',
+        message: 'Test requisition not found'
+      });
+    }
+    
+    res.render('test_result_upload', {
+      title: 'Upload Test Results',
+      requisition: testRequisition
+    });
+  } catch (error) {
+    console.error('Error showing upload page:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to load result upload page'
+    });
+  }
+};
+
+// Upload test results
+exports.uploadTestResults = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+    
+    // Check if there are files in the request
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).render('error', {
+        title: 'Error',
+        message: 'No files were uploaded'
+      });
+    }
+    
+    const testRequisition = await TestRequest.findByPk(id);
+    
+    if (!testRequisition) {
+      return res.status(404).render('error', {
+        title: 'Error',
+        message: 'Test requisition not found'
+      });
+    }
+    
+    // Create array of file paths
+    const filePaths = req.files.map(file => file.path.replace(/\\/g, '/').replace('public/', '/'));
+    
+    // Update test requisition with result file paths and change status
+    await testRequisition.update({
+      resultFile: JSON.stringify(filePaths),
+      resultNotes: notes || null,
+      status: 'Completed',
+      completedDate: new Date()
+    });
+    
+    res.redirect('/tests/requisitions?message=Test results uploaded successfully');
+  } catch (error) {
+    console.error('Error uploading test results:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to upload test results'
+    });
+  }
+};
+
+// View test result
+exports.viewTestResult = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const testRequisition = await TestRequest.findByPk(id, {
+      include: [
+        { model: Patient },
+        { model: Test },
+        { model: Doctor }
+      ]
+    });
+    
+    if (!testRequisition) {
+      return res.status(404).render('error', {
+        title: 'Error',
+        message: 'Test requisition not found'
+      });
+    }
+    
+    // Parse result file paths from JSON
+    let resultFiles = [];
+    if (testRequisition.resultFile) {
+      try {
+        resultFiles = JSON.parse(testRequisition.resultFile);
+        // If it's not an array, make it an array
+        if (!Array.isArray(resultFiles)) {
+          resultFiles = [resultFiles];
+        }
+      } catch (e) {
+        // If parsing fails, assume it's a single file path string
+        resultFiles = [testRequisition.resultFile];
+      }
+    }
+    
+    res.render('test_result_view', {
+      title: 'Test Results',
+      requisition: testRequisition,
+      resultFiles
+    });
+  } catch (error) {
+    console.error('Error viewing test results:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to view test results'
+    });
+  }
+};
+
+module.exports = exports;

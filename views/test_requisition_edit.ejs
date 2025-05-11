@@ -1,0 +1,147 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container py-4">
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="/tests/requisitions">Test Requisitions</a></li>
+          <li class="breadcrumb-item active">Edit Requisition</li>
+        </ol>
+      </nav>
+      <h2>
+        <i class="fas fa-edit me-2"></i>Edit Test Requisition
+      </h2>
+      <p class="text-muted">Update details for Test Requisition #<%= requisition.id %></p>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <form action="/tests/requisition/<%= requisition.id %>" method="POST">
+        <div class="row">
+          <!-- Requisition Info -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="patientName" class="form-label">Patient</label>
+              <input type="text" class="form-control" id="patientName" value="<%= requisition.Patient ? requisition.Patient.name : 'Unknown' %>" readonly>
+              <small class="text-muted"><%= requisition.Patient ? requisition.Patient.patientId : '' %></small>
+            </div>
+            
+            <div class="mb-3">
+              <label for="testName" class="form-label">Test</label>
+              <input type="text" class="form-control" id="testName" value="<%= requisition.Test ? requisition.Test.name : 'Unknown' %>" readonly>
+            </div>
+            
+            <div class="mb-3">
+              <label for="requestDate" class="form-label">Request Date</label>
+              <input type="text" class="form-control" id="requestDate" value="<%= new Date(requisition.requestDate).toLocaleDateString() %>" readonly>
+            </div>
+          </div>
+          
+          <!-- Status and Priority -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="status" class="form-label">Status</label>
+              <select class="form-select" id="status" name="status" required>
+                <option value="Pending" <%= requisition.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+                <option value="In Progress" <%= requisition.status === 'In Progress' ? 'selected' : '' %>>In Progress</option>
+                <option value="Completed" <%= requisition.status === 'Completed' ? 'selected' : '' %>>Completed</option>
+                <option value="Delivered" <%= requisition.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                <option value="Cancelled" <%= requisition.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+              </select>
+            </div>
+            
+            <div class="mb-3">
+              <label for="priority" class="form-label">Priority</label>
+              <select class="form-select" id="priority" name="priority" required>
+                <option value="Normal" <%= requisition.priority === 'Normal' ? 'selected' : '' %>>Normal</option>
+                <option value="Urgent" <%= requisition.priority === 'Urgent' ? 'selected' : '' %>>Urgent</option>
+              </select>
+            </div>
+            
+            <div class="mb-3">
+              <label for="doctorId" class="form-label">Referring Doctor</label>
+              <select class="form-select" id="doctorId" name="doctorId">
+                <option value="">-- No Doctor --</option>
+                <% if (doctors && doctors.length > 0) { %>
+                  <% doctors.forEach(doctor => { %>
+                    <option value="<%= doctor.id %>" <%= requisition.DoctorId === doctor.id ? 'selected' : '' %>>
+                      Dr. <%= doctor.name %>
+                    </option>
+                  <% }); %>
+                <% } %>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Delivery Options -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="deliveryOption" class="form-label">Delivery Option</label>
+              <select class="form-select" id="deliveryOption" name="deliveryOption" required>
+                <option value="Not Collected" <%= requisition.deliveryOption === 'Not Collected' ? 'selected' : '' %>>Not Collected</option>
+                <option value="Collect" <%= requisition.deliveryOption === 'Collect' ? 'selected' : '' %>>Collect</option>
+                <option value="Email" <%= requisition.deliveryOption === 'Email' ? 'selected' : '' %>>Email</option>
+                <option value="Home Delivery" <%= requisition.deliveryOption === 'Home Delivery' ? 'selected' : '' %>>Home Delivery</option>
+              </select>
+            </div>
+            
+            <div class="mb-3">
+              <label for="deliveryDate" class="form-label">Expected Delivery Date</label>
+              <input type="date" class="form-control" id="deliveryDate" name="deliveryDate" 
+                value="<%= requisition.deliveryDate ? new Date(requisition.deliveryDate).toISOString().split('T')[0] : '' %>">
+            </div>
+          </div>
+          
+          <!-- Notes -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="notes" class="form-label">Notes</label>
+              <textarea class="form-control" id="notes" name="notes" rows="5"><%= requisition.notes || '' %></textarea>
+            </div>
+          </div>
+        </div>
+        
+        <div class="d-flex justify-content-between mt-4">
+          <a href="/tests/requisitions" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to Requisitions
+          </a>
+          <div>
+            <% if (requisition.status !== 'Completed' && requisition.status !== 'Delivered') { %>
+              <a href="/tests/results/upload/<%= requisition.id %>" class="btn btn-info me-2">
+                <i class="fas fa-file-upload me-1"></i> Upload Results
+              </a>
+            <% } %>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-1"></i> Save Changes
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.getElementById('status');
+    const uploadBtn = document.querySelector('a[href^="/tests/results/upload/"]');
+    
+    // Hide/show upload button based on status change
+    if (statusSelect && uploadBtn) {
+      statusSelect.addEventListener('change', function() {
+        const status = this.value;
+        if (status === 'Completed' || status === 'Delivered') {
+          uploadBtn.classList.add('d-none');
+        } else {
+          uploadBtn.classList.remove('d-none');
+        }
+      });
+    }
+  });
+</script>
+
+<%- include('partials/footer') %> 
