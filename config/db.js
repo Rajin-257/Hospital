@@ -18,7 +18,7 @@ const connectDB = async () => {
     console.log('Database connected successfully');
     
     // Sync database
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ alter: false });
     console.log('Database synchronized');
     
     setTimeout(async () => {

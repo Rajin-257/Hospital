@@ -23,7 +23,7 @@ function initializeSelects() {
 
 // Format currency
 function formatCurrency(amount) {
-    return '$' + parseFloat(amount).toFixed(2);
+    return 'Tk ' + parseFloat(amount).toFixed(2);
 }
 
 // Format date

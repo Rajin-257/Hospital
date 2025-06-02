@@ -28,7 +28,7 @@
     }
     
     .invoice-subtitle {
-        font-size: 14px !important;
+        font-size: 15px !important;
         font-family: Arial, sans-serif;
         letter-spacing: -0.5px;
     }
@@ -44,13 +44,13 @@
     }
     
     .info-label {
-        font-size: 12px !important;
+        font-size: 13px !important;
         font-family: Arial, sans-serif;
         letter-spacing: -0.5px;
     }
     
     .info-value {
-        font-size: 13px !important;
+        font-size: 14px !important;
         margin-bottom: 0 !important;
         font-family: Arial, sans-serif;
         letter-spacing: -0.5px;
@@ -58,13 +58,13 @@
     
     /* Section titles and table elements */
     .section-title {
-        font-size: 12px !important;
+        font-size: 13px !important;
         font-family: Arial, sans-serif;
         letter-spacing: 0px;
     }
     
     .invoice-table th, .invoice-table td {
-        font-size: 12px !important;
+        font-size: 13px !important;
         font-family: Arial, sans-serif;
         letter-spacing: -0.5px;
     }
@@ -100,11 +100,11 @@
     
     /* Totals section */
     .invoice-total-label, .invoice-total-value {
-        font-size: 14px !important;
+        font-size: 15px !important;
     }
     
     .invoice-grand-total {
-        font-size: 16px !important;
+        font-size: 17px !important;
     }
     
     .barcode-container {
@@ -140,20 +140,20 @@
     
     /* Signature section */
     .signature-title {
-        font-size: 12px !important;
+        font-size: 13px !important;
     }
     
     .signature-subtitle {
-        font-size: 16px !important;
+        font-size: 17px !important;
     }
     
     /* Totals section */
     .invoice-total-label, .invoice-total-value {
-        font-size: 12px !important;
+        font-size: 13px !important;
     }
     
     .invoice-grand-total {
-        font-size: 14px !important;
+        font-size: 15px !important;
     }
     
     /* Invoice info spacing */
@@ -773,8 +773,7 @@ function formatAmount(amount) {
     <table class="invoice-info-table">
         <tr>
             <td style="width: 50%;">
-                <div class="info-label">Bill To</div>
-                <div class="info-value"><%= billing.Patient.name %></div>
+                <div class="info-value">Name: <%= billing.Patient.name %></div>
                 <div class="info-value">Patient ID: <%= billing.Patient.patientId %></div>
                 <div class="info-value">Age: <%= calculateAge(billing.Patient.dateOfBirth) %></div>
                 <div class="info-value">Gender: <%= billing.Patient.gender %></div>
@@ -977,7 +976,7 @@ function formatAmount(amount) {
                 <div class="invoice-total-value"><%- formatAmount(billing.totalAmount) %></div>
             </div>
             <div class="invoice-total-row">
-                <div class="invoice-total-label">Discount (<%= parseFloat(billing.discountPercentage).toFixed(2) %>%):</div>
+                <div class="invoice-total-label">Discount:</div>
                 <div class="invoice-total-value"><%- formatAmount(billing.discountAmount) %></div>
             </div>
             <div class="invoice-total-row invoice-grand-total">
@@ -1043,7 +1042,13 @@ function formatAmount(amount) {
                     <div class="col-md-2">
                         <label class="form-label">Additional Discount %</label>
                         <div class="input-group">
-                            <input type="number" class="form-control" id="second-discount-percent" name="secondDiscountPercentage" value="0" min="0" max="100" step="0.01">
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="second-discount-percent" 
+                                   name="secondDiscountPercentage"
+                                   step="0.01" 
+                                   min="0" 
+                                   max="100">
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
@@ -1051,7 +1056,7 @@ function formatAmount(amount) {
                         <label class="form-label">Additional Discount Amount</label>
                         <div class="input-group">
                             <span class="input-group-text">Tk</span>
-                            <input type="number" class="form-control" id="second-discount-amount" name="secondDiscountAmount" value="0" min="0" step="0.01">
+                            <input type="number" class="form-control" id="second-discount-amount" name="secondDiscountAmount">
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -1072,16 +1077,24 @@ function formatAmount(amount) {
                     <div class="col-md-12">
                         <div class="alert alert-info mb-0">
                             <div class="d-flex justify-content-between align-items-center">
-                                <span>Original Net Payable: </span>
-                                <strong>Tk <span id="original-net-payable"><%= parseFloat(billing.netPayable).toFixed(2) %></span></strong>
+                                <span>Previous Paid Amount: </span>
+                                <strong>Tk <span id="previous-paid-amount"><%= parseFloat(billing.paidAmount).toFixed(2) %></span></strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Current Due Amount: </span>
+                                <strong>Tk <span id="current-due-amount"><%= parseFloat(billing.dueAmount).toFixed(2) %></span></strong>
                             </div>
                             <div class="d-flex justify-content-between align-items-center">
                                 <span>Additional Discount: </span>
                                 <strong>Tk <span id="second-discount-total">0.00</span></strong>
                             </div>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span>Final Net Payable: </span>
-                                <strong>Tk <span id="final-net-payable"><%= parseFloat(billing.netPayable).toFixed(2) %></span></strong>
+                                <span>Final Due Amount: </span>
+                                <strong>Tk <span id="final-due-amount"><%= parseFloat(billing.dueAmount).toFixed(2) %></span></strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Total Amount After Payment: </span>
+                                <strong>Tk <span id="total-after-payment"><%= parseFloat(billing.paidAmount).toFixed(2) %></span></strong>
                             </div>
                         </div>
                     </div>
@@ -1141,7 +1154,8 @@ function formatAmount(amount) {
     // For payment form
     $(document).ready(function() {
         function updateSecondDiscount() {
-            const originalNetPayable = parseFloat($('#original-net-payable').text());
+            const previousPaidAmount = parseFloat($('#previous-paid-amount').text());
+            const currentDueAmount = parseFloat($('#current-due-amount').text());
             const secondDiscountPercent = parseFloat($('#second-discount-percent').val()) || 0;
             const secondDiscountAmount = parseFloat($('#second-discount-amount').val()) || 0;
             
@@ -1149,43 +1163,64 @@ function formatAmount(amount) {
             let totalSecondDiscount;
             if (secondDiscountAmount > 0) {
                 totalSecondDiscount = secondDiscountAmount;
-                // Update percentage if amount is manually entered
-                const calculatedPercent = (secondDiscountAmount / originalNetPayable * 100).toFixed(2);
+                // Update percentage if amount is manually entered - keep 2 decimal places
+                const calculatedPercent = (secondDiscountAmount / currentDueAmount * 100).toFixed(2);
                 $('#second-discount-percent').val(calculatedPercent);
             } else {
-                totalSecondDiscount = (originalNetPayable * secondDiscountPercent / 100);
+                // Calculate discount with higher precision
+                totalSecondDiscount = (currentDueAmount * (secondDiscountPercent / 100));
+                // Round to 2 decimal places for display
                 $('#second-discount-amount').val(totalSecondDiscount.toFixed(2));
             }
 
-            // Ensure discount doesn't exceed the net payable
-            if (totalSecondDiscount > originalNetPayable) {
-                totalSecondDiscount = originalNetPayable;
+            // Ensure discount doesn't exceed the current due amount
+            if (totalSecondDiscount > currentDueAmount) {
+                totalSecondDiscount = currentDueAmount;
                 $('#second-discount-amount').val(totalSecondDiscount.toFixed(2));
-                $('#second-discount-percent').val('100');
+                $('#second-discount-percent').val('100.00');
             }
 
-            const finalNetPayable = originalNetPayable - totalSecondDiscount;
+            const finalDueAmount = currentDueAmount - totalSecondDiscount;
 
-            // Update display values
+            // Update display values with 2 decimal precision
             $('#second-discount-total').text(totalSecondDiscount.toFixed(2));
-            $('#final-net-payable').text(finalNetPayable.toFixed(2));
-            $('#payment-amount').attr('max', finalNetPayable.toFixed(2));
-            $('#payment-amount').val(finalNetPayable.toFixed(2));
-        }
+            $('#final-due-amount').text(finalDueAmount.toFixed(2));
+            $('#payment-amount').attr('max', finalDueAmount.toFixed(2));
+            $('#payment-amount').val(finalDueAmount.toFixed(2));
+            
+            // Calculate total after payment
+            const paymentAmount = parseFloat($('#payment-amount').val()) || 0;
+            const totalAfterPayment = previousPaidAmount + paymentAmount;
+            $('#total-after-payment').text(totalAfterPayment.toFixed(2));
+        }   
 
-        // Add event listeners for second discount inputs
-        $('#second-discount-percent, #second-discount-amount').on('input', function() {
+        // Add event listeners for second discount inputs and payment amount
+        $('#second-discount-percent').on('input', function() {
+            // Ensure the percentage doesn't exceed 100
+            let value = parseFloat($(this).val());
+            if (value > 100) {
+                $(this).val('100.00');
+            }
+            updateSecondDiscount();
+        });
+
+        $('#second-discount-amount, #payment-amount').on('input', function() {
             updateSecondDiscount();
         });
 
         $('#payment-form').on('submit', function(e) {
             e.preventDefault();
+            const previousPaidAmount = parseFloat($('#previous-paid-amount').text());
+            const paymentAmount = parseFloat($('#payment-amount').val()) || 0;
+            const currentDueAmount = parseFloat($('#current-due-amount').text());
+            const totalAfterPayment = previousPaidAmount + paymentAmount;
             
             const paymentData = {
-                paidAmount: $('#payment-amount').val(),
+                paidAmount: totalAfterPayment,
                 paymentMethod: $('#payment-method').val(),
                 secondDiscountPercentage: $('#second-discount-percent').val(),
-                secondDiscountAmount: $('#second-discount-amount').val()
+                secondDiscountAmount: $('#second-discount-amount').val(),
+                previousPaidAmount: $('#previous-paid-amount').text()
             };
             
             $.ajax({

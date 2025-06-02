@@ -768,7 +768,7 @@
                 '<span class="badge bg-info">Normal</span>';
             
             const extraChargeDisplay = extraCharge > 0 ? 
-                ` <small class="text-muted">(+$${extraCharge.toFixed(2)} extra)</small>` : '';
+                ` <small class="text-muted">(+Tk ${extraCharge.toFixed(2)} extra)</small>` : '';
             
             // Format delivery date for display and storage
             const displayDeliveryDate = deliveryDate ? new Date(deliveryDate).toLocaleDateString() : 'N/A';
@@ -779,7 +779,7 @@
                     data-delivery-date="${deliveryDate || ''}" data-commission="${testCommission}"
                     data-doctor-id="${doctorId || ''}" data-doctor-name="${doctorName}">
                     <td>${testName}</td>
-                    <td>$${Math.round(totalPrice)}${extraChargeDisplay}</td>
+                    <td>Tk ${Math.round(totalPrice)}${extraChargeDisplay}</td>
                     <td>${priorityLabel}</td>
                     <td>${doctorName || 'None'}</td>
                     <td>${displayDeliveryDate}</td>
@@ -859,7 +859,7 @@
                                     <td>${formattedDate}</td>
                                     <td>${appointment.appointmentTime}</td>
                                     <td>Dr. ${appointment.Doctor.name}</td>
-                                    <td>$${Math.round(fee)}</td>
+                                    <td>Tk ${Math.round(fee)}</td>
                                 </tr>
                             `;
                             
@@ -907,8 +907,8 @@
                                     <td>${booking.Cabin.cabinType}</td>
                                     <td>${formattedDate}</td>
                                     <td>${days}</td>
-                                    <td>$${Math.round(dailyRate)}</td>
-                                    <td>$${Math.round(totalAmount)}</td>
+                                    <td>Tk ${Math.round(dailyRate)}</td>
+                                    <td>Tk ${Math.round(totalAmount)}</td>
                                 </tr>
                             `;
                             
