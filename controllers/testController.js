@@ -7,7 +7,9 @@ const { Op } = require('sequelize');
 // Get all tests
 exports.getAllTests = async (req, res) => {
   try {
-    const { search, priceRange } = req.query;
+    const { search, priceRange, page = 1 } = req.query;
+    const limit = 10;
+    const offset = (page - 1) * limit;
     
     // Define where conditions for search and filters
     const whereConditions = {};
@@ -34,21 +36,33 @@ exports.getAllTests = async (req, res) => {
           break;
       }
     }
-    
-    const tests = await Test.findAll({
+
+    const { count, rows: tests } = await Test.findAndCountAll({
       where: whereConditions,
-      order: [['name', 'ASC']]
+      order: [['name', 'ASC']],
+      limit,
+      offset
     });
     
+    const totalPages = Math.ceil(count / limit);
+    
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.json(tests);
+      return res.json({
+        tests,
+        currentPage: parseInt(page),
+        totalPages,
+        totalRecords: count
+      });
     }
     
     res.render('tests', {
       title: 'Tests',
       tests,
       search: search || '',
-      priceRange: priceRange || 'all'
+      priceRange: priceRange || 'all',
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
     });
   } catch (error) {
     console.error(error);

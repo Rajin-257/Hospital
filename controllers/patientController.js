@@ -4,15 +4,49 @@ const { Op } = require('sequelize');
 // Get all patients
 exports.getAllPatients = async (req, res) => {
   try {
-    const patients = await Patient.findAll();
+    const { search, page = 1 } = req.query;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+    
+    // Build query conditions
+    const whereConditions = {};
+    
+    // Search filter
+    if (search) {
+      whereConditions[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { patientId: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } }
+      ];
+    }
+    
+    // Count total patients matching filters
+    const { count, rows: patients } = await Patient.findAndCountAll({
+      where: whereConditions,
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+    });
+    
+    const totalPages = Math.ceil(count / limit);
     
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.json(patients);
+      return res.json({
+        patients,
+        currentPage: parseInt(page),
+        totalPages,
+        totalRecords: count
+      });
     }
     
     res.render('patients', {
       title: 'Patients',
-      patients
+      patients,
+      search: search || '',
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
     });
   } catch (error) {
     console.error(error);

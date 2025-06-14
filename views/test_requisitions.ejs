@@ -195,6 +195,14 @@
     </ul>
   </nav>
   <% } %>
+
+  <!-- Results info -->
+  <div class="text-center mt-3">
+    <small class="text-muted">
+      Showing <%= requisitions.length > 0 ? ((currentPage - 1) * 10 + 1) : 0 %> to 
+      <%= Math.min(currentPage * 10, totalRecords) %> of <%= totalRecords %> test requisitions
+    </small>
+  </div>
 </div>
 
 <!-- Print Styles -->

@@ -13,14 +13,43 @@
             <% } %>
         </div>
         <div class="card-body">
-            <div class="mb-3">
-                <div class="input-group">
-                    <input type="date" class="form-control" id="appointment-date-filter" value="<%= new Date().toISOString().split('T')[0] %>">
-                    <button class="btn btn-outline-secondary" type="button" id="filter-btn">
-                        <i class="fas fa-filter"></i> Filter
-                    </button>
+            <!-- Filters -->
+            <form method="GET" class="mb-3">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="all" <%= status === 'all' ? 'selected' : '' %>>All Status</option>
+                            <option value="scheduled" <%= status === 'scheduled' ? 'selected' : '' %>>Scheduled</option>
+                            <option value="completed" <%= status === 'completed' ? 'selected' : '' %>>Completed</option>
+                            <option value="cancelled" <%= status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="dateRange" class="form-label">Date Range</label>
+                        <select class="form-select" id="dateRange" name="dateRange">
+                            <option value="all" <%= dateRange === 'all' ? 'selected' : '' %>>All Dates</option>
+                            <option value="today" <%= dateRange === 'today' ? 'selected' : '' %>>Today</option>
+                            <option value="upcoming" <%= dateRange === 'upcoming' ? 'selected' : '' %>>Upcoming</option>
+                            <option value="week" <%= dateRange === 'week' ? 'selected' : '' %>>This Week</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               placeholder="Search by patient or doctor name..." value="<%= search %>">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-outline-primary me-2" type="submit">
+                            <i class="fas fa-search"></i> Filter
+                        </button>
+                        <a href="/appointments" class="btn btn-outline-secondary">
+                            <i class="fas fa-sync"></i>
+                        </a>
+                    </div>
                 </div>
-            </div>
+            </form>
+            
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead class="table-light">
@@ -71,6 +100,39 @@
                         <% }); %>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Pagination -->
+            <% if (appointments && appointments.length > 0 && totalPages > 1) { %>
+            <nav aria-label="Appointment pagination">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                        <a class="page-link" href="?page=<%= currentPage - 1 %>&status=<%= status %>&dateRange=<%= dateRange %>&search=<%= search %>" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    <% for(let i = 1; i <= totalPages; i++) { %>
+                    <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                        <a class="page-link" href="?page=<%= i %>&status=<%= status %>&dateRange=<%= dateRange %>&search=<%= search %>">
+                            <%= i %>
+                        </a>
+                    </li>
+                    <% } %>
+                    <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                        <a class="page-link" href="?page=<%= currentPage + 1 %>&status=<%= status %>&dateRange=<%= dateRange %>&search=<%= search %>" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <% } %>
+
+            <!-- Results info -->
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    Showing <%= appointments.length > 0 ? ((currentPage - 1) * 10 + 1) : 0 %> to 
+                    <%= Math.min(currentPage * 10, totalRecords) %> of <%= totalRecords %> appointments
+                </small>
             </div>
         </div>
     </div>

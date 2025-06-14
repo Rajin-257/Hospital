@@ -6,7 +6,9 @@ const { Op } = require('sequelize');
 // Get all cabins
 exports.getAllCabins = async (req, res) => {
   try {
-    const { search, cabinType, status } = req.query;
+    const { search, cabinType, status, page = 1 } = req.query;
+    const limit = 10;
+    const offset = (page - 1) * limit;
     
     // Define where conditions for search and filters
     const whereConditions = {};
@@ -28,14 +30,23 @@ exports.getAllCabins = async (req, res) => {
     if (status && status !== 'all') {
       whereConditions.status = status;
     }
-    
-    const cabins = await Cabin.findAll({
+
+    const { count, rows: cabins } = await Cabin.findAndCountAll({
       where: whereConditions,
-      order: [['cabinNumber', 'ASC']]
+      order: [['cabinNumber', 'ASC']],
+      limit,
+      offset
     });
     
+    const totalPages = Math.ceil(count / limit);
+    
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.json(cabins);
+      return res.json({
+        cabins,
+        currentPage: parseInt(page),
+        totalPages,
+        totalRecords: count
+      });
     }
     
     res.render('cabins', {
@@ -43,7 +54,10 @@ exports.getAllCabins = async (req, res) => {
       cabins,
       search: search || '',
       cabinType: cabinType || 'all',
-      status: status || 'all'
+      status: status || 'all',
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
     });
   } catch (error) {
     console.error(error);

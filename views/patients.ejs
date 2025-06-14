@@ -66,6 +66,39 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Pagination -->
+            <% if (patients && patients.length > 0 && totalPages > 1) { %>
+            <nav aria-label="Patient pagination">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                        <a class="page-link" href="?page=<%= currentPage - 1 %>&search=<%= search %>" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    <% for(let i = 1; i <= totalPages; i++) { %>
+                    <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                        <a class="page-link" href="?page=<%= i %>&search=<%= search %>">
+                            <%= i %>
+                        </a>
+                    </li>
+                    <% } %>
+                    <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                        <a class="page-link" href="?page=<%= currentPage + 1 %>&search=<%= search %>" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <% } %>
+
+            <!-- Results info -->
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    Showing <%= patients.length > 0 ? ((currentPage - 1) * 10 + 1) : 0 %> to 
+                    <%= Math.min(currentPage * 10, totalRecords) %> of <%= totalRecords %> patients
+                </small>
+            </div>
         </div>
     </div>
 </div>

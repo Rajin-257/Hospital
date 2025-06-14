@@ -12,33 +12,104 @@ function formatDate(dateString) {
 // Get all appointments
 exports.getAllAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.findAll({
-      include: [
-        { model: Patient },
-        { model: Doctor }
-      ],
-      order: [['appointmentDate', 'ASC'], ['appointmentTime', 'ASC']]
-    });
+    const { status, dateRange, search, page = 1 } = req.query;
+    const limit = 10;
+    const offset = (page - 1) * limit;
     
-    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.json(appointments);
+    // Build query conditions
+    const whereConditions = {};
+    
+    // Status filter
+    if (status && status !== 'all') {
+      whereConditions.status = status;
     }
     
-    // Fetch all patients and doctors for the appointment form
+    // Date range filter
+    if (dateRange && dateRange !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      switch (dateRange) {
+        case 'today':
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          whereConditions.appointmentDate = {
+            [Op.gte]: today,
+            [Op.lt]: tomorrow
+          };
+          break;
+        case 'upcoming':
+          whereConditions.appointmentDate = {
+            [Op.gte]: today
+          };
+          break;
+        case 'week':
+          const nextWeek = new Date(today);
+          nextWeek.setDate(nextWeek.getDate() + 7);
+          whereConditions.appointmentDate = {
+            [Op.gte]: today,
+            [Op.lte]: nextWeek
+          };
+          break;
+      }
+    }
+    
+    // Search filter (will be applied through include)
+    const includeOptions = [
+      { 
+        model: Patient,
+        where: search ? {
+          [Op.or]: [
+            { name: { [Op.like]: `%${search}%` } },
+            { patientId: { [Op.like]: `%${search}%` } }
+          ]
+        } : undefined
+      },
+      { 
+        model: Doctor,
+        where: search ? { name: { [Op.like]: `%${search}%` } } : undefined
+      }
+    ];
+    
+    const { count, rows: appointments } = await Appointment.findAndCountAll({
+      where: whereConditions,
+      include: includeOptions,
+      order: [['appointmentDate', 'ASC'], ['appointmentTime', 'ASC']],
+      limit,
+      offset,
+      distinct: true
+    });
+    
     const patients = await Patient.findAll({
-      order: [['name', 'ASC']]
+      attributes: ['id', 'name', 'patientId']
     });
     
     const doctors = await Doctor.findAll({
-      order: [['name', 'ASC']]
+      attributes: ['id', 'name', 'specialization']
     });
+    
+    const totalPages = Math.ceil(count / limit);
+    
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.json({
+        appointments,
+        currentPage: parseInt(page),
+        totalPages,
+        totalRecords: count
+      });
+    }
     
     res.render('appointments', {
       title: 'Appointments',
       appointments,
       patients,
       doctors,
-      formatDate
+      status: status || 'all',
+      dateRange: dateRange || 'all',
+      search: search || '',
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
     });
   } catch (error) {
     console.error(error);

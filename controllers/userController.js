@@ -1,69 +1,62 @@
 const User = require('../models/User');
 const { Op } = require('sequelize');
 
-// Get all users (staff list)
+// Get all users with pagination and filtering
 exports.getAllUsers = async (req, res) => {
   try {
-    const { search, roleFilter, statusFilter } = req.query;
+    const { role, status, search, page = 1 } = req.query;
+    const limit = 10;
+    const offset = (page - 1) * limit;
     
-    // Define where conditions for search and filters
+    // Build query conditions
     const whereConditions = {};
     
-    // Hide softadmin users from non-softadmins
-    // Only softadmin users can see other softadmin users
-    if (req.user.role !== 'softadmin') {
-      whereConditions.role = { [Op.ne]: 'softadmin' };
+    // Role filter
+    if (role && role !== 'all') {
+      whereConditions.role = role;
     }
     
-    // Apply role filter if provided and not 'all'
-    if (roleFilter && roleFilter !== 'all') {
-      // If user is not softadmin and tries to filter for softadmin, ignore it
-      if (roleFilter === 'softadmin' && req.user.role !== 'softadmin') {
-        // Just keep the existing condition that prevents showing softadmins
-      } else {
-        whereConditions.role = roleFilter;
-      }
+    // Status filter
+    if (status && status !== 'all') {
+      whereConditions.isActive = status === 'active';
     }
     
-    // Apply status filter if provided and not 'all'
-    if (statusFilter && statusFilter !== 'all') {
-      whereConditions.isActive = statusFilter === 'active';
-    }
-    
-    // Apply search filter if provided
+    // Search filter
     if (search) {
-      // Create search conditions
-      const searchConditions = [
+      whereConditions[Op.or] = [
         { username: { [Op.like]: `%${search}%` } },
         { email: { [Op.like]: `%${search}%` } }
       ];
-      
-      // If there's an existing roleFilter condition
-      if (whereConditions.role) {
-        // Keep the role condition separate from search
-        // This maintains the restriction on softadmin visibility
-      } else {
-        // If no role condition exists, add the search as an OR condition
-        whereConditions[Op.or] = searchConditions;
-      }
     }
     
-    const users = await User.findAll({
+    const { count, rows: users } = await User.findAndCountAll({
       where: whereConditions,
-      attributes: { exclude: ['password'] },
-      order: [['createdAt', 'DESC']]
+      attributes: ['id', 'username', 'email', 'role', 'isActive', 'createdAt'],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
     });
     
+    const totalPages = Math.ceil(count / limit);
+    
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.json(users);
+      return res.json({
+        users,
+        currentPage: parseInt(page),
+        totalPages,
+        totalRecords: count
+      });
     }
     
-    res.render('users/user_list', {
-      title: 'Staff List',
+    res.render('users/user_list', { 
+      title: 'Users',
       users,
+      role: role || 'all',
+      status: status || 'all',
       search: search || '',
-      roleFilter: roleFilter || 'all',
-      statusFilter: statusFilter || 'all'
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
     });
   } catch (error) {
     console.error(error);

@@ -192,6 +192,45 @@
           </tbody>
         </table>
       </div>
+      
+      <!-- Pagination -->
+      <% if (bills && bills.length > 0 && typeof totalPages !== 'undefined' && totalPages > 1) { %>
+      <nav aria-label="Billing pagination" class="mt-3">
+        <ul class="pagination justify-content-center">
+          <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+            <a class="page-link" href="?page=<%= currentPage - 1 %>&startDate=<%= startDate %>&endDate=<%= endDate %>&searchType=<%= searchType %>&searchQuery=<%= searchQuery %>" aria-label="Previous">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+          <% for(let i = 1; i <= totalPages; i++) { %>
+          <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+            <a class="page-link" href="?page=<%= i %>&startDate=<%= startDate %>&endDate=<%= endDate %>&searchType=<%= searchType %>&searchQuery=<%= searchQuery %>">
+              <%= i %>
+            </a>
+          </li>
+          <% } %>
+          <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+            <a class="page-link" href="?page=<%= currentPage + 1 %>&startDate=<%= startDate %>&endDate=<%= endDate %>&searchType=<%= searchType %>&searchQuery=<%= searchQuery %>" aria-label="Next">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <% } %>
+
+      <!-- Results info -->
+      <% if (typeof totalRecords !== 'undefined') { %>
+      <div class="text-center mt-3">
+        <small class="text-muted">
+          <% if (totalPages > 1) { %>
+            Showing <%= bills.length > 0 ? ((currentPage - 1) * 15 + 1) : 0 %> to 
+            <%= Math.min(currentPage * 15, totalRecords) %> of <%= totalRecords %> billing records
+          <% } else { %>
+            Showing <%= totalRecords %> billing record<%= totalRecords !== 1 ? 's' : '' %>
+          <% } %>
+        </small>
+      </div>
+      <% } %>
     </div>
   </div>
 </div>

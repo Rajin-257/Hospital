@@ -5,15 +5,49 @@ const { Op } = require('sequelize');
 // Get all doctors
 exports.getAllDoctors = async (req, res) => {
   try {
-    const doctors = await Doctor.findAll();
+    const { search, page = 1 } = req.query;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+    
+    // Build query conditions
+    const whereConditions = {};
+    
+    // Search filter
+    if (search) {
+      whereConditions[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { specialization: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } }
+      ];
+    }
+    
+    // Count total doctors matching filters
+    const { count, rows: doctors } = await Doctor.findAndCountAll({
+      where: whereConditions,
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+    });
+    
+    const totalPages = Math.ceil(count / limit);
     
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.json(doctors);
+      return res.json({
+        doctors,
+        currentPage: parseInt(page),
+        totalPages,
+        totalRecords: count
+      });
     }
     
     res.render('doctors', {
       title: 'Doctors',
-      doctors
+      doctors,
+      search: search || '',
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
     });
   } catch (error) {
     console.error(error);

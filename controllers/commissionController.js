@@ -10,7 +10,7 @@ const { sequelize } = require('../config/db');
 // Get all commissions with filtering options
 exports.getCommissions = async (req, res) => {
   try {
-    const { doctorId, status, startDate, endDate } = req.query;
+    const { doctorId, status, startDate, endDate, page = 1, limit = 'all' } = req.query;
     
     // Build query conditions
     const whereConditions = {};
@@ -39,35 +39,82 @@ exports.getCommissions = async (req, res) => {
         [Op.lte]: new Date(endDate)
       };
     }
+
+    // Use pagination if limit is specified, otherwise load all (for DataTables)
+    let commissions, totalRecords = 0, totalPages = 1;
     
-    const commissions = await DoctorCommission.findAll({
-      where: whereConditions,
-      include: [
-        { 
-          model: Doctor,
-          attributes: ['id', 'name', 'phone']
-        },
-        { 
-          model: Test,
-          attributes: ['id', 'name', 'price']
-        },
-        { 
-          model: TestRequest,
-          include: [
-            { model: Patient, attributes: ['id', 'name', 'patientId'] }
-          ]
-        },
-        { 
-          model: Billing,
-          attributes: ['id', 'billNumber', 'billDate']
-        }
-      ],
-      order: [['commissionDate', 'DESC']]
-    });
+    if (limit !== 'all' && !isNaN(limit)) {
+      const limitNum = parseInt(limit);
+      const offset = (parseInt(page) - 1) * limitNum;
+      
+      const result = await DoctorCommission.findAndCountAll({
+        where: whereConditions,
+        include: [
+          { 
+            model: Doctor,
+            attributes: ['id', 'name', 'phone']
+          },
+          { 
+            model: Test,
+            attributes: ['id', 'name', 'price']
+          },
+          { 
+            model: TestRequest,
+            include: [
+              { model: Patient, attributes: ['id', 'name', 'patientId'] }
+            ]
+          },
+          { 
+            model: Billing,
+            attributes: ['id', 'billNumber', 'billDate']
+          }
+        ],
+        order: [['commissionDate', 'DESC']],
+        limit: limitNum,
+        offset,
+        distinct: true
+      });
+      
+      commissions = result.rows;
+      totalRecords = result.count;
+      totalPages = Math.ceil(totalRecords / limitNum);
+    } else {
+      // Load all for DataTables client-side pagination
+      commissions = await DoctorCommission.findAll({
+        where: whereConditions,
+        include: [
+          { 
+            model: Doctor,
+            attributes: ['id', 'name', 'phone']
+          },
+          { 
+            model: Test,
+            attributes: ['id', 'name', 'price']
+          },
+          { 
+            model: TestRequest,
+            include: [
+              { model: Patient, attributes: ['id', 'name', 'patientId'] }
+            ]
+          },
+          { 
+            model: Billing,
+            attributes: ['id', 'billNumber', 'billDate']
+          }
+        ],
+        order: [['commissionDate', 'DESC']]
+      });
+      totalRecords = commissions.length;
+    }
     
     // For API requests
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.json(commissions);
+      return res.json({
+        commissions,
+        currentPage: parseInt(page),
+        totalPages,
+        totalRecords
+      });
     }
     
     // Get all doctors for filter dropdown
@@ -81,7 +128,10 @@ exports.getCommissions = async (req, res) => {
       title: 'Doctor Commission Reports',
       commissions,
       doctors,
-      query: req.query
+      query: req.query,
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords
     });
   } catch (error) {
     console.error(error);
@@ -187,4 +237,5 @@ exports.markAsPaid = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
-}; 
+};
+

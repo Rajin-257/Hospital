@@ -343,7 +343,9 @@ exports.getDueInvoiceStats = async (req, res) => {
 // Get all billing records
 exports.getAllBillingRecords = async (req, res) => {
   try {
-    const { startDate, endDate, searchType, searchQuery } = req.query;
+    const { startDate, endDate, searchType, searchQuery, page = 1 } = req.query;
+    const limit = 15;
+    const offset = (page - 1) * limit;
     
     // Build where clause based on filters
     let whereClause = {};
@@ -375,8 +377,8 @@ exports.getAllBillingRecords = async (req, res) => {
         // If 'all' or any other value, we don't add specific filter criteria
       }
     }
-    
-    const bills = await Billing.findAll({
+
+    const { count, rows: bills } = await Billing.findAndCountAll({
       where: whereClause,
       include: [
         { 
@@ -384,8 +386,13 @@ exports.getAllBillingRecords = async (req, res) => {
           where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
         }
       ],
-      order: [['billDate', 'DESC']]
+      order: [['billDate', 'DESC']],
+      limit,
+      offset,
+      distinct: true
     });
+    
+    const totalPages = Math.ceil(count / limit);
     
     res.render('billing_reports', {
       title: 'All Billing Records',
@@ -395,7 +402,10 @@ exports.getAllBillingRecords = async (req, res) => {
       startDate: startDate || '',
       endDate: endDate || '',
       searchType: searchType || 'all',
-      searchQuery: searchQuery || ''
+      searchQuery: searchQuery || '',
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
     });
   } catch (error) {
     console.error('Error in getAllBillingRecords:', error);
@@ -507,7 +517,10 @@ exports.getPartialPaymentBills = async (req, res) => {
       startDate: startDate || '',
       endDate: endDate || '',
       searchType: searchType || 'all',
-      searchQuery: searchQuery || ''
+      searchQuery: searchQuery || '',
+      currentPage: 1,
+      totalPages: 1,
+      totalRecords: bills.length
     });
   } catch (error) {
     console.error('Error in getPartialPaymentBills:', error);
@@ -573,7 +586,10 @@ exports.getFullyPaidBills = async (req, res) => {
       startDate: startDate || '',
       endDate: endDate || '',
       searchType: searchType || 'all',
-      searchQuery: searchQuery || ''
+      searchQuery: searchQuery || '',
+      currentPage: 1,
+      totalPages: 1,
+      totalRecords: bills.length
     });
   } catch (error) {
     console.error('Error in getFullyPaidBills:', error);
@@ -642,7 +658,10 @@ exports.getDuePaymentBills = async (req, res) => {
       startDate: startDate || '',
       endDate: endDate || '',
       searchType: searchType || 'all',
-      searchQuery: searchQuery || ''
+      searchQuery: searchQuery || '',
+      currentPage: 1,
+      totalPages: 1,
+      totalRecords: bills.length
     });
   } catch (error) {
     console.error('Error in getDuePaymentBills:', error);
@@ -706,7 +725,10 @@ exports.getDailyBillingReport = async (req, res) => {
         billCount: bills.length
       },
       searchType: searchType || 'all',
-      searchQuery: searchQuery || ''
+      searchQuery: searchQuery || '',
+      currentPage: 1,
+      totalPages: 1,
+      totalRecords: bills.length
     });
   } catch (error) {
     console.error('Error in getDailyBillingReport:', error);
@@ -810,7 +832,10 @@ exports.getAllPaymentTypesReport = async (req, res) => {
       startDate: startDate || '',
       endDate: endDate || '',
       searchType: searchType || 'all',
-      searchQuery: searchQuery || ''
+      searchQuery: searchQuery || '',
+      currentPage: 1,
+      totalPages: 1,
+      totalRecords: bills.length
     });
   } catch (error) {
     console.error('Error in getAllPaymentTypesReport:', error);
