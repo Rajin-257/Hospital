@@ -15,7 +15,7 @@
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-user me-2"></i>Basic Information</h5>
-                    <button class="btn btn-sm btn-primary edit-profile" data-id="<%= user.id %>">
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
                         <i class="fas fa-edit me-1"></i> Edit
                     </button>
                 </div>
@@ -84,7 +84,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-lock me-2"></i>Security</h5>
-                    <button class="btn btn-sm btn-primary change-password" data-id="<%= user.id %>">
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#passwordModal">
                         <i class="fas fa-key me-1"></i> Change Password
                     </button>
                 </div>
@@ -97,22 +97,22 @@
 </div>
 
 <!-- Edit Profile Modal -->
-<div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Edit Profile</h5>
+                <h5 class="modal-title" id="editProfileModalLabel"><i class="fas fa-user-edit me-2"></i>Edit Profile</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="edit-profile-form">
                 <input type="hidden" id="edit-user-id" name="id" value="<%= user.id %>">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label required-label">Username</label>
+                        <label for="edit-username" class="form-label required-label">Username</label>
                         <input type="text" class="form-control" id="edit-username" name="username" value="<%= user.username %>" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label required-label">Email</label>
+                        <label for="edit-email" class="form-label required-label">Email</label>
                         <input type="email" class="form-control" id="edit-email" name="email" value="<%= user.email %>" required>
                     </div>
                 </div>
@@ -126,26 +126,26 @@
 </div>
 
 <!-- Change Password Modal -->
-<div class="modal fade" id="passwordModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-key me-2"></i>Change Password</h5>
+                <h5 class="modal-title" id="passwordModalLabel"><i class="fas fa-key me-2"></i>Change Password</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="password-form">
                 <input type="hidden" id="password-user-id" name="id" value="<%= user.id %>">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label required-label">Current Password</label>
-                        <input type="password" class="form-control" id="current-password" name="currentPassword" required minlength="6">
+                        <label for="current-password" class="form-label required-label">Current Password</label>
+                        <input type="password" class="form-control" id="current-password" name="currentPassword" required >
                     </div>
                     <div class="mb-3">
-                        <label class="form-label required-label">New Password</label>
+                        <label for="password" class="form-label required-label">New Password</label>
                         <input type="password" class="form-control" id="password" name="password" required minlength="6">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label required-label">Confirm New Password</label>
+                        <label for="confirmPassword" class="form-label required-label">Confirm New Password</label>
                         <input type="password" class="form-control" id="confirmPassword" required minlength="6">
                     </div>
                 </div>
@@ -158,24 +158,20 @@
     </div>
 </div>
 
+<%- include('../partials/footer') %>
+
 <script>
     $(document).ready(function() {
-        // Edit profile - show modal
-        $('.edit-profile').on('click', function() {
-            $('#editProfileModal').modal('show');
-        });
-        
-        // Edit profile - submit form
+        // Edit profile form submission
         $('#edit-profile-form').on('submit', function(e) {
             e.preventDefault();
             
-            const userId = $('#edit-user-id').val();
-            
             $.ajax({
-                url: `/profile/update`,
+                url: '/profile/update',
                 type: 'PUT',
                 data: $(this).serialize(),
                 success: function(response) {
+                    // Hide modal
                     $('#editProfileModal').modal('hide');
                     showToast('Profile updated successfully');
                     setTimeout(() => {
@@ -188,12 +184,7 @@
             });
         });
         
-        // Change password - show modal
-        $('.change-password').on('click', function() {
-            $('#passwordModal').modal('show');
-        });
-        
-        // Password validation
+        // Password form submission
         $('#password-form').on('submit', function(e) {
             e.preventDefault();
             
@@ -206,10 +197,11 @@
             }
             
             $.ajax({
-                url: `/profile/change-password`,
+                url: '/profile/change-password',
                 type: 'POST',
                 data: $(this).serialize(),
                 success: function(response) {
+                    // Hide modal
                     $('#passwordModal').modal('hide');
                     showToast('Password changed successfully');
                     
