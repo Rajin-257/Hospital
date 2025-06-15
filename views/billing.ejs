@@ -103,10 +103,6 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label required-label">Phone</label>
-                        <input type="tel" class="form-control" name="phone" id="patient-phone" required>
-                    </div>
-                    <div class="col-md-4">
                         <label class="form-label">Blood Group</label>
                         <select class="form-select" name="bloodGroup" id="patient-blood-group">
                             <option value="">Select Blood Group</option>
@@ -119,6 +115,10 @@
                             <option value="O+">O+</option>
                             <option value="O-">O-</option>
                         </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label required-label">Phone</label>
+                        <input type="tel" class="form-control" name="phone" id="patient-phone" required>
                     </div>
                 </div>
                 <div class="text-end">
@@ -398,6 +398,12 @@
                                 <input type="number" class="form-control" id="test-extra-charge" min="0" step="0.01" value="0">
                             </div>
                         </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Delivery Date (if applicable)</label>
+                            <input type="date" class="form-control" id="test-delivery-date">
+                        </div>
+
                         <div class="col-md-3">
                             <label class="form-label required-label">Test</label>
                             <div class="input-group">
@@ -411,10 +417,6 @@
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Delivery Date (if applicable)</label>
-                            <input type="date" class="form-control" id="test-delivery-date">
                         </div>
                     </div>
                     
