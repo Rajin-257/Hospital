@@ -392,12 +392,23 @@ exports.getAllBillingRecords = async (req, res) => {
       distinct: true
     });
     
+    // Get all records for summary calculation (without pagination)
+    const allBills = await Billing.findAll({
+      where: whereClause,
+      include: [
+        { 
+          model: Patient,
+          where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+        }
+      ]
+    });
+    
     const totalPages = Math.ceil(count / limit);
     
     res.render('billing_reports', {
       title: 'All Billing Records',
       bills,
-      summary: calculateBillingSummary(bills),
+      summary: calculateBillingSummary(allBills),
       reportType: 'all',
       startDate: startDate || '',
       endDate: endDate || '',
@@ -460,7 +471,9 @@ exports.getUnbilledTests = async (req, res) => {
 // Get partial payment bills
 exports.getPartialPaymentBills = async (req, res) => {
   try {
-    const { startDate, endDate, searchType, searchQuery } = req.query;
+    const { startDate, endDate, searchType, searchQuery, page = 1 } = req.query;
+    const limit = 15;
+    const offset = (page - 1) * limit;
     
     // Build where clause based on filters
     let whereClause = {
@@ -500,27 +513,42 @@ exports.getPartialPaymentBills = async (req, res) => {
       }
     }
     
-    const bills = await Billing.findAll({
+    const { count, rows: bills } = await Billing.findAndCountAll({
       where: whereClause,
       include: [{ 
         model: Patient,
         where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
       }],
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset,
+      distinct: true
     });
+    
+    // Get all records for summary calculation (without pagination)
+    const allBills = await Billing.findAll({
+      where: whereClause,
+      include: [{ 
+        model: Patient,
+        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+      }]
+    });
+    
+    const totalPages = Math.ceil(count / limit);
     
     res.render('billing_reports', {
       title: 'Partial Payment Bills',
       user: req.user,
       bills,
+      allBills,
       reportType: 'partial',
       startDate: startDate || '',
       endDate: endDate || '',
       searchType: searchType || 'all',
       searchQuery: searchQuery || '',
-      currentPage: 1,
-      totalPages: 1,
-      totalRecords: bills.length
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
     });
   } catch (error) {
     console.error('Error in getPartialPaymentBills:', error);
@@ -534,7 +562,9 @@ exports.getPartialPaymentBills = async (req, res) => {
 // Get fully paid bills
 exports.getFullyPaidBills = async (req, res) => {
   try {
-    const { startDate, endDate, searchType, searchQuery } = req.query;
+    const { startDate, endDate, searchType, searchQuery, page = 1 } = req.query;
+    const limit = 15;
+    const offset = (page - 1) * limit;
     
     // Build where clause based on filters
     let whereClause = {
@@ -569,27 +599,42 @@ exports.getFullyPaidBills = async (req, res) => {
       }
     }
     
-    const bills = await Billing.findAll({
+    const { count, rows: bills } = await Billing.findAndCountAll({
       where: whereClause,
       include: [{ 
         model: Patient,
         where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
       }],
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset,
+      distinct: true
     });
+    
+    // Get all records for summary calculation (without pagination)
+    const allBills = await Billing.findAll({
+      where: whereClause,
+      include: [{ 
+        model: Patient,
+        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+      }]
+    });
+    
+    const totalPages = Math.ceil(count / limit);
     
     res.render('billing_reports', {
       title: 'Fully Paid Bills',
       user: req.user,
       bills,
+      allBills,
       reportType: 'paid',
       startDate: startDate || '',
       endDate: endDate || '',
       searchType: searchType || 'all',
       searchQuery: searchQuery || '',
-      currentPage: 1,
-      totalPages: 1,
-      totalRecords: bills.length
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
     });
   } catch (error) {
     console.error('Error in getFullyPaidBills:', error);
@@ -603,7 +648,9 @@ exports.getFullyPaidBills = async (req, res) => {
 // Get due payment bills
 exports.getDuePaymentBills = async (req, res) => {
   try {
-    const { startDate, endDate, searchType, searchQuery } = req.query;
+    const { startDate, endDate, searchType, searchQuery, page = 1 } = req.query;
+    const limit = 15;
+    const offset = (page - 1) * limit;
     
     // Build where clause based on filters
     let whereClause = {
@@ -641,27 +688,42 @@ exports.getDuePaymentBills = async (req, res) => {
       }
     }
     
-    const bills = await Billing.findAll({
+    const { count, rows: bills } = await Billing.findAndCountAll({
       where: whereClause,
       include: [{ 
         model: Patient,
         where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
       }],
-      order: [['billDate', 'DESC']]
+      order: [['billDate', 'DESC']],
+      limit,
+      offset,
+      distinct: true
     });
+    
+    // Get all records for summary calculation (without pagination)
+    const allBills = await Billing.findAll({
+      where: whereClause,
+      include: [{ 
+        model: Patient,
+        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+      }]
+    });
+    
+    const totalPages = Math.ceil(count / limit);
     
     res.render('billing_reports', {
       title: 'Due Payment Bills',
       bills,
-      summary: calculateBillingSummary(bills),
+      allBills,
+      summary: calculateBillingSummary(allBills),
       reportType: 'due',
       startDate: startDate || '',
       endDate: endDate || '',
       searchType: searchType || 'all',
       searchQuery: searchQuery || '',
-      currentPage: 1,
-      totalPages: 1,
-      totalRecords: bills.length
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
     });
   } catch (error) {
     console.error('Error in getDuePaymentBills:', error);
@@ -717,6 +779,7 @@ exports.getDailyBillingReport = async (req, res) => {
       title: 'Daily Billing Report',
       user: req.user,
       bills,
+      allBills: bills, // For daily reports, all bills are the same as bills since it's one day
       reportType: 'daily',
       summary: {
         totalAmount: bills.reduce((sum, bill) => sum + Number(bill.totalAmount), 0),
@@ -724,6 +787,8 @@ exports.getDailyBillingReport = async (req, res) => {
         totalDue: bills.reduce((sum, bill) => sum + Number(bill.dueAmount), 0),
         billCount: bills.length
       },
+      startDate: '', // Daily reports don't use date filters
+      endDate: '', // Daily reports don't use date filters
       searchType: searchType || 'all',
       searchQuery: searchQuery || '',
       currentPage: 1,
@@ -781,7 +846,9 @@ exports.getMonthlyRevenueReport = async (req, res) => {
 // Get all payment types report (both paid and due)
 exports.getAllPaymentTypesReport = async (req, res) => {
   try {
-    const { startDate, endDate, searchType, searchQuery } = req.query;
+    const { startDate, endDate, searchType, searchQuery, page = 1 } = req.query;
+    const limit = 15;
+    const offset = (page - 1) * limit;
     
     // Build where clause based on filters
     let whereClause = {};
@@ -814,28 +881,43 @@ exports.getAllPaymentTypesReport = async (req, res) => {
       }
     }
     
-    const bills = await Billing.findAll({
+    const { count, rows: bills } = await Billing.findAndCountAll({
       where: whereClause,
       include: [{ 
         model: Patient,
         where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
       }],
-      order: [['billDate', 'DESC']]
+      order: [['billDate', 'DESC']],
+      limit,
+      offset,
+      distinct: true
     });
+    
+    // Get all records for summary calculation (without pagination)
+    const allBills = await Billing.findAll({
+      where: whereClause,
+      include: [{ 
+        model: Patient,
+        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+      }]
+    });
+    
+    const totalPages = Math.ceil(count / limit);
     
     res.render('billing_reports', {
       title: 'All Payment Types Report',
       user: req.user,
       bills,
+      allBills,
       reportType: 'all-payment-types',
-      summary: calculateBillingSummary(bills),
+      summary: calculateBillingSummary(allBills),
       startDate: startDate || '',
       endDate: endDate || '',
       searchType: searchType || 'all',
       searchQuery: searchQuery || '',
-      currentPage: 1,
-      totalPages: 1,
-      totalRecords: bills.length
+      currentPage: parseInt(page),
+      totalPages,
+      totalRecords: count
     });
   } catch (error) {
     console.error('Error in getAllPaymentTypesReport:', error);
@@ -930,6 +1012,90 @@ exports.getAllBillingRecordsApi = async (req, res) => {
     console.error('Error in getAllBillingRecordsApi:', error);
     res.status(500).json({ 
       message: 'Failed to fetch billing records'
+    });
+  }
+};
+
+// Get all billing records for printing (no pagination)
+exports.getBillingRecordsForPrint = async (req, res) => {
+  try {
+    const { startDate, endDate, searchType, searchQuery, reportType } = req.query;
+    
+    // Build where clause based on report type and filters
+    let whereClause = {};
+    let patientWhereClause = {};
+    
+    // Apply report type specific filters
+    switch (reportType) {
+      case 'partial':
+        whereClause.dueAmount = { [Op.gt]: 0 };
+        whereClause.paidAmount = { [Op.gt]: 0 };
+        break;
+      case 'paid':
+        whereClause.dueAmount = 0;
+        break;
+      case 'due':
+        whereClause.dueAmount = { [Op.gt]: 0 };
+        whereClause.status = 'due';
+        break;
+      case 'daily':
+        const today = new Date();
+        const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+        whereClause.createdAt = { [Op.between]: [startOfDay, endOfDay] };
+        break;
+      // 'all-payment-types' and 'all' don't need specific filters
+    }
+    
+    // Date range filter
+    if (startDate && endDate) {
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      endDateObj.setHours(23, 59, 59, 999);
+      
+      if (reportType === 'daily') {
+        // For daily reports, don't override the date filter
+      } else {
+        whereClause.billDate = {
+          [Op.between]: [startDateObj, endDateObj]
+        };
+      }
+    }
+    
+    // Search filter
+    if (searchQuery && searchType) {
+      switch (searchType) {
+        case 'billNumber':
+          whereClause.billNumber = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientId':
+          patientWhereClause.patientId = { [Op.like]: `%${searchQuery}%` };
+          break;
+        case 'patientName':
+          patientWhereClause.name = { [Op.like]: `%${searchQuery}%` };
+          break;
+      }
+    }
+    
+    const bills = await Billing.findAll({
+      where: whereClause,
+      include: [{ 
+        model: Patient,
+        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+      }],
+      order: [['billDate', 'DESC']]
+    });
+    
+    res.json({
+      success: true,
+      bills: bills,
+      totalRecords: bills.length
+    });
+  } catch (error) {
+    console.error('Error in getBillingRecordsForPrint:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch billing records for print'
     });
   }
 }; 

@@ -1,0 +1,67 @@
+<%
+  // Pagination logic to show only 5 page numbers
+  const maxVisiblePages = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+  
+  // Adjust start page if we're near the end
+  if (endPage - startPage < maxVisiblePages - 1) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+  }
+  
+  const showStartEllipsis = startPage > 1;
+  const showEndEllipsis = endPage < totalPages;
+%>
+
+<% if (typeof totalPages !== 'undefined' && totalPages > 1) { %>
+<nav aria-label="<%= paginationLabel || 'Pagination' %>">
+  <ul class="pagination justify-content-center">
+    <!-- Previous button -->
+    <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+      <a class="page-link" href="<%= baseUrl %>?page=<%= currentPage - 1 %><%= queryParams || '' %>" aria-label="Previous">
+        <span aria-hidden="true">&laquo;</span>
+      </a>
+    </li>
+    
+    <!-- First page (if not visible in range) -->
+    <% if (showStartEllipsis) { %>
+      <li class="page-item">
+        <a class="page-link" href="<%= baseUrl %>?page=1<%= queryParams || '' %>">1</a>
+      </li>
+      <% if (startPage > 2) { %>
+        <li class="page-item disabled">
+          <span class="page-link">...</span>
+        </li>
+      <% } %>
+    <% } %>
+    
+    <!-- Visible page numbers -->
+    <% for(let i = startPage; i <= endPage; i++) { %>
+      <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+        <a class="page-link" href="<%= baseUrl %>?page=<%= i %><%= queryParams || '' %>">
+          <%= i %>
+        </a>
+      </li>
+    <% } %>
+    
+    <!-- Last page (if not visible in range) -->
+    <% if (showEndEllipsis) { %>
+      <% if (endPage < totalPages - 1) { %>
+        <li class="page-item disabled">
+          <span class="page-link">...</span>
+        </li>
+      <% } %>
+      <li class="page-item">
+        <a class="page-link" href="<%= baseUrl %>?page=<%= totalPages %><%= queryParams || '' %>"><%= totalPages %></a>
+      </li>
+    <% } %>
+    
+    <!-- Next button -->
+    <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+      <a class="page-link" href="<%= baseUrl %>?page=<%= currentPage + 1 %><%= queryParams || '' %>" aria-label="Next">
+        <span aria-hidden="true">&raquo;</span>
+      </a>
+    </li>
+  </ul>
+</nav>
+<% } %> 

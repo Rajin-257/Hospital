@@ -453,7 +453,7 @@ exports.getUnbilledAppointments = async (req, res) => {
         }
       },
       include: [
-        { model: Doctor }
+        { model: Doctor, required: false }
       ],
       order: [['appointmentDate', 'DESC']]
     });

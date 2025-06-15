@@ -55,24 +55,33 @@ exports.getAllAppointments = async (req, res) => {
     }
     
     // Search filter (will be applied through include)
-    const includeOptions = [
+    let includeOptions = [
       { 
         model: Patient,
-        where: search ? {
-          [Op.or]: [
-            { name: { [Op.like]: `%${search}%` } },
-            { patientId: { [Op.like]: `%${search}%` } }
-          ]
-        } : undefined
+        required: false // Ensures LEFT JOIN instead of INNER JOIN
       },
       { 
         model: Doctor,
-        where: search ? { name: { [Op.like]: `%${search}%` } } : undefined
+        required: false // Ensures LEFT JOIN instead of INNER JOIN
       }
     ];
     
+    // If search is provided, modify the query to use a different approach
+    let searchWhereCondition = whereConditions;
+    if (search) {
+      // Use a subquery approach or modify the main where condition
+      searchWhereCondition = {
+        ...whereConditions,
+        [Op.or]: [
+          { '$Patient.name$': { [Op.like]: `%${search}%` } },
+          { '$Patient.patientId$': { [Op.like]: `%${search}%` } },
+          { '$Doctor.name$': { [Op.like]: `%${search}%` } }
+        ]
+      };
+    }
+    
     const { count, rows: appointments } = await Appointment.findAndCountAll({
-      where: whereConditions,
+      where: searchWhereCondition,
       include: includeOptions,
       order: [['appointmentDate', 'ASC'], ['appointmentTime', 'ASC']],
       limit,
@@ -109,7 +118,8 @@ exports.getAllAppointments = async (req, res) => {
       search: search || '',
       currentPage: parseInt(page),
       totalPages,
-      totalRecords: count
+      totalRecords: count,
+      formatDate
     });
   } catch (error) {
     console.error(error);
@@ -125,8 +135,8 @@ exports.getAppointmentsByDate = async (req, res) => {
     const appointments = await Appointment.findAll({
       where: { appointmentDate: date },
       include: [
-        { model: Patient },
-        { model: Doctor }
+        { model: Patient, required: false },
+        { model: Doctor, required: false }
       ],
       order: [['appointmentTime', 'ASC']]
     });
@@ -169,8 +179,8 @@ exports.createAppointment = async (req, res) => {
     
     const fullAppointment = await Appointment.findByPk(appointment.id, {
       include: [
-        { model: Patient },
-        { model: Doctor }
+        { model: Patient, required: false },
+        { model: Doctor, required: false }
       ]
     });
     
@@ -234,7 +244,7 @@ exports.getAppointmentsByPatient = async (req, res) => {
     const appointments = await Appointment.findAll({
       where: { PatientId: patientId },
       include: [
-        { model: Doctor }
+        { model: Doctor, required: false }
       ],
       order: [['appointmentDate', 'DESC'], ['appointmentTime', 'ASC']]
     });

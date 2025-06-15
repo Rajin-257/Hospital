@@ -171,30 +171,16 @@
     </div>
   </div>
 
-  <!-- Pagination -->
-  <% if (requisitions && requisitions.length > 0 && totalPages > 1) { %>
-  <nav aria-label="Requisition pagination">
-    <ul class="pagination justify-content-center">
-      <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-        <a class="page-link" href="?page=<%= currentPage - 1 %>&status=<%= status %>&priority=<%= priority %>&dateRange=<%= dateRange %>&search=<%= search %>" aria-label="Previous">
-          <span aria-hidden="true">&laquo;</span>
-        </a>
-      </li>
-      <% for(let i = 1; i <= totalPages; i++) { %>
-        <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-          <a class="page-link" href="?page=<%= i %>&status=<%= status %>&priority=<%= priority %>&dateRange=<%= dateRange %>&search=<%= search %>">
-            <%= i %>
-          </a>
-        </li>
-      <% } %>
-      <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-        <a class="page-link" href="?page=<%= currentPage + 1 %>&status=<%= status %>&priority=<%= priority %>&dateRange=<%= dateRange %>&search=<%= search %>" aria-label="Next">
-          <span aria-hidden="true">&raquo;</span>
-        </a>
-      </li>
-    </ul>
-  </nav>
-  <% } %>
+              <!-- Pagination -->
+            <% if (requisitions && requisitions.length > 0) { %>
+                <%- include('partials/pagination', {
+                    currentPage: currentPage,
+                    totalPages: totalPages,
+                    baseUrl: '',
+                    queryParams: '&status=' + encodeURIComponent(status || '') + '&priority=' + encodeURIComponent(priority || '') + '&dateRange=' + encodeURIComponent(dateRange || '') + '&search=' + encodeURIComponent(search || ''),
+                    paginationLabel: 'Requisition pagination'
+                }) %>
+            <% } %>
 
   <!-- Results info -->
   <div class="text-center mt-3">

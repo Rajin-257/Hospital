@@ -77,28 +77,14 @@
             </div>
 
             <!-- Pagination -->
-            <% if (tests && tests.length > 0 && totalPages > 1) { %>
-            <nav aria-label="Test pagination">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-                        <a class="page-link" href="?page=<%= currentPage - 1 %>&search=<%= search %>&priceRange=<%= priceRange %>" aria-label="Previous">
-                            <span aria-hidden="true">&laquo;</span>
-                        </a>
-                    </li>
-                    <% for(let i = 1; i <= totalPages; i++) { %>
-                    <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                        <a class="page-link" href="?page=<%= i %>&search=<%= search %>&priceRange=<%= priceRange %>">
-                            <%= i %>
-                        </a>
-                    </li>
-                    <% } %>
-                    <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-                        <a class="page-link" href="?page=<%= currentPage + 1 %>&search=<%= search %>&priceRange=<%= priceRange %>" aria-label="Next">
-                            <span aria-hidden="true">&raquo;</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+            <% if (tests && tests.length > 0) { %>
+                <%- include('partials/pagination', {
+                    currentPage: currentPage,
+                    totalPages: totalPages,
+                    baseUrl: '',
+                    queryParams: '&search=' + encodeURIComponent(search || '') + '&priceRange=' + encodeURIComponent(priceRange || ''),
+                    paginationLabel: 'Test pagination'
+                }) %>
             <% } %>
 
             <!-- Results info -->

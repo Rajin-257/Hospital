@@ -95,28 +95,14 @@
             </div>
 
             <!-- Pagination -->
-            <% if (cabins && cabins.length > 0 && totalPages > 1) { %>
-            <nav aria-label="Cabin pagination">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-                        <a class="page-link" href="?page=<%= currentPage - 1 %>&search=<%= search %>&cabinType=<%= cabinType %>&status=<%= status %>" aria-label="Previous">
-                            <span aria-hidden="true">&laquo;</span>
-                        </a>
-                    </li>
-                    <% for(let i = 1; i <= totalPages; i++) { %>
-                    <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                        <a class="page-link" href="?page=<%= i %>&search=<%= search %>&cabinType=<%= cabinType %>&status=<%= status %>">
-                            <%= i %>
-                        </a>
-                    </li>
-                    <% } %>
-                    <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-                        <a class="page-link" href="?page=<%= currentPage + 1 %>&search=<%= search %>&cabinType=<%= cabinType %>&status=<%= status %>" aria-label="Next">
-                            <span aria-hidden="true">&raquo;</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+            <% if (cabins && cabins.length > 0) { %>
+                <%- include('partials/pagination', {
+                    currentPage: currentPage,
+                    totalPages: totalPages,
+                    baseUrl: '',
+                    queryParams: '&search=' + encodeURIComponent(search || '') + '&cabinType=' + encodeURIComponent(cabinType || '') + '&status=' + encodeURIComponent(status || ''),
+                    paginationLabel: 'Cabin pagination'
+                }) %>
             <% } %>
 
             <!-- Results info -->

@@ -43,6 +43,9 @@ router.get('/commission-stats', checkFeatureAccess('Commission Reports'), report
 // Get all billing records
 router.get('/all-billings', checkFeatureAccess('Billing Reports'), reportController.getAllBillingRecordsApi);
 
+// Get all billing records for printing (no pagination)
+router.get('/billing-print-data', checkFeatureAccess('Billing Reports'), reportController.getBillingRecordsForPrint);
+
 // Get unbilled appointments
 router.get('/unbilled-appointments', checkFeatureAccess('Appointment Reports'), reportController.getUnbilledAppointments);
 

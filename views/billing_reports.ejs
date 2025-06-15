@@ -99,25 +99,25 @@
             <div class="col-md-3">
               <div class="mb-2">
                 <small class="text-muted">Total Bills</small>
-                <h4><%= bills ? bills.length : 0 %></h4>
+                <h4><%= (locals.allBills ? allBills.length : (locals.totalRecords || 0)) %></h4>
               </div>
             </div>
             <div class="col-md-3">
               <div class="mb-2">
                 <small class="text-muted">Total Amount</small>
-                <h4> <%= (bills ? bills.reduce((sum, bill) => sum + parseFloat(bill.totalAmount || 0), 0) : 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
+                <h4> <%= ((locals.allBills ? allBills : bills || []).reduce((sum, bill) => sum + parseFloat(bill.totalAmount || 0), 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
               </div>
             </div>
             <div class="col-md-3">
               <div class="mb-2">
                 <small class="text-muted">Total Paid</small>
-                <h4 class="text-success"> <%= (bills ? bills.reduce((sum, bill) => sum + parseFloat(bill.paidAmount || 0), 0) : 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
+                <h4 class="text-success"> <%= ((locals.allBills ? allBills : bills || []).reduce((sum, bill) => sum + parseFloat(bill.paidAmount || 0), 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
               </div>
             </div>
             <div class="col-md-3">
               <div class="mb-2">
                 <small class="text-muted">Total Due</small>
-                <h4 class="text-danger"> <%= (bills ? bills.reduce((sum, bill) => sum + parseFloat(bill.dueAmount || 0), 0) : 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
+                <h4 class="text-danger"> <%= ((locals.allBills ? allBills : bills || []).reduce((sum, bill) => sum + parseFloat(bill.dueAmount || 0), 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></h4>
               </div>
             </div>
           </div>
@@ -193,30 +193,18 @@
         </table>
       </div>
       
-      <!-- Pagination -->
-      <% if (bills && bills.length > 0 && typeof totalPages !== 'undefined' && totalPages > 1) { %>
-      <nav aria-label="Billing pagination" class="mt-3">
-        <ul class="pagination justify-content-center">
-          <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-            <a class="page-link" href="?page=<%= currentPage - 1 %>&startDate=<%= startDate %>&endDate=<%= endDate %>&searchType=<%= searchType %>&searchQuery=<%= searchQuery %>" aria-label="Previous">
-              <span aria-hidden="true">&laquo;</span>
-            </a>
-          </li>
-          <% for(let i = 1; i <= totalPages; i++) { %>
-          <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-            <a class="page-link" href="?page=<%= i %>&startDate=<%= startDate %>&endDate=<%= endDate %>&searchType=<%= searchType %>&searchQuery=<%= searchQuery %>">
-              <%= i %>
-            </a>
-          </li>
-          <% } %>
-          <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-            <a class="page-link" href="?page=<%= currentPage + 1 %>&startDate=<%= startDate %>&endDate=<%= endDate %>&searchType=<%= searchType %>&searchQuery=<%= searchQuery %>" aria-label="Next">
-              <span aria-hidden="true">&raquo;</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
-      <% } %>
+                  <!-- Pagination -->
+            <% if (bills && bills.length > 0) { %>
+                <div class="mt-3">
+                    <%- include('partials/pagination', {
+                        currentPage: currentPage,
+                        totalPages: totalPages,
+                        baseUrl: '',
+                        queryParams: '&startDate=' + encodeURIComponent(startDate || '') + '&endDate=' + encodeURIComponent(endDate || '') + '&searchType=' + encodeURIComponent(searchType || '') + '&searchQuery=' + encodeURIComponent(searchQuery || ''),
+                        paginationLabel: 'Billing pagination'
+                    }) %>
+                </div>
+            <% } %>
 
       <!-- Results info -->
       <% if (typeof totalRecords !== 'undefined') { %>
@@ -609,154 +597,196 @@
     });
     
     // Print functionality
-    document.getElementById('print-report').addEventListener('click', function() {
-      // Create print header that will only be visible when printing
-      const printHeader = document.createElement('div');
-      printHeader.className = 'print-header';
+    document.getElementById('print-report').addEventListener('click', async function() {
+      const printButton = this;
+      const originalText = printButton.innerHTML;
       
-      // Get the report title based on the type
-      let reportTitle = 'All Billing Reports';
-      const reportType = '<%= reportType %>'; // Get the report type from EJS
-      
-      if (reportType === 'partial') {
-        reportTitle = 'Partial Payment Bills Report';
-      } else if (reportType === 'paid') {
-        reportTitle = 'Fully Paid Bills Report';
-      } else if (reportType === 'due') {
-        reportTitle = 'Due Payment Bills Report';
-      } else if (reportType === 'daily') {
-        reportTitle = 'Daily Billing Report (' + new Date().toLocaleDateString() + ')';
-      } else if (reportType === 'all-payment-types') {
-        reportTitle = 'All Payment Types Report';
-      }
-      
-      // Get summary data
-      const totalBills = document.querySelectorAll('#billingTable tbody tr:not(.no-results)').length;
-      
-      // Calculate totals
-      let totalAmount = 0;
-      let totalDiscount = 0;
-      let totalPaid = 0;
-      let totalDue = 0;
-      
-      document.querySelectorAll('#billingTable tbody tr:not(.no-results)').forEach(row => {
-        // Get the cells containing the values (adjust indices if needed)
-        const amountCell = row.cells[4]; // Total column
-        const discountCell = row.cells[5]; // Discount column
-        const paidCell = row.cells[7]; // Paid column
-        const dueCell = row.cells[8]; // Due column
+      try {
+        // Show loading state
+        printButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Loading...';
+        printButton.disabled = true;
         
-        // Extract numeric values (strip "Tk " and commas)
-        if (amountCell) {
-          const amount = parseFloat(amountCell.textContent.replace(' ', '').replace(/,/g, '')) || 0;
-          totalAmount += amount;
+        // Get current filter parameters
+        const reportType = '<%= reportType %>';
+        const startDate = '<%= locals.startDate || "" %>';
+        const endDate = '<%= locals.endDate || "" %>';
+        const searchType = '<%= locals.searchType || "" %>';
+        const searchQuery = '<%= locals.searchQuery || "" %>';
+        
+        // Fetch all data for printing
+        const params = new URLSearchParams();
+        params.append('reportType', reportType);
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        if (searchType) params.append('searchType', searchType);
+        if (searchQuery) params.append('searchQuery', searchQuery);
+        
+        const response = await fetch(`/reports/billing-print-data?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to fetch print data');
+        
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || 'Failed to fetch print data');
+        
+        // Create print header that will only be visible when printing
+        const printHeader = document.createElement('div');
+        printHeader.className = 'print-header';
+        
+        // Get the report title based on the type
+        let reportTitle = 'All Billing Reports';
+        
+        if (reportType === 'partial') {
+          reportTitle = 'Partial Payment Bills Report';
+        } else if (reportType === 'paid') {
+          reportTitle = 'Fully Paid Bills Report';
+        } else if (reportType === 'due') {
+          reportTitle = 'Due Payment Bills Report';
+        } else if (reportType === 'daily') {
+          reportTitle = 'Daily Billing Report (' + new Date().toLocaleDateString() + ')';
+        } else if (reportType === 'all-payment-types') {
+          reportTitle = 'All Payment Types Report';
         }
         
-        if (discountCell) {
-          const discount = parseFloat(discountCell.textContent.replace(' ', '').replace(/,/g, '')) || 0;
-          totalDiscount += discount;
+        // Calculate totals from all data
+        let totalAmount = 0;
+        let totalDiscount = 0;
+        let totalPaid = 0;
+        let totalDue = 0;
+        
+        data.bills.forEach(bill => {
+          totalAmount += parseFloat(bill.totalAmount || 0);
+          totalDiscount += parseFloat(bill.discountAmount || 0);
+          totalPaid += parseFloat(bill.paidAmount || 0);
+          totalDue += parseFloat(bill.dueAmount || 0);
+        });
+        
+        // Format the currency values
+        const formatCurrency = (value) => {
+          return value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        };
+        
+                 // Function to format date as dd/mm/yyyy
+        const formatDate = (date) => {
+          const d = new Date(date);
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const year = d.getFullYear();
+          return `${day}/${month}/${year}`;
+        };
+        
+        // Get date range information for print header
+        let dateRangeInfo = '';
+        
+        if (reportType === 'daily') {
+          dateRangeInfo = `<p><strong>Report Date: ${formatDate(new Date())}</strong></p>`;
+        } else if (startDate && endDate) {
+          dateRangeInfo = `<p><strong>Date Range: ${formatDate(startDate)} to ${formatDate(endDate)}</strong></p>`;
+        } else if (startDate) {
+          dateRangeInfo = `<p><strong>From Date: ${formatDate(startDate)}</strong></p>`;
+        } else if (endDate) {
+          dateRangeInfo = `<p><strong>Up to Date: ${formatDate(endDate)}</strong></p>`;
         }
         
-        if (paidCell) {
-          const paid = parseFloat(paidCell.textContent.replace(' ', '').replace(/,/g, '')) || 0;
-          totalPaid += paid;
-        }
+        printHeader.innerHTML = `
+          <h2><%= locals.settings && settings.medical_name ? settings.medical_name : 'HOSPITAL MANAGEMENT SYSTEM' %> </h2>
+          <p><%= locals.settings && settings.address ? settings.address : 'No Address' %></p>
+          <p><%= locals.settings && settings.phone ? settings.phone : 'No Phone' %></p>
+          <hr>
+          <h3>${reportTitle}</h3>
+          ${dateRangeInfo}
+          <p>Generated on: ${formatDate(new Date())} ${new Date().toLocaleTimeString()}</p>
+        `;
         
-        if (dueCell && dueCell.textContent !== 'Paid') {
-          const due = parseFloat(dueCell.textContent.replace(' ', '').replace(/,/g, '')) || 0;
-          totalDue += due;
-        }
-      });
-      
-      // Format the currency values
-      const formatCurrency = (value) => {
-        return value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-      };
-      
-      // Get date range information for print header
-      let dateRangeInfo = '';
-      const startDate = '<%= locals.startDate || "" %>';
-      const endDate = '<%= locals.endDate || "" %>';
-      
-      if (reportType === 'daily') {
-        dateRangeInfo = `<p><strong>Report Date: ${new Date().toLocaleDateString()}</strong></p>`;
-      } else if (startDate && endDate) {
-        dateRangeInfo = `<p><strong>Date Range: ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}</strong></p>`;
-      } else if (startDate) {
-        dateRangeInfo = `<p><strong>From Date: ${new Date(startDate).toLocaleDateString()}</strong></p>`;
-      } else if (endDate) {
-        dateRangeInfo = `<p><strong>Up to Date: ${new Date(endDate).toLocaleDateString()}</strong></p>`;
-      }
-      
-      printHeader.innerHTML = `
-        <h2><%= locals.settings && settings.medical_name ? settings.medical_name : 'HOSPITAL MANAGEMENT SYSTEM' %> </h2>
-        <p><%= locals.settings && settings.address ? settings.address : 'No Address' %></p>
-        <p><%= locals.settings && settings.phone ? settings.phone : 'No Phone' %></p>
-        <hr>
-        <h3>${reportTitle}</h3>
-        ${dateRangeInfo}
-        <p>Generated on: ${new Date().toLocaleString()}</p>
-      `;
-      
-      // Create a print-only summary section
-      const printSummary = document.createElement('div');
-      printSummary.className = 'print-only';
-      printSummary.innerHTML = `
-        <div class="row mb-4 print-only">
-          <div class="col">
-            <div class="print-summary" style="margin: 20px 0; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <div style="flex: 1;">
-                  <strong>Total Bills:</strong> ${totalBills}
+        // Create a print-only summary section
+        const printSummary = document.createElement('div');
+        printSummary.className = 'print-only';
+        printSummary.innerHTML = `
+          <div class="row mb-4 print-only">
+            <div class="col">
+              <div class="print-summary" style="margin: 20px 0; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                  <div style="flex: 1;">
+                    <strong>Total Bills:</strong> ${data.bills.length}
+                  </div>
+                  <div style="flex: 1;">
+                    <strong>Total Amount:</strong>  ${formatCurrency(totalAmount)}
+                  </div>
+                  <div style="flex: 1;">
+                    <strong>Total Discount: </strong> ${formatCurrency(totalDiscount)}
+                  </div>
                 </div>
-                <div style="flex: 1;">
-                  <strong>Total Amount:</strong>  Tk ${formatCurrency(totalAmount)}
-                </div>
-                <div style="flex: 1;">
-                  <strong>Total Discount: </strong> Tk ${formatCurrency(totalDiscount)}
-                </div>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <div style="flex: 1;">
-                  <strong>Total Paid:  </strong> Tk ${formatCurrency(totalPaid)}
-                </div>
-                <div style="flex: 1;">
-                  <strong>Total Due:  </strong> Tk ${formatCurrency(totalDue)}
-                </div>
-                <div style="flex: 1;">
-                  <strong>Payment Rate: </strong> ${totalAmount > 0 ? Math.round((totalPaid / totalAmount) * 100) : 0}%
+                <div style="display: flex; justify-content: space-between;">
+                  <div style="flex: 1;">
+                    <strong>Total Paid:  </strong> ${formatCurrency(totalPaid)}
+                  </div>
+                  <div style="flex: 1;">
+                    <strong>Total Due:  </strong> ${formatCurrency(totalDue)}
+                  </div>
+                  <div style="flex: 1;">
+                    <strong>Payment Rate: </strong> ${totalAmount > 0 ? Math.round((totalPaid / totalAmount) * 100) : 0}%
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      `;
-      
-      // Insert the print header at the top of the container
-      const container = document.querySelector('.container');
-      container.insertBefore(printHeader, container.firstChild);
-      
-      // Insert the print summary after the header
-      container.insertBefore(printSummary, printHeader.nextSibling);
-      
-      // Clean the table for printing - remove action buttons
-      const actionCells = document.querySelectorAll('#billingTable td:last-child');
-      actionCells.forEach(cell => {
-        cell.setAttribute('data-temp-html', cell.innerHTML);
-        cell.innerHTML = '';
-      });
-      
-      window.print();
-      
-      // Restore table cells
-      actionCells.forEach(cell => {
-        cell.innerHTML = cell.getAttribute('data-temp-html');
-        cell.removeAttribute('data-temp-html');
-      });
-      
-      // Remove the print header and summary after printing
-      container.removeChild(printHeader);
-      container.removeChild(printSummary);
+        `;
+        
+        // Replace table content with all data
+        const tableBody = document.querySelector('#billingTable tbody');
+        const originalTableHTML = tableBody.innerHTML;
+        
+        // Generate complete table rows
+        let tableRows = '';
+        data.bills.forEach(bill => {
+          const statusClass = bill.status === 'paid' ? 'table-success' : (bill.status === 'partial' ? 'table-warning' : 'table-danger');
+          const statusBadge = bill.status === 'paid' ? 'success' : (bill.status === 'partial' ? 'warning' : 'danger');
+          const statusText = bill.status === 'paid' ? 'Paid' : (bill.status === 'partial' ? 'Partial' : 'Due');
+          const dueDisplay = parseFloat(bill.dueAmount || 0) > 0 ? formatCurrency(parseFloat(bill.dueAmount || 0)) : 'Paid';
+          
+                     tableRows += `
+             <tr class="${statusClass}">
+               <td>${bill.billNumber || 'N/A'}</td>
+               <td>${bill.billDate ? formatDate(bill.billDate) : 'N/A'}</td>
+               <td>${bill.Patient ? bill.Patient.patientId : 'N/A'}</td>
+               <td>${bill.Patient ? bill.Patient.name : 'Unknown'}</td>
+               <td>${formatCurrency(parseFloat(bill.totalAmount || 0))}</td>
+               <td>${formatCurrency(parseFloat(bill.discountAmount || 0))}</td>
+               <td>${formatCurrency(parseFloat(bill.netPayable || 0))}</td>
+               <td>${formatCurrency(parseFloat(bill.paidAmount || 0))}</td>
+               <td class="${parseFloat(bill.dueAmount || 0) > 0 ? 'text-danger' : ''}">${dueDisplay}</td>
+               <td><span class="badge bg-${statusBadge}">${statusText}</span></td>
+               <td class="no-print"></td>
+             </tr>
+           `;
+        });
+        
+        // Update table with all data
+        tableBody.innerHTML = tableRows;
+        
+        // Insert the print header at the top of the container
+        const container = document.querySelector('.container');
+        container.insertBefore(printHeader, container.firstChild);
+        
+        // Insert the print summary after the header
+        container.insertBefore(printSummary, printHeader.nextSibling);
+        
+        // Print the document
+        window.print();
+        
+        // Restore original table content
+        tableBody.innerHTML = originalTableHTML;
+        
+        // Remove the print header and summary after printing
+        container.removeChild(printHeader);
+        container.removeChild(printSummary);
+        
+      } catch (error) {
+        console.error('Error preparing print data:', error);
+        alert('Error preparing print data: ' + error.message);
+      } finally {
+        // Restore button state
+        printButton.innerHTML = originalText;
+        printButton.disabled = false;
+      }
     });
 
     // Reset form and redirect to base URL

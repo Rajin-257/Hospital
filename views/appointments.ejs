@@ -1,6 +1,5 @@
 <%- include('partials/header') %>
 <%- include('partials/navbar') %>
-<%- include('partials/date-formatter') %>
 
 <div class="container-fluid py-4">
     <div class="card">
@@ -65,8 +64,20 @@
                     <tbody id="appointment-list">
                         <% appointments.forEach(appointment => { %>
                             <tr>
-                                <td><%= appointment.Patient.name %> (<%= appointment.Patient.patientId %>)</td>
-                                <td>Dr. <%= appointment.Doctor.name %></td>
+                                <td>
+                                    <% if (appointment.Patient) { %>
+                                        <%= appointment.Patient.name %> (<%= appointment.Patient.patientId %>)
+                                    <% } else { %>
+                                        <span class="text-muted">Unknown Patient</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (appointment.Doctor) { %>
+                                        Dr. <%= appointment.Doctor.name %>
+                                    <% } else { %>
+                                        <span class="text-muted">Unknown Doctor</span>
+                                    <% } %>
+                                </td>
                                 <td><%= formatDate(appointment.appointmentDate) %></td>
                                 <td><%= appointment.appointmentTime.substring(0, 5) %></td>
                                 <td>
@@ -103,28 +114,14 @@
             </div>
 
             <!-- Pagination -->
-            <% if (appointments && appointments.length > 0 && totalPages > 1) { %>
-            <nav aria-label="Appointment pagination">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-                        <a class="page-link" href="?page=<%= currentPage - 1 %>&status=<%= status %>&dateRange=<%= dateRange %>&search=<%= search %>" aria-label="Previous">
-                            <span aria-hidden="true">&laquo;</span>
-                        </a>
-                    </li>
-                    <% for(let i = 1; i <= totalPages; i++) { %>
-                    <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                        <a class="page-link" href="?page=<%= i %>&status=<%= status %>&dateRange=<%= dateRange %>&search=<%= search %>">
-                            <%= i %>
-                        </a>
-                    </li>
-                    <% } %>
-                    <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-                        <a class="page-link" href="?page=<%= currentPage + 1 %>&status=<%= status %>&dateRange=<%= dateRange %>&search=<%= search %>" aria-label="Next">
-                            <span aria-hidden="true">&raquo;</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+            <% if (appointments && appointments.length > 0) { %>
+                <%- include('partials/pagination', {
+                    currentPage: currentPage,
+                    totalPages: totalPages,
+                    baseUrl: '',
+                    queryParams: '&status=' + encodeURIComponent(status || '') + '&dateRange=' + encodeURIComponent(dateRange || '') + '&search=' + encodeURIComponent(search || ''),
+                    paginationLabel: 'Appointment pagination'
+                }) %>
             <% } %>
 
             <!-- Results info -->
@@ -274,8 +271,8 @@ $(document).ready(function() {
                         }
                         
                         let row = '<tr>';
-                        row += '<td>' + appointment.Patient.name + ' (' + appointment.Patient.patientId + ')</td>';
-                        row += '<td>Dr. ' + appointment.Doctor.name + '</td>';
+                        row += '<td>' + (appointment.Patient ? appointment.Patient.name + ' (' + appointment.Patient.patientId + ')' : '<span class="text-muted">Unknown Patient</span>') + '</td>';
+                        row += '<td>' + (appointment.Doctor ? 'Dr. ' + appointment.Doctor.name : '<span class="text-muted">Unknown Doctor</span>') + '</td>';
                         row += '<td>' + formatDate(appointment.appointmentDate) + '</td>';
                         row += '<td>' + appointment.appointmentTime.substring(0, 5) + '</td>';
                         row += '<td>' + statusBadge + '</td>';
