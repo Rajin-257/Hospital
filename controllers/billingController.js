@@ -276,11 +276,22 @@ exports.createBilling = async (req, res) => {
           }
         }
         
+        // Get default doctor if none specified
+        let doctorId = test.doctorId;
+        if (!doctorId) {
+          // Find first available doctor as default
+          const defaultDoctor = await Doctor.findOne({
+            where: { isAvailable: true },
+            order: [['id', 'ASC']]
+          });
+          doctorId = defaultDoctor ? defaultDoctor.id : 1; // Fallback to doctor ID 1
+        }
+
         // Create test request object
         const testRequestData = {
           PatientId: patientId,
           TestId: test.id,
-          DoctorId: test.doctorId || null,
+          DoctorId: doctorId,
           priority: test.priority || 'Normal',
           requestDate: today,
           status: 'Pending',
@@ -878,11 +889,22 @@ async function processTestRequests(oldItems, newItems, patientId, billingId) {
       
       for (const test of addedItems) {
         try {
+          // Get default doctor if none specified
+          let doctorId = test.doctorId;
+          if (!doctorId) {
+            // Find first available doctor as default
+            const defaultDoctor = await Doctor.findOne({
+              where: { isAvailable: true },
+              order: [['id', 'ASC']]
+            });
+            doctorId = defaultDoctor ? defaultDoctor.id : 1; // Fallback to doctor ID 1
+          }
+
           // Create test request object
           const testRequestData = {
             PatientId: patientId,
             TestId: test.id,
-            DoctorId: test.doctorId || null,
+            DoctorId: doctorId,
             priority: test.priority || 'Normal',
             requestDate: today,
             status: 'Pending',

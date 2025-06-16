@@ -59,9 +59,9 @@ const TestRequest = sequelize.define('TestRequest', {
   }
 });
 
-// Relationships
+// Relationships  
 TestRequest.belongsTo(Patient);
 TestRequest.belongsTo(Test);
-TestRequest.belongsTo(Doctor);
+TestRequest.belongsTo(Doctor, { allowNull: true });
 
 module.exports = TestRequest;

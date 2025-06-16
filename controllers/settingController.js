@@ -1,14 +1,16 @@
-const Setting = require('../models/Setting');
 const FeaturePermission = require('../models/FeaturePermission');
 const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
 const { Op } = require('sequelize');
+const { getTenantTest, getTenantSetting } = require('../utils/tenantModels');
+const { getSequelize } = require('../config/db');
 
 
 // Get settings page
 exports.getSettings = async (req, res) => {
   try {
+    const Setting = getTenantSetting();
     const settings = await Setting.findOne();
     const featurePermissions = await FeaturePermission.findAll();
     
@@ -46,6 +48,8 @@ exports.getSettings = async (req, res) => {
 exports.updateSettings = async (req, res) => {
   try {
     const { medical_name, address, phone, email } = req.body;
+    
+    const Setting = getTenantSetting();
     
     // Check if settings already exist
     let settings = await Setting.findOne();
@@ -186,27 +190,15 @@ exports.importFeaturePermissions = async (req, res) => {
 // Import test data
 exports.importTestData = async (req, res) => {
     try {
-        const Test = require('../models/Test');
-        const { getSequelize } = require('../config/db');
-        
-        console.log('🔄 Starting test data import to TENANT database...');
+        // Get tenant-safe models
+        const Test = getTenantTest();
+        const Setting = getTenantSetting();
         
         // Import test data from the testData file
         const { testData } = require('../scripts/testData');
         
         const sequelize = getSequelize();
         const dbName = sequelize.config ? sequelize.config.database : 'unknown';
-        
-        console.log(`📋 Importing ${testData.length} tests to database: ${dbName}`);
-        
-        // Check if we're using tenant database
-        if (!dbName.includes('hospx_db_')) {
-            console.error('🚨 CRITICAL: Not using tenant database for test import!');
-            return res.status(500).json({ 
-                success: false, 
-                message: 'Error: Not connected to tenant database' 
-            });
-        }
         
         // Start a transaction on the tenant database
         const transaction = await sequelize.transaction();
@@ -229,17 +221,15 @@ exports.importTestData = async (req, res) => {
             // Commit the transaction
             await transaction.commit();
             
-            console.log(`✅ Successfully imported ${testData.length} tests to tenant database: ${dbName}`);
             res.json({ 
                 success: true, 
-                message: `Test data imported successfully to ${dbName}`,
+                message: `Test data imported successfully`,
                 count: testData.length 
             });
             
         } catch (error) {
             // Rollback transaction on error
             await transaction.rollback();
-            console.error('❌ Error importing tests to tenant database:', error);
             res.status(500).json({ 
                 success: false, 
                 message: `Error importing test data: ${error.message}` 
@@ -247,7 +237,6 @@ exports.importTestData = async (req, res) => {
         }
         
     } catch (error) {
-        console.error('❌ Error in importTestData:', error);
         res.status(500).json({ 
             success: false, 
             message: `Error importing test data: ${error.message}` 

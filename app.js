@@ -65,23 +65,40 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Apply SaaS domain validation middleware first
+// Apply SaaS domain validation middleware first - THIS MUST RUN BEFORE ANY AUTH
 app.use(validateDomainAndConnect);
 
 // Load tenant-specific settings after domain validation
 app.use(loadTenantSettings);
 
 // Apply auth and feature permissions middleware to relevant routes
-// The root level only applies to authenticated routes, individual routes handle auth separately
+// This now runs AFTER SaaS middleware has set the tenant context
 app.use((req, res, next) => {
   // Skip auth for login page and public assets
   if (req.path === '/login' || req.path.startsWith('/public')) {
     return next();
   }
+  
+  // Ensure we have tenant context before running auth
+  if (!req.tenant) {
+    return res.status(500).render('error', {
+      title: 'System Error',
+      message: 'Database context not available. Please try again.',
+      redirectUrl: '/login'
+    });
+  }
+  
   // For other routes, apply auth and permissions middleware
   protect(req, res, (err) => {
-    if (err) return next(err);
-    getFeaturePermissions(req, res, next);
+    if (err) {
+      return next(err);
+    }
+    getFeaturePermissions(req, res, (permErr) => {
+      if (permErr) {
+        return next(permErr);
+      }
+      next();
+    });
   });
 });
 

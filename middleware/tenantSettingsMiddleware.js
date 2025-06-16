@@ -1,4 +1,4 @@
-const Setting = require('../models/Setting');
+const { getTenantSetting } = require('../utils/tenantModels');
 
 // Load tenant-specific settings middleware
 async function loadTenantSettings(req, res, next) {
@@ -12,11 +12,11 @@ async function loadTenantSettings(req, res, next) {
         // Only load settings if we have a tenant database connection
         if (req.tenant && req.tenant.sequelize) {
             try {
+                const Setting = getTenantSetting();
                 const settings = await Setting.findOne();
                 if (settings) {
                     res.locals.settings = settings;
                 } else {
-                    console.log('No settings found for tenant:', req.tenant.database.database_name);
                     res.locals.settings = null;
                 }
             } catch (settingsError) {
