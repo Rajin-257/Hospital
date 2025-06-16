@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - HospX</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .error-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+        .error-icon {
+            font-size: 80px;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+        .error-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .error-message {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .domain-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        .btn-register {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 50px;
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            color: white;
+            text-decoration: none;
+        }
+        .features-list {
+            text-align: left;
+            margin: 30px 0;
+        }
+        .features-list li {
+            margin: 10px 0;
+            color: #555;
+        }
+        .features-list i {
+            color: #28a745;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">
+            <i class="fas fa-hospital-user"></i>
+        </div>
+        
+        <h1 class="error-title"><%= title %></h1>
+        
+        <p class="error-message"><%= message %></p>
+        
+        <% if (typeof currentDomain !== 'undefined' && currentDomain) { %>
+        <div class="domain-info">
+            <strong><i class="fas fa-globe"></i> Current Domain:</strong> <%= currentDomain %>
+        </div>
+        <% } %>
+        
+        <div class="features-list">
+            <h4><i class="fas fa-star text-warning"></i> What you get with HospX:</h4>
+            <ul class="list-unstyled">
+                <li><i class="fas fa-check-circle"></i> Complete Hospital Management System</li>
+                <li><i class="fas fa-check-circle"></i> Patient Registration & Management</li>
+                <li><i class="fas fa-check-circle"></i> Doctor & Staff Management</li>
+                <li><i class="fas fa-check-circle"></i> Appointment Scheduling</li>
+                <li><i class="fas fa-check-circle"></i> Billing & Payment System</li>
+                <li><i class="fas fa-check-circle"></i> Comprehensive Reports</li>
+                <li><i class="fas fa-check-circle"></i> 24/7 Support</li>
+            </ul>
+        </div>
+        
+        <% if (typeof registrationUrl !== 'undefined' && registrationUrl) { %>
+        <a href="<%= registrationUrl %>" class="btn-register">
+            <i class="fas fa-user-plus"></i> Register Your Hospital Now
+        </a>
+        <% } %>
+        
+        <div class="mt-4">
+            <small class="text-muted">
+                Need help? Contact us at <strong>support@hospx.app</strong>
+            </small>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Auto redirect after 30 seconds if registration URL is available
+        `<% if (typeof registrationUrl !== 'undefined' && registrationUrl) { %>
+        setTimeout(function() {
+            const userConfirm = confirm('You will be redirected to registration page. Click OK to continue or Cancel to stay on this page.');
+            if (userConfirm) {
+                window.location.href = '<%- registrationUrl %>';
+            }
+        }, 30000);
+        <% } %>`
+    </script>
+</body>
+</html> 

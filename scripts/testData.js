@@ -240,5 +240,10 @@ async function importTests() {
   }
 }
 
-// Run the import function
-importTests();
+// Export the test data for use in controllers
+module.exports = { testData };
+
+// Run the import function only if this script is executed directly
+if (require.main === module) {
+  importTests();
+}

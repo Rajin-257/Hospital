@@ -3,12 +3,12 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
-const { connectDB, sequelize } = require('./config/db');
+const { connectDB, sequelize, defaultSequelize } = require('./config/db');
 const ejs = require('ejs');
 const { protect } = require('./middleware/auth');
 const { getFeaturePermissions } = require('./middleware/featurePermission');
-const session = require('express-session');
-const SequelizeStore = require('connect-session-sequelize')(session.Store);
+const { validateDomainAndConnect } = require('./middleware/saasMiddleware');
+const { loadTenantSettings } = require('./middleware/tenantSettingsMiddleware');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -48,61 +48,28 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Configure session with Sequelize store
-const sessionStore = new SequelizeStore({
-  db: sequelize,
-  tableName: 'sessions',
-  expiration: 30 * 60 * 1000, // 30 minutes in milliseconds
-  checkExpirationInterval: 15 * 60 * 1000 // Check every 15 minutes
-});
-
-app.use(session({
-  store: sessionStore,
-  secret: process.env.SESSION_SECRET || 'session_secret_key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 30 * 60 * 1000 // 30 minutes in milliseconds
-  }
-}));
-
-// Initialize the session store
-sessionStore.sync();
-
-// Middleware to extend session on activity
-app.use((req, res, next) => {
-  // Skip for login page and public assets
-  if (req.path === '/login' || req.path.startsWith('/public')) {
-    return next();
-  }
-  
-  // If there's a session and the user is logged in, extend the session
-  if (req.session && req.session.user) {
-    req.session.cookie.maxAge = 30 * 60 * 1000; // Reset to 30 minutes
-  }
-  
-  next();
-});
-
 // Set view engine
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-// Load settings for all views
+// Load settings for all views - SKIP for now, settings should be tenant-specific
 app.use(async (req, res, next) => {
   try {
-    const settings = await Setting.findOne();
-    if (settings) {
-      res.locals.settings = settings;
-    }
+    // Skip settings loading for SaaS - each tenant should have their own settings
+    // This will be handled after tenant database is set
+    res.locals.settings = null; // Default to null, will be loaded later if needed
     next();
   } catch (error) {
     console.error('Error loading settings:', error);
     next();
   }
 });
+
+// Apply SaaS domain validation middleware first
+app.use(validateDomainAndConnect);
+
+// Load tenant-specific settings after domain validation
+app.use(loadTenantSettings);
 
 // Apply auth and feature permissions middleware to relevant routes
 // The root level only applies to authenticated routes, individual routes handle auth separately

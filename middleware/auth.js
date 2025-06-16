@@ -4,32 +4,6 @@ const User = require('../models/User');
 // Protect routes
 exports.protect = async (req, res, next) => {
   try {
-    // Check if user session exists
-    if (req.session && req.session.user) {
-      // Session exists, get user from database to verify
-      const user = await User.findByPk(req.session.user.id);
-      
-      if (!user || !user.isActive) {
-        // Clear invalid session
-        return clearAuthAndRedirect(req, res);
-      }
-      
-      // Set user in request
-      req.user = user;
-      
-      // Set user data for views
-      res.locals.user = {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role
-      };
-      
-      // Session is valid, proceed
-      return next();
-    }
-    
-    // No session, check token as fallback
     let token;
     
     // Get token from cookie
@@ -52,14 +26,6 @@ exports.protect = async (req, res, next) => {
       if (!user || !user.isActive) {
         return clearAuthAndRedirect(req, res);
       }
-      
-      // Create session for token-based auth
-      req.session.user = {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role
-      };
       
       // Set user in request
       req.user = user;
@@ -86,18 +52,7 @@ exports.protect = async (req, res, next) => {
 // Helper function to clear auth data and redirect
 const clearAuthAndRedirect = (req, res) => {
   res.clearCookie('token');
-  
-  if (req.session) {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('Error destroying session:', err);
-      }
-      // Redirect with timeout parameter if it was a session timeout
-      res.redirect('/login?timeout=true');
-    });
-  } else {
-    res.redirect('/login?timeout=true');
-  }
+  res.redirect('/login?timeout=true');
 };
 
 // Authorize roles

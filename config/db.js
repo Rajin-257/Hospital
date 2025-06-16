@@ -1,7 +1,12 @@
 const { Sequelize } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
-const sequelize = new Sequelize(
+// Store for request-specific database connections
+const asyncLocalStorage = require('async_hooks').AsyncLocalStorage;
+const als = new asyncLocalStorage();
+
+// Default sequelize instance (for fallback)
+let defaultSequelize = new Sequelize(
   process.env.DB_NAME || 'hospital_management',
   process.env.DB_USER || 'root',
   process.env.DB_PASSWORD || '',
@@ -14,36 +19,7 @@ const sequelize = new Sequelize(
 
 const connectDB = async () => {
   try {
-    await sequelize.authenticate();
-    console.log('Database connected successfully');
-    
-    // Sync database
-    await sequelize.sync({ alter: false });
-    console.log('Database synchronized');
-    
-    setTimeout(async () => {
-      try {
-        // Import the User model
-        const User = require('../models/User');
-        
-        // Check if admin user exists
-        const adminExists = await User.findOne({ where: { username: 'softadmin' } });
-        
-        if (!adminExists) {
-          // Create default admin user
-          await User.create({
-            username: 'softadmin',
-            email: 'softadmin@hospital.com',
-            password: '123', // Will be hashed by the model hooks
-            role: 'softadmin',
-            isActive: true
-          });
-          console.log('Default admin user created');
-        }
-      } catch (error) {
-        console.error('Error creating default user:', error);
-      }
-    }, 500); // Small delay to ensure models are loaded
+    await defaultSequelize.authenticate();
     
   } catch (error) {
     console.error('Unable to connect to the database:', error);
@@ -51,4 +27,47 @@ const connectDB = async () => {
   }
 };
 
-module.exports = { sequelize, connectDB };
+// Set tenant database connection for current request context
+const setTenantDatabase = (tenantSequelize) => {
+  const store = als.getStore();
+  if (store && tenantSequelize) {
+    store.tenantSequelize = tenantSequelize;
+    console.log('Set tenant database for request:', tenantSequelize.config.database);
+  }
+};
+
+// Get database connection for current request
+const getSequelize = () => {
+  const store = als.getStore();
+  if (store && store.tenantSequelize) {
+    return store.tenantSequelize;
+  }
+  return defaultSequelize;
+};
+
+// Run function in tenant context
+const runInTenantContext = (fn) => {
+  return als.run({ tenantSequelize: null }, fn);
+};
+
+// Export dynamic sequelize getter that works per request
+const sequelize = new Proxy({}, {
+  get: function(target, prop) {
+    const currentSequelize = getSequelize();
+    return currentSequelize[prop];
+  },
+  set: function(target, prop, value) {
+    const currentSequelize = getSequelize();
+    currentSequelize[prop] = value;
+    return true;
+  }
+});
+
+module.exports = { 
+  sequelize, 
+  connectDB, 
+  setTenantDatabase, 
+  getSequelize,
+  runInTenantContext,
+  defaultSequelize 
+};

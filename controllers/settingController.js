@@ -4,7 +4,7 @@ const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
 const { Op } = require('sequelize');
-const { exec } = require('child_process');
+
 
 // Get settings page
 exports.getSettings = async (req, res) => {
@@ -186,32 +186,71 @@ exports.importFeaturePermissions = async (req, res) => {
 // Import test data
 exports.importTestData = async (req, res) => {
     try {
-        const settings = await Setting.findOne();
+        const Test = require('../models/Test');
+        const { getSequelize } = require('../config/db');
         
-        // Run the testData.js script
-        exec('node scripts/testData.js', async (error, stdout, stderr) => {
-            if (error) {
-                console.error('Error running test data script:', error);
-                return res.status(500).json({ success: false, message: 'Error importing test data' });
-            }
+        console.log('🔄 Starting test data import to TENANT database...');
+        
+        // Import test data from the testData file
+        const { testData } = require('../scripts/testData');
+        
+        const sequelize = getSequelize();
+        const dbName = sequelize.config ? sequelize.config.database : 'unknown';
+        
+        console.log(`📋 Importing ${testData.length} tests to database: ${dbName}`);
+        
+        // Check if we're using tenant database
+        if (!dbName.includes('hospx_db_')) {
+            console.error('🚨 CRITICAL: Not using tenant database for test import!');
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Error: Not connected to tenant database' 
+            });
+        }
+        
+        // Start a transaction on the tenant database
+        const transaction = await sequelize.transaction();
+        
+        try {
+            // Insert all tests into the TENANT database
+            await Test.bulkCreate(testData, { 
+                transaction,
+                ignoreDuplicates: true // Avoid errors if tests already exist
+            });
             
-            if (stderr) {
-                console.error('Test data script stderr:', stderr);
-            }
-            
-            console.log('Test data script output:', stdout);
-            
-            // Update settings to disable import_tast_data after successful import
+            // Update settings in the TENANT database
+            const settings = await Setting.findOne({ transaction });
             if (settings) {
-                await settings.update({
-                    import_tast_data: true
-                });
+                await settings.update({ 
+                    import_tast_data: true 
+                }, { transaction });
             }
             
-            res.json({ success: true, message: 'Test data imported successfully' });
-        });
+            // Commit the transaction
+            await transaction.commit();
+            
+            console.log(`✅ Successfully imported ${testData.length} tests to tenant database: ${dbName}`);
+            res.json({ 
+                success: true, 
+                message: `Test data imported successfully to ${dbName}`,
+                count: testData.length 
+            });
+            
+        } catch (error) {
+            // Rollback transaction on error
+            await transaction.rollback();
+            console.error('❌ Error importing tests to tenant database:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: `Error importing test data: ${error.message}` 
+            });
+        }
+        
     } catch (error) {
-        console.error('Error importing test data:', error);
-        res.status(500).json({ success: false, message: 'Error importing test data' });
+        console.error('❌ Error in importTestData:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: `Error importing test data: ${error.message}` 
+        });
     }
 }; 
