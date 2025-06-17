@@ -19,10 +19,28 @@ router.get('/register', protect, getFeaturePermissions, checkFeatureAccess('User
   res.render('auth/register', { title: 'Register User' });
 });
 
+// Refresh token route - handles automatic refresh redirects
+router.get('/refresh-token', async (req, res) => {
+  try {
+    // Call the refresh token controller
+    await authController.refreshToken(req, res);
+    
+    // If refresh was successful and there's a redirect URL, redirect there
+    const redirectUrl = req.query.redirect || '/dashboard';
+    if (res.headersSent) return; // Response already sent by controller
+    
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error('Refresh token route error:', error);
+    res.redirect('/login?timeout=true');
+  }
+});
+
 // Authentication routes
 router.post('/register', protect, getFeaturePermissions, checkFeatureAccess('User Management'), authController.register);
 router.post('/login', authController.login);
 router.get('/logout', authController.logout);
+router.post('/refresh-token', authController.refreshToken); // API endpoint for AJAX calls
 
 // Get current user - protected
 router.get('/me', protect, getFeaturePermissions, authController.getMe);

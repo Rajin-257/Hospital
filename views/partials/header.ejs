@@ -36,6 +36,39 @@
             border-color: #6f42c1;
         }
         
+        /* Session notification styles */
+        .session-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+        
+        .session-notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .session-notification.success {
+            background-color: #28a745;
+        }
+        
+        .session-notification.warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .session-notification.error {
+            background-color: #dc3545;
+        }
+        
         /* Other custom styles... */
     </style>
 </head>

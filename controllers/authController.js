@@ -1,6 +1,50 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
+// Token configuration
+const ACCESS_TOKEN_EXPIRY = '1h'; // 1 hour for access token
+const REFRESH_TOKEN_EXPIRY = '7d'; // 7 days for refresh token
+const ACCESS_TOKEN_COOKIE_EXPIRY = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
+const REFRESH_TOKEN_COOKIE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+// Helper function to generate tokens
+const generateTokens = (userId) => {
+  const accessToken = jwt.sign(
+    { id: userId, type: 'access' }, 
+    process.env.JWT_SECRET || 'secretkey', 
+    { expiresIn: ACCESS_TOKEN_EXPIRY }
+  );
+  
+  const refreshToken = jwt.sign(
+    { id: userId, type: 'refresh' }, 
+    process.env.JWT_REFRESH_SECRET || 'refreshsecretkey', 
+    { expiresIn: REFRESH_TOKEN_EXPIRY }
+  );
+  
+  return { accessToken, refreshToken };
+};
+
+// Helper function to set token cookies
+const setTokenCookies = (res, accessToken, refreshToken) => {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  };
+
+  // Set access token cookie
+  res.cookie('token', accessToken, {
+    ...cookieOptions,
+    maxAge: ACCESS_TOKEN_COOKIE_EXPIRY
+  });
+
+  // Set refresh token cookie
+  res.cookie('refreshToken', refreshToken, {
+    ...cookieOptions,
+    maxAge: REFRESH_TOKEN_COOKIE_EXPIRY
+  });
+};
+
 // Register user
 exports.register = async (req, res) => {
   try {
@@ -20,14 +64,12 @@ exports.register = async (req, res) => {
       role: role || 'receptionist'
     });
 
-    // Generate JWT token
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secretkey', {
-      expiresIn: '1h'
-    });
+    // Generate tokens
+    const { accessToken, refreshToken } = generateTokens(user.id);
 
     res.status(201).json({
       success: true,
-      token,
+      token: accessToken,
       user: {
         id: user.id,
         username: user.username,
@@ -65,18 +107,11 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Account is deactivated' });
     }
 
-    // Generate JWT token
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secretkey', {
-      expiresIn: '8h' // Extended to 8 hours since no session refresh
-    });
+    // Generate tokens
+    const { accessToken, refreshToken } = generateTokens(user.id);
 
-    // Set token in cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 8 * 60 * 60 * 1000 // 8 hours in milliseconds
-    });
+    // Set token cookies
+    setTokenCookies(res, accessToken, refreshToken);
 
     // Render dashboard or redirect
     res.redirect('/');
@@ -88,14 +123,82 @@ exports.login = async (req, res) => {
   }
 };
 
+// Refresh token endpoint
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.cookies;
+
+    if (!refreshToken) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Refresh token not provided' 
+      });
+    }
+
+    try {
+      // Verify refresh token
+      const decoded = jwt.verify(
+        refreshToken, 
+        process.env.JWT_REFRESH_SECRET || 'refreshsecretkey'
+      );
+
+      // Check if it's a refresh token
+      if (decoded.type !== 'refresh') {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Invalid token type' 
+        });
+      }
+
+      // Check if user still exists and is active
+      const user = await User.findByPk(decoded.id);
+      if (!user || !user.isActive) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'User not found or inactive' 
+        });
+      }
+
+      // Generate new tokens
+      const { accessToken: newAccessToken, refreshToken: newRefreshToken } = generateTokens(user.id);
+
+      // Set new token cookies
+      setTokenCookies(res, newAccessToken, newRefreshToken);
+
+      res.json({
+        success: true,
+        message: 'Tokens refreshed successfully',
+        accessToken: newAccessToken
+      });
+
+    } catch (tokenError) {
+      // Clear invalid refresh token
+      res.clearCookie('refreshToken');
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid or expired refresh token' 
+      });
+    }
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 // Logout user
 exports.logout = (req, res) => {
-  // Clear the cookie with same options as when it was set
-  res.clearCookie('token', {
+  // Clear both cookies with same options as when they were set
+  const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-  });
+  };
+  
+  res.clearCookie('token', cookieOptions);
+  res.clearCookie('refreshToken', cookieOptions);
   res.redirect('/login');
 };
 

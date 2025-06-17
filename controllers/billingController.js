@@ -284,7 +284,7 @@ exports.createBilling = async (req, res) => {
             where: { isAvailable: true },
             order: [['id', 'ASC']]
           });
-          doctorId = defaultDoctor ? defaultDoctor.id : 1; // Fallback to doctor ID 1
+          doctorId = defaultDoctor ? defaultDoctor.id : null; // Fallback to doctor ID 1
         }
 
         // Create test request object
