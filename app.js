@@ -9,6 +9,7 @@ const { protect } = require('./middleware/auth');
 const { getFeaturePermissions } = require('./middleware/featurePermission');
 const { validateDomainAndConnect } = require('./middleware/saasMiddleware');
 const { loadTenantSettings } = require('./middleware/tenantSettingsMiddleware');
+const jwt = require('jsonwebtoken');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -74,8 +75,8 @@ app.use(loadTenantSettings);
 // Apply auth and feature permissions middleware to relevant routes
 // This now runs AFTER SaaS middleware has set the tenant context
 app.use((req, res, next) => {
-  // Skip auth for login page and public assets
-  if (req.path === '/login' || req.path.startsWith('/public')) {
+  // Skip auth for login page, public assets, and root route
+  if (req.path === '/login' || req.path.startsWith('/public') || req.path === '/') {
     return next();
   }
   
@@ -117,9 +118,33 @@ app.use('/commissions', commissionRoutes);
 app.use('/marketing-commissions', marketingCommissionRoutes);
 app.use('/', userRoutes);
 
-// Redirect root to dashboard
+// Handle root route - check if user is authenticated
 app.get('/', (req, res) => {
-  res.redirect('/dashboard');
+  // Check if user has a valid token
+  const token = req.cookies.token;
+  
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secretkey');
+      // If token is valid, redirect to dashboard
+      if (decoded && decoded.type === 'access') {
+        return res.redirect('/dashboard');
+      }
+    } catch (error) {
+      // Token is invalid, clear it and redirect to login
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+      };
+      res.clearCookie('token', cookieOptions);
+      res.clearCookie('refreshToken', cookieOptions);
+      return res.redirect('/login');
+    }
+  }
+  
+  // No token or invalid token, redirect to login
+  res.redirect('/login');
 });
 
 // 404 handler

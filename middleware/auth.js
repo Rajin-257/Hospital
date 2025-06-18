@@ -104,11 +104,8 @@ exports.protect = async (req, res, next) => {
         // If this is a table not found error, it means we're in the wrong database context
         if (dbError.message.includes("doesn't exist") || dbError.message.includes("Table")) {
           // This is likely a timing issue where auth middleware runs before SaaS middleware sets the context
-          return res.status(500).render('error', {
-            title: 'System Error',
-            message: 'Database connection issue. Please try again.',
-            redirectUrl: '/login'
-          });
+          // Redirect to login instead of showing error to avoid loops
+          return res.redirect('/login?error=database');
         }
         
         throw dbError; // Re-throw other database errors
@@ -138,11 +135,7 @@ exports.protect = async (req, res, next) => {
       // Check if this is a database context issue
       if (error.message.includes("doesn't exist") || error.message.includes("Table")) {
         // Don't immediately clear auth for database context issues
-        return res.status(500).render('error', {
-          title: 'System Error', 
-          message: 'Please refresh the page and try again.',
-          redirectUrl: '/dashboard'
-        });
+        return res.redirect('/login?error=database');
       }
       
       // Invalid token - try to use refresh token before clearing auth
@@ -155,8 +148,9 @@ exports.protect = async (req, res, next) => {
           );
           
           if (refreshDecoded.type === 'refresh') {
-            // Redirect to refresh endpoint
-            return res.redirect('/refresh-token?redirect=' + encodeURIComponent(req.originalUrl));
+            // Redirect to refresh endpoint with proper error handling
+            const redirectUrl = req.originalUrl === '/login' ? '/dashboard' : req.originalUrl;
+            return res.redirect('/refresh-token?redirect=' + encodeURIComponent(redirectUrl));
           }
         } catch (refreshError) {
           // Both tokens invalid, clear auth

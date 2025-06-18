@@ -114,7 +114,7 @@ exports.login = async (req, res) => {
     setTokenCookies(res, accessToken, refreshToken);
 
     // Render dashboard or redirect
-    res.redirect('/');
+    res.redirect('/dashboard');
   } catch (error) {
     res.status(500).json({
       success: false,

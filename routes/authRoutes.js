@@ -29,7 +29,12 @@ router.get('/refresh-token', async (req, res) => {
     const redirectUrl = req.query.redirect || '/dashboard';
     if (res.headersSent) return; // Response already sent by controller
     
-    res.redirect(redirectUrl);
+    // Ensure we don't redirect to login to avoid loops
+    if (redirectUrl === '/login' || redirectUrl === '/') {
+      res.redirect('/dashboard');
+    } else {
+      res.redirect(redirectUrl);
+    }
   } catch (error) {
     console.error('Refresh token route error:', error);
     res.redirect('/login?timeout=true');
