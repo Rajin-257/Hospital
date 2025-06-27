@@ -2,47 +2,71 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 // Token configuration
-const ACCESS_TOKEN_EXPIRY = '1h'; // 1 hour for access token
-const REFRESH_TOKEN_EXPIRY = '7d'; // 7 days for refresh token
-const ACCESS_TOKEN_COOKIE_EXPIRY = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
-const REFRESH_TOKEN_COOKIE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+const ACCESS_TOKEN_EXPIRY = '24h'; // 24 hour for access token
+const ACCESS_TOKEN_COOKIE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-// Helper function to generate tokens
-const generateTokens = (userId) => {
-  const accessToken = jwt.sign(
-    { id: userId, type: 'access' }, 
+// Validate JWT secret on startup
+const validateJWTSecret = () => {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'secretkey') {
+    console.warn('⚠️  WARNING: Using default JWT_SECRET. Set a secure JWT_SECRET in production!');
+  }
+};
+
+// Initialize validation
+validateJWTSecret();
+
+// Cookie options function
+const getCookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+  maxAge: ACCESS_TOKEN_COOKIE_EXPIRY,
+  path: '/'
+});
+
+// Helper function to generate access token
+const generateAccessToken = (userId) => {
+  if (!userId) {
+    throw new Error('User ID is required for token generation');
+  }
+
+  return jwt.sign(
+    { 
+      id: userId, 
+      iat: Math.floor(Date.now() / 1000)
+    }, 
     process.env.JWT_SECRET || 'secretkey', 
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
-  
-  const refreshToken = jwt.sign(
-    { id: userId, type: 'refresh' }, 
-    process.env.JWT_REFRESH_SECRET || 'refreshsecretkey', 
-    { expiresIn: REFRESH_TOKEN_EXPIRY }
-  );
-  
-  return { accessToken, refreshToken };
 };
 
-// Helper function to set token cookies
-const setTokenCookies = (res, accessToken, refreshToken) => {
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-  };
+// Function to set token cookie
+const setTokenCookie = (res, accessToken) => {
+  try {
+    // Set access token cookie
+    res.cookie('token', accessToken, getCookieOptions());
 
-  // Set access token cookie
-  res.cookie('token', accessToken, {
-    ...cookieOptions,
-    maxAge: ACCESS_TOKEN_COOKIE_EXPIRY
-  });
+    // Set security headers
+    res.set({
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block'
+    });
 
-  // Set refresh token cookie
-  res.cookie('refreshToken', refreshToken, {
-    ...cookieOptions,
-    maxAge: REFRESH_TOKEN_COOKIE_EXPIRY
-  });
+    console.log('✅ Token set successfully');
+  } catch (error) {
+    console.error('❌ Error setting token cookie:', error);
+    throw new Error('Failed to set authentication cookie');
+  }
+};
+
+// Function to clear auth cookie
+const clearAuthCookie = (res) => {
+  const cookieOptions = getCookieOptions();
+  delete cookieOptions.maxAge; // Remove maxAge for clearing
+  
+  res.clearCookie('token', cookieOptions);
+  console.log('🧹 Auth cookie cleared');
 };
 
 // Register user
@@ -50,10 +74,21 @@ exports.register = async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
 
+    // Validate required fields
+    if (!username || !email || !password) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Username, email, and password are required' 
+      });
+    }
+
     // Check if user already exists
     const userExists = await User.findOne({ where: { email } });
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'User already exists' 
+      });
     }
 
     // Create new user
@@ -64,11 +99,17 @@ exports.register = async (req, res) => {
       role: role || 'receptionist'
     });
 
-    // Generate tokens
-    const { accessToken, refreshToken } = generateTokens(user.id);
+    // Generate access token
+    const accessToken = generateAccessToken(user.id);
+
+    // Set secure cookie for web registration
+    setTokenCookie(res, accessToken);
+
+    console.log(`✅ User registered successfully: ${username} (${user.id})`);
 
     res.status(201).json({
       success: true,
+      message: 'User registered successfully',
       token: accessToken,
       user: {
         id: user.id,
@@ -78,9 +119,10 @@ exports.register = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('❌ Registration error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Registration failed'
     });
   }
 };
@@ -90,115 +132,85 @@ exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
+    // Validate input
+    if (!username || !password) {
+      console.log('❌ Login attempt with missing credentials');
+      return res.status(400).json({ 
+        success: false,
+        message: 'Username and password are required' 
+      });
+    }
+
     // Check if user exists
     const user = await User.findOne({ where: { username } });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.log(`❌ Login attempt with non-existent user: ${username}`);
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
     }
 
     // Check if password matches
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.log(`❌ Login attempt with invalid password for user: ${username}`);
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
     }
 
     // Check if user is active
     if (!user.isActive) {
-      return res.status(401).json({ message: 'Account is deactivated' });
+      console.log(`❌ Login attempt with deactivated account: ${username}`);
+      return res.status(401).json({ 
+        success: false,
+        message: 'Account is deactivated. Please contact support.' 
+      });
     }
 
-    // Generate tokens
-    const { accessToken, refreshToken } = generateTokens(user.id);
+    // Generate access token
+    const accessToken = generateAccessToken(user.id);
 
-    // Set token cookies
-    setTokenCookies(res, accessToken, refreshToken);
+    // Set token cookie with enhanced security
+    setTokenCookie(res, accessToken);
 
-    // Render dashboard or redirect
+    console.log(`✅ User logged in successfully: ${username} (${user.id})`);
+
+    // Check if this is an AJAX request
+    if (req.xhr || req.headers['x-requested-with'] === 'XMLHttpRequest') {
+      return res.json({
+        success: true,
+        message: 'Login successful',
+        redirectUrl: '/dashboard'
+      });
+    }
+
+    // For regular form submission, redirect to dashboard
     res.redirect('/dashboard');
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-// Refresh token endpoint
-exports.refreshToken = async (req, res) => {
-  try {
-    const { refreshToken } = req.cookies;
-
-    if (!refreshToken) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Refresh token not provided' 
+    console.error('❌ Login error:', error);
+    
+    // Check if this is an AJAX request
+    if (req.xhr || req.headers['x-requested-with'] === 'XMLHttpRequest') {
+      return res.status(500).json({
+        success: false,
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Login failed'
       });
     }
 
-    try {
-      // Verify refresh token
-      const decoded = jwt.verify(
-        refreshToken, 
-        process.env.JWT_REFRESH_SECRET || 'refreshsecretkey'
-      );
-
-      // Check if it's a refresh token
-      if (decoded.type !== 'refresh') {
-        return res.status(401).json({ 
-          success: false, 
-          message: 'Invalid token type' 
-        });
-      }
-
-      // Check if user still exists and is active
-      const user = await User.findByPk(decoded.id);
-      if (!user || !user.isActive) {
-        return res.status(401).json({ 
-          success: false, 
-          message: 'User not found or inactive' 
-        });
-      }
-
-      // Generate new tokens
-      const { accessToken: newAccessToken, refreshToken: newRefreshToken } = generateTokens(user.id);
-
-      // Set new token cookies
-      setTokenCookies(res, newAccessToken, newRefreshToken);
-
-      res.json({
-        success: true,
-        message: 'Tokens refreshed successfully',
-        accessToken: newAccessToken
-      });
-
-    } catch (tokenError) {
-      // Clear invalid refresh token
-      res.clearCookie('refreshToken');
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid or expired refresh token' 
-      });
-    }
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    // For regular form submission, redirect to login with error
+    res.redirect('/login?error=' + encodeURIComponent('Login failed. Please try again.'));
   }
 };
+
+
 
 // Logout user
 exports.logout = (req, res) => {
-  // Clear both cookies with same options as when they were set
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-  };
-  
-  res.clearCookie('token', cookieOptions);
-  res.clearCookie('refreshToken', cookieOptions);
+  // Clear cookie with same options as when it was set
+  clearAuthCookie(res);
   res.redirect('/login');
 };
 

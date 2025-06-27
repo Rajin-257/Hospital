@@ -10,39 +10,71 @@ const modelCache = new Map();
  * This ensures all queries use the correct tenant database
  */
 const getTenantModel = (modelName, modelDefinition) => {
-  const currentSequelize = getSequelize();
-  const databaseName = currentSequelize.config?.database || 'default';
-  const cacheKey = `${databaseName}-${modelName}`;
-  
-  // Check if we already have this model for this database
-  if (modelCache.has(cacheKey)) {
-    return modelCache.get(cacheKey);
+  try {
+    const currentSequelize = getSequelize();
+    
+    // Verify the connection is alive
+    if (!currentSequelize) {
+      throw new Error(`No database connection available for model ${modelName}`);
+    }
+    
+    // Check if connection is closed
+    if (currentSequelize.connectionManager && 
+        currentSequelize.connectionManager.pool && 
+        currentSequelize.connectionManager.pool._closed) {
+      throw new Error(`Database connection is closed for model ${modelName}`);
+    }
+    
+    const databaseName = currentSequelize.config?.database || 'default';
+    const cacheKey = `${databaseName}-${modelName}`;
+    
+    // Check if we already have this model for this database
+    if (modelCache.has(cacheKey)) {
+      const cachedModel = modelCache.get(cacheKey);
+      // Verify the cached model's sequelize instance is still valid
+      if (cachedModel.sequelize === currentSequelize) {
+        return cachedModel;
+      } else {
+        // Remove stale cache entry
+        modelCache.delete(cacheKey);
+      }
+    }
+    
+    // Check if the model already exists in the current sequelize instance
+    if (currentSequelize.models[modelName]) {
+      const existingModel = currentSequelize.models[modelName];
+      modelCache.set(cacheKey, existingModel);
+      return existingModel;
+    }
+    
+    // If we have a model definition, create the model
+    if (modelDefinition) {
+      const model = modelDefinition(currentSequelize);
+      modelCache.set(cacheKey, model);
+      return model;
+    }
+    
+    // Fallback - try to require the model from models directory
+    try {
+      const fallbackModel = require(`../models/${modelName}`);
+      console.warn(`⚠️ Using fallback model for ${modelName}`);
+      return fallbackModel;
+    } catch (requireError) {
+      throw new Error(`Model ${modelName} not found and no definition provided`);
+    }
+  } catch (error) {
+    console.error(`❌ Error getting tenant model ${modelName}:`, error.message);
+    throw error;
   }
-  
-  // Check if the model already exists in the current sequelize instance
-  if (currentSequelize.models[modelName]) {
-    modelCache.set(cacheKey, currentSequelize.models[modelName]);
-    return currentSequelize.models[modelName];
-  }
-  
-  // If we have a model definition, create the model
-  if (modelDefinition) {
-    const model = modelDefinition(currentSequelize);
-    modelCache.set(cacheKey, model);
-    return model;
-  }
-  
-  // Fallback - this shouldn't happen in normal operation
-  const fallbackModel = require(`../models/${modelName}`);
-  return fallbackModel;
 };
 
 /**
- * Get User model for current tenant
+ * Get User model for current tenant with enhanced error handling
  */
 const getTenantUser = () => {
   return getTenantModel('User', (sequelize) => {
-    const User = sequelize.define('User', {
+    try {
+      const User = sequelize.define('User', {
       id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -90,11 +122,20 @@ const getTenantUser = () => {
       }
     });
 
-    User.prototype.comparePassword = async function(candidatePassword) {
-      return await bcrypt.compare(candidatePassword, this.password);
-    };
+      User.prototype.comparePassword = async function(candidatePassword) {
+        try {
+          return await bcrypt.compare(candidatePassword, this.password);
+        } catch (error) {
+          console.error('❌ Error comparing password:', error);
+          return false;
+        }
+      };
 
-    return User;
+      return User;
+    } catch (error) {
+      console.error('❌ Error defining User model:', error);
+      throw error;
+    }
   });
 };
 
@@ -450,6 +491,61 @@ const getTenantBilling = () => {
   });
 };
 
+/**
+ * Get cache statistics (useful for debugging)
+ */
+const getCacheStats = () => {
+  const stats = {
+    totalModels: modelCache.size,
+    databases: new Set(),
+    models: []
+  };
+  
+  for (const key of modelCache.keys()) {
+    const [dbName, modelName] = key.split('-', 2);
+    stats.databases.add(dbName);
+    stats.models.push({ database: dbName, model: modelName });
+  }
+  
+  stats.databases = Array.from(stats.databases);
+  return stats;
+};
+
+/**
+ * Verify tenant model connection health
+ */
+const verifyTenantConnection = async () => {
+  try {
+    const currentSequelize = getSequelize();
+    
+    if (!currentSequelize) {
+      throw new Error('No database connection available');
+    }
+    
+    if (currentSequelize.connectionManager && 
+        currentSequelize.connectionManager.pool && 
+        currentSequelize.connectionManager.pool._closed) {
+      throw new Error('Database connection is closed');
+    }
+    
+    // Test the connection
+    await currentSequelize.authenticate();
+    
+    return {
+      healthy: true,
+      database: currentSequelize.config?.database || 'unknown',
+      host: currentSequelize.config?.host || 'unknown'
+    };
+  } catch (error) {
+    return {
+      healthy: false,
+      error: error.message,
+      database: 'unknown',
+      host: 'unknown'
+    };
+  }
+};
+
 module.exports = {
   getTenantModel,
   getTenantUser,
@@ -460,5 +556,7 @@ module.exports = {
   getTenantDoctorCommission,
   getTenantDoctor,
   getTenantPatient,
-  getTenantBilling
+  getTenantBilling,
+  getCacheStats,
+  verifyTenantConnection
 }; 

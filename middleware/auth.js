@@ -2,68 +2,19 @@ const jwt = require('jsonwebtoken');
 const { getSequelize } = require('../config/db');
 const { getTenantUser } = require('../utils/tenantModels');
 
-// Helper function to check if token is close to expiry (within 10 minutes)
-const isTokenNearExpiry = (decoded) => {
-  const currentTime = Math.floor(Date.now() / 1000);
-  const timeUntilExpiry = decoded.exp - currentTime;
-  return timeUntilExpiry < 600; // 10 minutes in seconds
-};
 
-// Helper function to generate new access token
-const generateAccessToken = (userId) => {
-  return jwt.sign(
-    { id: userId, type: 'access' }, 
-    process.env.JWT_SECRET || 'secretkey', 
-    { expiresIn: '1h' }
-  );
-};
 
-// Helper function to refresh token automatically
-const refreshTokenIfNeeded = async (req, res, decoded) => {
-  try {
-    // Check if token is near expiry
-    if (isTokenNearExpiry(decoded)) {
-      const { refreshToken } = req.cookies;
-      
-      if (refreshToken) {
-        try {
-          // Verify refresh token
-          const refreshDecoded = jwt.verify(
-            refreshToken, 
-            process.env.JWT_REFRESH_SECRET || 'refreshsecretkey'
-          );
-          
-          // Check if it's a valid refresh token type
-          if (refreshDecoded.type === 'refresh' && refreshDecoded.id === decoded.id) {
-            // Generate new access token
-            const newAccessToken = generateAccessToken(decoded.id);
-            
-            // Set new access token cookie
-            res.cookie('token', newAccessToken, {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-              maxAge: 1 * 60 * 60 * 1000 // 1 hour in milliseconds
-            });
-            
-            console.log(`Token auto-refreshed for user ${decoded.id}`);
-            return newAccessToken;
-          }
-        } catch (refreshError) {
-          console.log('Refresh token invalid or expired:', refreshError.message);
-          // Continue with the original token - let it expire naturally
-        }
-      }
-    }
-    
-    return null; // No refresh needed or possible
-  } catch (error) {
-    console.log('Error during token refresh:', error.message);
-    return null;
-  }
-};
+// Cookie options function
+const getCookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+  path: '/'
+});
 
-// Protect routes
+
+
+// Enhanced protect routes middleware with better error handling
 exports.protect = async (req, res, next) => {
   try {
     let token;
@@ -75,47 +26,70 @@ exports.protect = async (req, res, next) => {
     
     // Check if token exists
     if (!token) {
+      console.log('🔒 No token found, redirecting to login from:', req.originalUrl);
       return res.redirect('/login');
     }
     
     try {
-      // Verify token
+      // Verify token first (before any database operations)
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secretkey');
       
-      // Check if it's an access token
-      if (decoded.type && decoded.type !== 'access') {
-        return clearAuthAndRedirect(req, res);
+      // Check if we have tenant context
+      if (!req.tenant || !req.tenant.sequelize) {
+        console.log('❌ No tenant context available for auth check');
+        return clearAuthAndRedirect(req, res, 'database');
       }
       
-      // Attempt to refresh token if needed (but don't block if it fails)
-      try {
-        await refreshTokenIfNeeded(req, res, decoded);
-      } catch (refreshError) {
-        // Log but don't fail the request - let the current token continue to work
-        console.log('Token refresh attempt failed:', refreshError.message);
-      }
-      
-      // Use tenant-safe User model
+      // Use tenant-safe User model with enhanced error handling
       let user;
       try {
         const User = getTenantUser();
-        user = await User.findByPk(decoded.id);
-      } catch (dbError) {
-        // If this is a table not found error, it means we're in the wrong database context
-        if (dbError.message.includes("doesn't exist") || dbError.message.includes("Table")) {
-          // This is likely a timing issue where auth middleware runs before SaaS middleware sets the context
-          // Redirect to login instead of showing error to avoid loops
-          return res.redirect('/login?error=database');
+        
+        // Verify that the database connection is alive
+        const tenantDb = getSequelize();
+        if (tenantDb.connectionManager && tenantDb.connectionManager.pool._closed) {
+          console.log('❌ Database connection is closed');
+          return clearAuthAndRedirect(req, res, 'connection');
         }
         
-        throw dbError; // Re-throw other database errors
+        // Test the connection before proceeding
+        await tenantDb.authenticate();
+        
+        user = await User.findByPk(decoded.id, {
+          attributes: { exclude: ['password'] }
+        });
+        
+      } catch (dbError) {
+        console.error('❌ Database error during auth:', dbError.message);
+        
+        // Handle specific database error types
+        if (dbError.message.includes("doesn't exist") || 
+            dbError.message.includes("Table") ||
+            dbError.message.includes("Unknown database") ||
+            dbError.message.includes("Connection lost") ||
+            dbError.message.includes("ConnectionManager.getConnection was called after the connection manager was closed") ||
+            dbError.message.includes("ER_BAD_DB_ERROR") ||
+            dbError.name === 'SequelizeConnectionError' ||
+            dbError.name === 'SequelizeConnectionRefusedError' ||
+            dbError.name === 'SequelizeHostNotFoundError' ||
+            dbError.name === 'SequelizeConnectionTimedOutError') {
+          
+          console.log('🗄️ Database context/connection issue, redirecting to login:', dbError.message);
+          return clearAuthAndRedirect(req, res, 'database');
+        }
+        
+        // For other database errors, still redirect but log differently
+        console.error('🚨 Unexpected database error:', dbError);
+        return clearAuthAndRedirect(req, res, 'error');
       }
       
       if (!user) {
+        console.log('❌ User not found for token:', decoded.id);
         return clearAuthAndRedirect(req, res);
       }
       
       if (!user.isActive) {
+        console.log('❌ User is not active:', user.id);
         return clearAuthAndRedirect(req, res);
       }
       
@@ -127,66 +101,131 @@ exports.protect = async (req, res, next) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        isActive: user.isActive
       };
       
+      console.log(`✅ Auth successful for ${user.username} (${user.id})`);
+      
       next();
-    } catch (error) {
-      // Check if this is a database context issue
-      if (error.message.includes("doesn't exist") || error.message.includes("Table")) {
-        // Don't immediately clear auth for database context issues
-        return res.redirect('/login?error=database');
+      
+    } catch (tokenError) {
+      console.log('❌ Token verification failed:', tokenError.message);
+      
+      // Handle JWT specific errors
+      if (tokenError.name === 'JsonWebTokenError') {
+        console.log('🔐 Invalid JWT token');
+      } else if (tokenError.name === 'TokenExpiredError') {
+        console.log('⏰ JWT token expired');
+      } else if (tokenError.name === 'NotBeforeError') {
+        console.log('⏰ JWT token not active yet');
       }
       
-      // Invalid token - try to use refresh token before clearing auth
-      const { refreshToken } = req.cookies;
-      if (refreshToken) {
-        try {
-          const refreshDecoded = jwt.verify(
-            refreshToken, 
-            process.env.JWT_REFRESH_SECRET || 'refreshsecretkey'
-          );
-          
-          if (refreshDecoded.type === 'refresh') {
-            // Redirect to refresh endpoint with proper error handling
-            const redirectUrl = req.originalUrl === '/login' ? '/dashboard' : req.originalUrl;
-            return res.redirect('/refresh-token?redirect=' + encodeURIComponent(redirectUrl));
-          }
-        } catch (refreshError) {
-          // Both tokens invalid, clear auth
-        }
+      // Check if this is a database context issue even in token verification
+      if (tokenError.message.includes("doesn't exist") || 
+          tokenError.message.includes("Table") ||
+          tokenError.message.includes("Unknown database") ||
+          tokenError.message.includes("Connection lost") ||
+          tokenError.message.includes("ConnectionManager.getConnection was called after the connection manager was closed")) {
+        return clearAuthAndRedirect(req, res, 'database');
       }
       
-      // Invalid token
+      // Invalid or expired token
       return clearAuthAndRedirect(req, res);
     }
   } catch (error) {
-    return clearAuthAndRedirect(req, res);
+    console.error('❌ Protect middleware error:', error);
+    return clearAuthAndRedirect(req, res, 'error');
   }
 };
 
-// Helper function to clear auth data and redirect
-const clearAuthAndRedirect = (req, res) => {
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-  };
+// Enhanced helper function to clear auth data and redirect with error context
+const clearAuthAndRedirect = (req, res, errorType = null) => {
+  const cookieOptions = getCookieOptions();
+  delete cookieOptions.maxAge; // Remove maxAge for clearing
   
+  // Clear auth cookie
   res.clearCookie('token', cookieOptions);
-  res.clearCookie('refreshToken', cookieOptions);
-  res.redirect('/login?timeout=true');
+  
+  // Set security headers
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  
+  console.log('🧹 Clearing auth cookie and redirecting from:', req.originalUrl);
+  
+  // Prevent redirect loops by checking if we're already going to login
+  if (req.originalUrl === '/login' || req.path === '/login') {
+    console.log('📍 Already at login, rendering login page directly');
+    
+    let errorMessage = null;
+    if (errorType === 'database') {
+      errorMessage = 'Database connection issue. Please try again.';
+    } else if (errorType === 'connection') {
+      errorMessage = 'Connection lost. Please login again.';
+    } else if (errorType === 'error') {
+      errorMessage = 'System error occurred. Please try again.';
+    }
+    
+    return res.render('auth/login', { 
+      title: 'Login',
+      error: errorMessage
+    });
+  }
+  
+  // Handle AJAX requests differently
+  if (req.xhr || req.headers['x-requested-with'] === 'XMLHttpRequest') {
+    console.log('📡 AJAX request detected, sending JSON response');
+    
+    let message = 'Authentication required';
+    if (errorType === 'database') {
+      message = 'Database connection issue. Please refresh and try again.';
+    } else if (errorType === 'connection') {
+      message = 'Connection lost. Please login again.';
+    } else if (errorType === 'error') {
+      message = 'System error occurred. Please refresh and try again.';
+    }
+    
+    return res.status(401).json({
+      success: false,
+      message: message,
+      redirectUrl: '/login',
+      errorType: errorType
+    });
+  }
+  
+  // Build redirect URL with error context
+  let redirectUrl = '/login';
+  if (errorType) {
+    redirectUrl += `?error=${errorType}`;
+  }
+  
+  console.log('🔀 Redirecting to login from:', req.originalUrl);
+  res.redirect(redirectUrl);
 };
 
 // Authorize roles
 exports.authorize = (...roles) => {
   return (req, res, next) => {
+    if (!req.user) {
+      console.log('❌ No user found in authorize middleware');
+      return res.status(401).render('error', {
+        title: 'Authentication Required',
+        message: 'Please login to access this resource'
+      });
+    }
+    
     if (!roles.includes(req.user.role)) {
+      console.log(`❌ User ${req.user.username} with role ${req.user.role} not authorized for roles: ${roles.join(', ')}`);
       return res.status(403).render('error', {
         title: 'Unauthorized',
         message: 'You are not authorized to access this resource'
       });
     }
+    
+    console.log(`✅ User ${req.user.username} authorized for role: ${req.user.role}`);
     next();
   };
 };

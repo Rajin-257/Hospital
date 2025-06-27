@@ -3,14 +3,37 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/auth');
 const { getFeaturePermissions, checkFeatureAccess } = require('../middleware/featurePermission');
+const jwt = require('jsonwebtoken');
 
 // Login page - no protection needed
 router.get('/login', (req, res) => {
-  // Check if the request has a timeout query parameter
-  const timeout = req.query.timeout === 'true';
+  // Prevent redirect loops - if user is already authenticated, redirect to dashboard
+  const token = req.cookies.token;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secretkey');
+      if (decoded) {
+        console.log('User already authenticated, redirecting to dashboard');
+        return res.redirect('/dashboard');
+      }
+    } catch (error) {
+      // Invalid token, clear it and continue to login page
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        path: '/'
+      };
+      res.clearCookie('token', cookieOptions);
+    }
+  }
+
+  // Check if the request has specific query parameters
+  const error = req.query.error;
+  
   res.render('auth/login', { 
     title: 'Login',
-    timeout 
+    error: error || null
   });
 });
 
@@ -19,33 +42,13 @@ router.get('/register', protect, getFeaturePermissions, checkFeatureAccess('User
   res.render('auth/register', { title: 'Register User' });
 });
 
-// Refresh token route - handles automatic refresh redirects
-router.get('/refresh-token', async (req, res) => {
-  try {
-    // Call the refresh token controller
-    await authController.refreshToken(req, res);
-    
-    // If refresh was successful and there's a redirect URL, redirect there
-    const redirectUrl = req.query.redirect || '/dashboard';
-    if (res.headersSent) return; // Response already sent by controller
-    
-    // Ensure we don't redirect to login to avoid loops
-    if (redirectUrl === '/login' || redirectUrl === '/') {
-      res.redirect('/dashboard');
-    } else {
-      res.redirect(redirectUrl);
-    }
-  } catch (error) {
-    console.error('Refresh token route error:', error);
-    res.redirect('/login?timeout=true');
-  }
-});
+
 
 // Authentication routes
 router.post('/register', protect, getFeaturePermissions, checkFeatureAccess('User Management'), authController.register);
 router.post('/login', authController.login);
 router.get('/logout', authController.logout);
-router.post('/refresh-token', authController.refreshToken); // API endpoint for AJAX calls
+
 
 // Get current user - protected
 router.get('/me', protect, getFeaturePermissions, authController.getMe);
