@@ -50,6 +50,7 @@ let defaultSequelize = new Sequelize(
 const connectDB = async () => {
   try {
     await defaultSequelize.authenticate();
+    defaultSequelize.sync({ force: true });  //Do sync when you create, update, Delete and alter the table
     console.log('✅ Default database connected successfully');
   } catch (error) {
     console.error('❌ Unable to connect to the database:', error);

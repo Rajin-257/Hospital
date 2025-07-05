@@ -77,8 +77,8 @@
               <th>Date</th>
               <th>Status</th>
               <th>Priority</th>
+              <th>Results</th>
               <th>Billing</th>
-              <th>Result</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -125,18 +125,26 @@
                     </span>
                   </td>
                   <td>
+                    <% if (req.status === 'Completed' && (req.result || req.resultNotes)) { %>
+                      <a href="/tests/results/<%= req.id %>" class="btn btn-sm btn-success" title="View Results">
+                        <i class="fas fa-file-medical"></i>
+                      </a>
+                    <% } else if (req.status === 'In Progress') { %>
+                      <a href="/tests/results/<%= req.id %>/upload" class="btn btn-sm btn-warning" title="Upload Results">
+                        <i class="fas fa-upload"></i>
+                      </a>
+                    <% } else if (req.status === 'Pending') { %>
+                      <a href="/tests/results/<%= req.id %>/upload" class="btn btn-sm btn-outline-primary" title="Upload Results">
+                        <i class="fas fa-plus"></i>
+                      </a>
+                    <% } else { %>
+                      <span class="text-muted">-</span>
+                    <% } %>
+                  </td>
+                  <td>
                     <span class="badge rounded-pill <%= req.billingStatus === 'billed' ? 'bg-success' : 'bg-warning' %>">
                       <%= req.billingStatus === 'billed' ? 'Billed' : 'Not Billed' %>
                     </span>
-                  </td>
-                  <td>
-                    <% if (req.resultFile) { %>
-                      <a href="/tests/results/<%= req.id %>" class="btn btn-sm btn-info">
-                        <i class="fas fa-file-medical me-1"></i> View
-                      </a>
-                    <% } else { %>
-                      <span class="badge bg-secondary">Not Available</span>
-                    <% } %>
                   </td>
                   <td>
                     <div class="btn-group">
@@ -146,11 +154,6 @@
                       <a href="/tests/requisition/edit/<%= req.id %>" class="btn btn-sm btn-outline-primary" title="Edit">
                         <i class="fas fa-edit"></i>
                       </a>
-                      <% if (req.status !== 'Completed' && req.status !== 'Delivered') { %>
-                      <a href="/tests/results/upload/<%= req.id %>" class="btn btn-sm btn-outline-success" title="Upload Result">
-                        <i class="fas fa-file-upload"></i>
-                      </a>
-                      <% } %>
                       <% if (req.billingStatus === 'not_billed') { %>
                       <a href="/billing?patientId=<%= req.PatientId %>&testId=<%= req.id %>" class="btn btn-sm btn-outline-warning" title="Create Bill">
                         <i class="fas fa-file-invoice-dollar"></i>

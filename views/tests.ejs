@@ -6,9 +6,67 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fas fa-vial me-2"></i>Tests</h5>
             <% if (locals.isFeatureVisible('Test Management')) { %>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTestModal">
-                <i class="fas fa-plus me-1"></i> Add Test
-            </button>
+            <div class="btn-toolbar d-flex flex-wrap justify-content-end" role="toolbar">
+                <!-- Department Dropdown -->
+                <div class="btn-group me-2 mb-2" role="group">
+                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-building me-1"></i> 
+                        <span class="d-none d-sm-inline">Department</span>
+                        <span class="d-inline d-sm-none">Dept</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addTestDepartmentModal">
+                            <i class="fas fa-plus me-1"></i> Add Test Department
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewTestDepartmentModal">
+                            <i class="fas fa-eye me-1"></i> View Test Department
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <!-- Category Dropdown -->
+                <div class="btn-group me-2 mb-2" role="group">
+                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-tags me-1"></i> 
+                        <span class="d-none d-sm-inline">Category</span>
+                        <span class="d-inline d-sm-none">Cat</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addTestCategoryModal">
+                            <i class="fas fa-plus me-1"></i> Add Test Category
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewTestCategoryModal">
+                            <i class="fas fa-eye me-1"></i> View Test Category
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <!-- Group Dropdown -->
+                <div class="btn-group me-2 mb-2" role="group">
+                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-layer-group me-1"></i> 
+                        <span class="d-none d-sm-inline">Group</span>
+                        <span class="d-inline d-sm-none">Grp</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addTestGroupModal">
+                            <i class="fas fa-plus me-1"></i> Add Test Group
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewTestGroupModal">
+                            <i class="fas fa-eye me-1"></i> View Test Group
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <!-- Add Test Button -->
+                <div class="btn-group mb-2" role="group">
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTestModal">
+                        <i class="fas fa-plus me-1"></i> 
+                        <span class="d-none d-sm-inline">Add Test</span>
+                        <span class="d-inline d-sm-none">Add</span>
+                    </button>
+                </div>
+            </div>
             <% } %>
         </div>
         <!-- Add filters and search box -->
@@ -48,6 +106,8 @@
                             <th>Name</th>
                             <th>Price</th>
                             <th>Commission</th>
+                            <th>Units</th>
+                            <th>Reference Range</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -57,6 +117,8 @@
                                 <td><%= test.name %></td>
                                 <td>Tk  <%= parseFloat(test.price).toFixed(2) %></td>
                                 <td>Tk  <%= parseFloat(test.commission).toFixed(2) %></td>
+                                <td><%= test.unit %></td>
+                                <td><%= test.bilogical_ref_range %></td>
                                 <td>
                                     <button class="btn btn-sm btn-info view-test" data-id="<%= test.id %>">
                                         <i class="fas fa-eye"></i>
@@ -113,6 +175,13 @@
                         <input type="text" class="form-control" name="name" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Test Group</label>
+                        <select class="form-select" name="test_group_id">
+                            <option value="">Select Test Group</option>
+                            <!-- Dynamic options will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label required-label">Price</label>
                         <div class="input-group">
                             <span class="input-group-text">Tk </span>
@@ -125,6 +194,14 @@
                             <span class="input-group-text">Tk </span>
                             <input type="number" class="form-control" name="commission" min="0" step="0.01" value="0">
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit</label>
+                        <input type="text" class="form-control" name="unit" placeholder="e.g., mg/dl, count, etc.">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Biological Reference Range</label>
+                        <input type="text" class="form-control" name="bilogical_ref_range" placeholder="e.g., 70-110 mg/dl">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -156,6 +233,13 @@
                         <input type="text" class="form-control" id="edit-test-name" name="name" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Test Group</label>
+                        <select class="form-select" id="edit-test-group" name="test_group_id">
+                            <option value="">Select Test Group</option>
+                            <!-- Dynamic options will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label required-label">Price</label>
                         <div class="input-group">
                             <span class="input-group-text">Tk </span>
@@ -168,6 +252,14 @@
                             <span class="input-group-text">Tk </span>
                             <input type="number" class="form-control" id="edit-test-commission" name="commission" min="0" step="0.01" value="0">
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit</label>
+                        <input type="text" class="form-control" id="edit-test-unit" name="unit" placeholder="e.g., mg/dl, count, etc.">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Biological Reference Range</label>
+                        <input type="text" class="form-control" id="edit-test-ref-range" name="bilogical_ref_range" placeholder="e.g., 70-110 mg/dl">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -197,14 +289,30 @@
                         <p class="mb-1 fw-bold">Test Name:</p>
                         <p id="view-test-name"></p>
                     </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Test Group:</p>
+                        <p id="view-test-group"></p>
+                    </div>
                 </div>
-                <div class="mb-3">
+                <div class="row mb-3">
+                    <div class="col-md-6">
                     <p class="mb-1 fw-bold">Price:</p>
                     <p id="view-test-price"></p>
                 </div>
-                <div class="mb-3">
+                    <div class="col-md-6">
                     <p class="mb-1 fw-bold">Commission:</p>
                     <p id="view-test-commission"></p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Unit:</p>
+                        <p id="view-test-unit"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Reference Range:</p>
+                        <p id="view-test-ref-range"></p>
+                    </div>
                 </div>
                 <div>
                     <p class="mb-1 fw-bold">Description:</p>
@@ -222,6 +330,9 @@
     $(document).ready(function() {
         // Initialize Select2
         initializeSelects();
+        
+        // Load initial data
+        loadTestGroups();
         
         // Make filters apply on change
         $('#priceRange').on('change', function() {
@@ -262,6 +373,9 @@
                     $('#edit-test-price').val(test.price);
                     $('#edit-test-commission').val(test.commission);
                     $('#edit-test-desc').val(test.description);
+                    $('#edit-test-group').val(test.test_group_id || '');
+                    $('#edit-test-unit').val(test.unit || '');
+                    $('#edit-test-ref-range').val(test.bilogical_ref_range || '');
                     
                     $('#editTestModal').modal('show');
                 },
@@ -303,9 +417,12 @@
                 type: 'GET',
                 success: function(test) {
                     $('#view-test-name').text(test.name);
-                    $('#view-test-price').text('$' + parseFloat(test.price).toFixed(2));
-                    $('#view-test-commission').text('$' + parseFloat(test.commission).toFixed(2));
+                    $('#view-test-price').text('Tk ' + parseFloat(test.price).toFixed(2));
+                    $('#view-test-commission').text('Tk ' + parseFloat(test.commission).toFixed(2));
                     $('#view-test-desc').text(test.description || 'No description available');
+                    $('#view-test-group').text(test.TestGroup?.name || 'No group assigned');
+                    $('#view-test-unit').text(test.unit || 'Not specified');
+                    $('#view-test-ref-range').text(test.bilogical_ref_range || 'Not specified');
                     
                     $('#viewTestModal').modal('show');
                 },
@@ -314,7 +431,425 @@
                 }
             });
         });
+        
+        // Department Management
+        $('#test-department-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            $.ajax({
+                url: '/tests/departments',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    $('#addTestDepartmentModal').modal('hide');
+                    showToast('Test department added successfully');
+                    $('#test-department-form')[0].reset();
+                    loadDepartments();
+                },
+                error: function(error) {
+                    showToast('Error adding test department: ' + (error.responseJSON?.message || 'Unknown error'), 'error');
+                }
+            });
+        });
+        
+        // Category Management
+        $('#test-category-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            $.ajax({
+                url: '/tests/categories',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    $('#addTestCategoryModal').modal('hide');
+                    showToast('Test category added successfully');
+                    $('#test-category-form')[0].reset();
+                    loadCategories();
+                },
+                error: function(error) {
+                    showToast('Error adding test category: ' + (error.responseJSON?.message || 'Unknown error'), 'error');
+                }
+            });
+        });
+        
+        // Group Management
+        $('#test-group-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            $.ajax({
+                url: '/tests/groups',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    $('#addTestGroupModal').modal('hide');
+                    showToast('Test group added successfully');
+                    $('#test-group-form')[0].reset();
+                    loadGroups();
+                    loadTestGroups();
+                },
+                error: function(error) {
+                    showToast('Error adding test group: ' + (error.responseJSON?.message || 'Unknown error'), 'error');
+                }
+            });
+        });
+        
+        // Load departments for category form
+        $('#addTestCategoryModal').on('show.bs.modal', function() {
+            loadDepartmentsForSelect();
+        });
+        
+        // Load categories for group form
+        $('#addTestGroupModal').on('show.bs.modal', function() {
+            loadCategoriesForSelect();
+        });
+        
+        // Load groups for test form
+        $('#addTestModal, #editTestModal').on('show.bs.modal', function() {
+            loadTestGroups();
+        });
+        
+        // View departments
+        $('#viewTestDepartmentModal').on('show.bs.modal', function() {
+            loadDepartments();
+        });
+        
+        // View categories
+        $('#viewTestCategoryModal').on('show.bs.modal', function() {
+            loadCategories();
+        });
+        
+        // View groups
+        $('#viewTestGroupModal').on('show.bs.modal', function() {
+            loadGroups();
+        });
     });
+    
+    // Load functions
+    function loadDepartments() {
+        $.ajax({
+            url: '/tests/departments',
+            type: 'GET',
+            success: function(departments) {
+                const tbody = $('#departments-table-body');
+                tbody.empty();
+                
+                departments.forEach(dept => {
+                    tbody.append(`
+                        <tr>
+                            <td>${dept.name}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary edit-department" data-id="${dept.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-department" data-id="${dept.id}" data-name="${dept.name}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            },
+            error: function(error) {
+                showToast('Error loading departments', 'error');
+            }
+        });
+    }
+    
+    function loadCategories() {
+        $.ajax({
+            url: '/tests/categories',
+            type: 'GET',
+            success: function(categories) {
+                const tbody = $('#categories-table-body');
+                tbody.empty();
+                
+                categories.forEach(cat => {
+                    tbody.append(`
+                        <tr>
+                            <td>${cat.name}</td>
+                            <td>${cat.TestDepartment?.name || 'No department'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary edit-category" data-id="${cat.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-category" data-id="${cat.id}" data-name="${cat.name}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            },
+            error: function(error) {
+                showToast('Error loading categories', 'error');
+            }
+        });
+    }
+    
+    function loadGroups() {
+        $.ajax({
+            url: '/tests/groups',
+            type: 'GET',
+            success: function(groups) {
+                const tbody = $('#groups-table-body');
+                tbody.empty();
+                
+                groups.forEach(group => {
+                    tbody.append(`
+                        <tr>
+                            <td>${group.name}</td>
+                            <td>${group.TestCategory?.name || 'No category'}</td>
+                            <td>${group.TestCategory?.TestDepartment?.name || 'No department'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary edit-group" data-id="${group.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-group" data-id="${group.id}" data-name="${group.name}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            },
+            error: function(error) {
+                showToast('Error loading groups', 'error');
+            }
+        });
+    }
+    
+    function loadDepartmentsForSelect() {
+        $.ajax({
+            url: '/tests/departments',
+            type: 'GET',
+            success: function(departments) {
+                const select = $('#test-category-form select[name="test_department_id"]');
+                select.find('option:not(:first)').remove();
+                
+                departments.forEach(dept => {
+                    select.append(`<option value="${dept.id}">${dept.name}</option>`);
+                });
+            },
+            error: function(error) {
+                showToast('Error loading departments', 'error');
+            }
+        });
+    }
+    
+    function loadCategoriesForSelect() {
+        $.ajax({
+            url: '/tests/categories',
+            type: 'GET',
+            success: function(categories) {
+                const select = $('#test-group-form select[name="test_category_id"]');
+                select.find('option:not(:first)').remove();
+                
+                categories.forEach(cat => {
+                    select.append(`<option value="${cat.id}">${cat.name}</option>`);
+                });
+            },
+            error: function(error) {
+                showToast('Error loading categories', 'error');
+            }
+        });
+    }
+    
+    function loadTestGroups() {
+        $.ajax({
+            url: '/tests/groups',
+            type: 'GET',
+            success: function(groups) {
+                const selects = $('select[name="test_group_id"]');
+                selects.find('option:not(:first)').remove();
+                
+                groups.forEach(group => {
+                    selects.append(`<option value="${group.id}">${group.name}</option>`);
+                });
+            },
+            error: function(error) {
+                showToast('Error loading test groups', 'error');
+            }
+        });
+    }
 </script>
+
+<!-- Add Test Department Modal -->
+<div class="modal fade" id="addTestDepartmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-building me-2"></i>Add Test Department</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="test-department-form">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label required-label">Department Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Save Department</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Test Department Modal -->
+<div class="modal fade" id="viewTestDepartmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-building me-2"></i>Test Departments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Department Name</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="departments-table-body">
+                            <!-- Dynamic content will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Test Category Modal -->
+<div class="modal fade" id="addTestCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-tags me-2"></i>Add Test Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="test-category-form">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label required-label">Department</label>
+                        <select class="form-select" name="test_department_id" required>
+                            <option value="">Select Department</option>
+                            <!-- Dynamic options will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-label">Category Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Test Category Modal -->
+<div class="modal fade" id="viewTestCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-tags me-2"></i>Test Categories</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category Name</th>
+                                <th>Department</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categories-table-body">
+                            <!-- Dynamic content will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Test Group Modal -->
+<div class="modal fade" id="addTestGroupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-layer-group me-2"></i>Add Test Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="test-group-form">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label required-label">Category</label>
+                        <select class="form-select" name="test_category_id" required>
+                            <option value="">Select Category</option>
+                            <!-- Dynamic options will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-label">Group Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Save Group</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Test Group Modal -->
+<div class="modal fade" id="viewTestGroupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-layer-group me-2"></i>Test Groups</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Group Name</th>
+                                <th>Category</th>
+                                <th>Department</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="groups-table-body">
+                            <!-- Dynamic content will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <%- include('partials/footer') %>

@@ -23,10 +23,9 @@ const TestRequest = sequelize.define('TestRequest', {
     type: DataTypes.ENUM('Pending', 'In Progress', 'Completed', 'Delivered', 'Cancelled'),
     defaultValue: 'Pending'
   },
-  resultFile: {
+  result:{
     type: DataTypes.TEXT,
-    allowNull: true,
-    comment: 'JSON string of file paths or single path'
+    allowNull: true
   },
   resultNotes: {
     type: DataTypes.TEXT,
@@ -62,6 +61,6 @@ const TestRequest = sequelize.define('TestRequest', {
 // Relationships  
 TestRequest.belongsTo(Patient);
 TestRequest.belongsTo(Test);
-TestRequest.belongsTo(Doctor, { allowNull: true });
+TestRequest.belongsTo(Doctor);
 
 module.exports = TestRequest;

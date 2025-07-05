@@ -3,38 +3,6 @@ const router = express.Router();
 const testController = require('../controllers/testController');
 const { protect } = require('../middleware/auth');
 const { getFeaturePermissions, checkFeatureAccess } = require('../middleware/featurePermission');
-const multer = require('multer');
-const path = require('path');
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, 'public/uploads/test_results');
-  },
-  filename: function(req, file, cb) {
-    cb(null, `result-${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`);
-  }
-});
-
-// File filter to accept multiple file types
-const fileFilter = (req, file, cb) => {
-  // Accept pdf, images, xlsx, docx files
-  const filetypes = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx/;
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = filetypes.test(file.mimetype);
-  
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    cb(new Error("Only image, PDF, Word and Excel files are allowed!"), false);
-  }
-};
-
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB file size limit
-});
 
 // Apply feature permissions middleware to all test routes
 router.use(protect, getFeaturePermissions);
@@ -69,14 +37,33 @@ router.post('/requisition/:id', checkFeatureAccess('Test Management'), testContr
 // Delete test requisition
 router.delete('/requisition/:id', checkFeatureAccess('Test Management'), testController.deleteTestRequisition);
 
-// Show upload result page
-router.get('/results/upload/:id', checkFeatureAccess('Test Management'), testController.showResultUploadPage);
+// Test Department routes
+router.get('/departments', checkFeatureAccess('Test Management'), testController.getAllTestDepartments);
+router.post('/departments', checkFeatureAccess('Test Management'), testController.createTestDepartment);
+router.get('/departments/:id', checkFeatureAccess('Test Management'), testController.getTestDepartment);
+router.put('/departments/:id', checkFeatureAccess('Test Management'), testController.updateTestDepartment);
+router.delete('/departments/:id', checkFeatureAccess('Test Management'), testController.deleteTestDepartment);
 
-// Process result upload
-router.post('/results/upload/:id', checkFeatureAccess('Test Management'), upload.array('result_files', 5), testController.uploadTestResults);
+// Test Category routes
+router.get('/categories', checkFeatureAccess('Test Management'), testController.getAllTestCategories);
+router.post('/categories', checkFeatureAccess('Test Management'), testController.createTestCategory);
+router.get('/categories/:id', checkFeatureAccess('Test Management'), testController.getTestCategory);
+router.put('/categories/:id', checkFeatureAccess('Test Management'), testController.updateTestCategory);
+router.delete('/categories/:id', checkFeatureAccess('Test Management'), testController.deleteTestCategory);
 
-// View test result
-router.get('/results/:id', checkFeatureAccess('Test Requisition'), testController.viewTestResult);
+// Test Group routes
+router.get('/groups', checkFeatureAccess('Test Management'), testController.getAllTestGroups);
+router.post('/groups', checkFeatureAccess('Test Management'), testController.createTestGroup);
+router.get('/groups/:id', checkFeatureAccess('Test Management'), testController.getTestGroup);
+router.put('/groups/:id', checkFeatureAccess('Test Management'), testController.updateTestGroup);
+router.delete('/groups/:id', checkFeatureAccess('Test Management'), testController.deleteTestGroup);
+
+// Test Result routes
+router.get('/results/:id', checkFeatureAccess('Test Requisition'), testController.getTestResult);
+router.get('/results/:id/upload', checkFeatureAccess('Test Management'), testController.showUploadResultForm);
+router.post('/results/:id/upload', checkFeatureAccess('Test Management'), testController.uploadTestResult);
+router.put('/results/:id', checkFeatureAccess('Test Management'), testController.updateTestResult);
+router.delete('/results/:id', checkFeatureAccess('Test Management'), testController.deleteTestResult);
 
 // Parametric routes
 router.get('/:id', checkFeatureAccess('Tests'), testController.getTest);

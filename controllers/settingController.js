@@ -194,52 +194,39 @@ exports.importTestData = async (req, res) => {
         const Test = getTenantTest();
         const Setting = getTenantSetting();
         
-        // Import test data from the testData file
-        const { testData } = require('../scripts/testData');
+        // Import hierarchical test data from the testData file
+        const { importHierarchicalDataToTenant, importTestsToTenant } = require('../scripts/testData');
         
         const sequelize = getSequelize();
         const dbName = sequelize.config ? sequelize.config.database : 'unknown';
         
-        // Start a transaction on the tenant database
-        const transaction = await sequelize.transaction();
+        console.log(`Starting test data import for tenant: ${dbName}`);
         
-        try {
-            // Insert all tests into the TENANT database
-            await Test.bulkCreate(testData, { 
-                transaction,
-                ignoreDuplicates: true // Avoid errors if tests already exist
-            });
-            
-            // Update settings in the TENANT database
-            const settings = await Setting.findOne({ transaction });
-            if (settings) {
-                await settings.update({ 
-                    import_tast_data: true 
-                }, { transaction });
-            }
-            
-            // Commit the transaction
-            await transaction.commit();
-            
-            res.json({ 
-                success: true, 
-                message: `Test data imported successfully`,
-                count: testData.length 
-            });
-            
-        } catch (error) {
-            // Rollback transaction on error
-            await transaction.rollback();
-            res.status(500).json({ 
-                success: false, 
-                message: `Error importing test data: ${error.message}` 
-            });
+        // Choose import type based on request body
+        const importType = req.body.importType || 'hierarchical';
+        
+        let result;
+        if (importType === 'hierarchical') {
+            // Import full hierarchical data (departments, categories, groups, tests)
+            result = await importHierarchicalDataToTenant(sequelize);
+        } else {
+            // Import only tests (backward compatibility)
+            result = await importTestsToTenant(sequelize);
         }
         
+        res.json({
+            success: true,
+            message: result.message,
+            data: result.counts || { count: result.count },
+            tenant: dbName
+        });
+        
     } catch (error) {
+        console.error('Error importing test data:', error);
         res.status(500).json({ 
             success: false, 
-            message: `Error importing test data: ${error.message}` 
+            message: `Error importing test data: ${error.message}`,
+            error: error.stack
         });
     }
 }; 

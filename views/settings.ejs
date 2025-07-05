@@ -112,12 +112,13 @@
                                 </div>
                                 
                                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                    <% if (!settings.import_tast_data) { %>
-                                        <button type="button" class="btn btn-warning me-2" id="importTestDataBtn">
+                                    <% if (settings.import_tast_data == false) { %>
+                                        <!-- For importing Only Test Data Use id "impoertTestDataBtn" Or For Import Complete Package Of test Data use id "importHierarchicalDataBtn" -->
+                                        <button type="button" class="btn btn-warning me-2" id="importHierarchicalDataBtn">
                                             <i class="fas fa-file-import me-2"></i>Import Test Data
                                         </button>
                                     <% } %>
-                                    <% if (!settings.import_feature_data && locals.isFeatureVisible('Permission Management')) { %>
+                                    <% if (settings.import_feature_data == false && locals.isFeatureVisible('Permission Management')) { %>
                                         <button type="button" class="btn btn-warning me-2" id="importFeaturePermissionsBtn">
                                             <i class="fas fa-file-import me-2"></i>Import Feature Permissions
                                         </button>
@@ -309,29 +310,83 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Script for importing test data and feature permissions -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Import test data
-    const importTestDataBtn = document.getElementById('importTestDataBtn');
-    if (importTestDataBtn) {
-        importTestDataBtn.addEventListener('click', async function() {
-            if (confirm('Are you sure you want to import test data? This will add sample data to your database.')) {
+    // Import hierarchical test data (recommended)
+    const importHierarchicalDataBtn = document.getElementById('importHierarchicalDataBtn');
+    if (importHierarchicalDataBtn) {
+        importHierarchicalDataBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to import hierarchical test data?\n\nThis will import:\n• Test Departments\n• Test Categories\n• Test Groups\n• Tests with units and reference ranges\n\nThis is the recommended import option.')) {
+                const btn = this;
+                const originalText = btn.innerHTML;
+                
                 try {
+                    // Show loading state
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Importing...';
+                    btn.style.pointerEvents = 'none';
+                    
                     const response = await fetch('/settings/import-test-data', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
-                        }
+                        },
+                        body: JSON.stringify({ importType: 'hierarchical' })
                     });
                     
                     const data = await response.json();
                     
                     if (data.success) {
-                        alert('Test data imported successfully! Please refresh the page.');
+                        alert(`Hierarchical test data imported successfully!\n\nImported:\n• ${data.data.departments} departments\n• ${data.data.categories} categories\n• ${data.data.groups} groups\n• ${data.data.tests} tests\n\nPlease refresh the page.`);
+                        window.location.reload();
+                    } else {
+                        alert('Failed to import hierarchical data: ' + data.message);
+                    }
+                } catch (error) {
+                    alert('Error importing hierarchical data: ' + error.message);
+                } finally {
+                    // Restore button state
+                    btn.innerHTML = originalText;
+                    btn.style.pointerEvents = 'auto';
+                }
+            }
+        });
+    }
+    
+    // Import test data only (legacy)
+    const importTestDataBtn = document.getElementById('importTestDataBtn');
+    if (importTestDataBtn) {
+        importTestDataBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to import tests only?\n\nThis legacy import will only add tests without the hierarchical structure (departments, categories, groups).\n\nWe recommend using "Import Hierarchical Data" instead.')) {
+                const btn = this;
+                const originalText = btn.innerHTML;
+                
+                try {
+                    // Show loading state
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Importing...';
+                    btn.style.pointerEvents = 'none';
+                    
+                    const response = await fetch('/settings/import-test-data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ importType: 'tests-only' })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert(`Test data imported successfully!\n\nImported: ${data.data.count} tests\n\nPlease refresh the page.`);
                         window.location.reload();
                     } else {
                         alert('Failed to import test data: ' + data.message);
                     }
                 } catch (error) {
                     alert('Error importing test data: ' + error.message);
+                } finally {
+                    // Restore button state
+                    btn.innerHTML = originalText;
+                    btn.style.pointerEvents = 'auto';
                 }
             }
         });

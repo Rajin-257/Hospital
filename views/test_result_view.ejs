@@ -8,179 +8,237 @@
         <ol class="breadcrumb">
           <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
           <li class="breadcrumb-item"><a href="/tests/requisitions">Test Requisitions</a></li>
+          <li class="breadcrumb-item"><a href="/tests/requisition/<%= testRequest.id %>">Requisition #<%= testRequest.id %></a></li>
           <li class="breadcrumb-item active">Test Results</li>
         </ol>
       </nav>
       <h2>
         <i class="fas fa-file-medical me-2"></i>Test Results
       </h2>
-      <p class="text-muted">Results for Test Requisition #<%= requisition.id %></p>
+      <p class="text-muted">Test Report for Requisition #<%= testRequest.id %></p>
     </div>
     <div class="col-md-4 text-md-end">
-      <button id="print-btn" class="btn btn-outline-secondary">
+      <button id="print-btn" class="btn btn-outline-secondary me-2">
         <i class="fas fa-print me-1"></i> Print
       </button>
-      <a href="/tests/requisitions" class="btn btn-outline-primary ms-2">
+      <a href="/tests/results/<%= testRequest.id %>/upload" class="btn btn-outline-primary me-2">
+        <i class="fas fa-edit me-1"></i> Edit Results
+      </a>
+      <a href="/tests/requisition/<%= testRequest.id %>" class="btn btn-outline-primary">
         <i class="fas fa-arrow-left me-1"></i> Back
       </a>
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-md-4">
-      <!-- Test Requisition Info -->
-      <div class="card mb-4">
-        <div class="card-header bg-light">
-          <h5 class="card-title mb-0">
-            <i class="fas fa-info-circle me-2"></i>Requisition Details
-          </h5>
+  <!-- Medical Report -->
+  <div class="card mb-4" id="medical-report">
+    <div class="card-header bg-primary text-white">
+      <div class="row">
+        <div class="col-md-6">
+          <h3 class="mb-0">MEDICAL TEST REPORT</h3>
+          <small>Hospital Management System</small>
         </div>
-        <div class="card-body">
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span class="fw-bold">Requisition ID:</span>
-              <span>#<%= requisition.id %></span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span class="fw-bold">Patient:</span>
-              <span>
-                <%= requisition.Patient ? requisition.Patient.name : 'Unknown' %>
-                <small class="d-block text-muted"><%= requisition.Patient ? requisition.Patient.patientId : '' %></small>
-              </span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span class="fw-bold">Test:</span>
-              <span><%= requisition.Test ? requisition.Test.name : 'Unknown' %></span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span class="fw-bold">Date Requested:</span>
-              <span><%= new Date(requisition.requestDate).toLocaleDateString() %></span>
-            </li>
-            <% if (requisition.completedDate) { %>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span class="fw-bold">Date Completed:</span>
-              <span><%= new Date(requisition.completedDate).toLocaleDateString() %></span>
-            </li>
-            <% } %>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span class="fw-bold">Status:</span>
-              <span class="badge rounded-pill <%= 
-                requisition.status === 'Pending' ? 'bg-warning' : 
-                requisition.status === 'In Progress' ? 'bg-info' : 
-                requisition.status === 'Completed' ? 'bg-success' : 
-                requisition.status === 'Delivered' ? 'bg-primary' : 
-                'bg-secondary' %>">
-                <%= requisition.status %>
-              </span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span class="fw-bold">Priority:</span>
-              <span class="badge rounded-pill <%= requisition.priority === 'Urgent' ? 'bg-danger' : 'bg-info' %>">
-                <%= requisition.priority %>
-              </span>
-            </li>
-            <% if (requisition.Doctor) { %>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span class="fw-bold">Referring Doctor:</span>
-              <span>Dr. <%= requisition.Doctor.name %></span>
-            </li>
-            <% } %>
-          </ul>
+        <div class="col-md-6 text-md-end">
+          <h5 class="mb-0">Report ID: #<%= testRequest.id %></h5>
+          <small>Generated: <%= new Date().toLocaleDateString() %></small>
         </div>
       </div>
     </div>
+    
+    <div class="card-body">
+      <!-- Patient Information Header -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <h5 class="text-primary mb-3">
+            <i class="fas fa-user me-2"></i>PATIENT INFORMATION
+          </h5>
+          <% if (testRequest.Patient) { %>
+            <table class="table table-borderless">
+              <tbody>
+                <tr>
+                  <td><strong>Name:</strong></td>
+                  <td><%= testRequest.Patient.name %></td>
+                </tr>
+                <tr>
+                  <td><strong>Patient ID:</strong></td>
+                  <td><%= testRequest.Patient.patientId %></td>
+                </tr>
+                <tr>
+                  <td><strong>Age:</strong></td>
+                  <td>
+                    <% if (testRequest.Patient.dateOfBirth) { 
+                      const age = new Date().getFullYear() - new Date(testRequest.Patient.dateOfBirth).getFullYear();
+                    %>
+                      <%= age %> years
+                    <% } else { %>
+                      N/A
+                    <% } %>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Gender:</strong></td>
+                  <td><%= testRequest.Patient.gender ? testRequest.Patient.gender.charAt(0).toUpperCase() + testRequest.Patient.gender.slice(1) : 'N/A' %></td>
+                </tr>
+                <% if (testRequest.Patient.bloodGroup) { %>
+                <tr>
+                  <td><strong>Blood Group:</strong></td>
+                  <td><%= testRequest.Patient.bloodGroup %></td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+          <% } %>
+        </div>
+        
+        <div class="col-md-6">
+          <h5 class="text-primary mb-3">
+            <i class="fas fa-calendar-alt me-2"></i>TEST DETAILS
+          </h5>
+          <table class="table table-borderless">
+            <tbody>
+              <tr>
+                <td><strong>Test Name:</strong></td>
+                <td><%= testRequest.Test ? testRequest.Test.name : 'Unknown Test' %></td>
+              </tr>
+              <tr>
+                <td><strong>Request Date:</strong></td>
+                <td><%= new Date(testRequest.requestDate).toLocaleDateString() %></td>
+              </tr>
+              <tr>
+                <td><strong>Completed Date:</strong></td>
+                <td><%= testRequest.completedDate ? new Date(testRequest.completedDate).toLocaleDateString() : 'N/A' %></td>
+              </tr>
+              <tr>
+                <td><strong>Priority:</strong></td>
+                <td>
+                  <span class="badge <%= testRequest.priority === 'Urgent' ? 'bg-danger' : 'bg-info' %>">
+                    <%= testRequest.priority %>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Status:</strong></td>
+                <td>
+                  <span class="badge bg-success">
+                    <%= testRequest.status %>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-    <div class="col-md-8">
-      <!-- Result Files -->
-      <h5 class="mb-3">
-        <i class="fas fa-file-medical me-2"></i>Result Files
-      </h5>
-      
-      <% if (resultFiles && resultFiles.length > 0) { %>
-        <div class="mb-4">
-          <% resultFiles.forEach((file, index) => { %>
-            <% 
-              const extension = file.split('.').pop().toLowerCase();
-              let icon = 'fas fa-file';
-              let colorClass = 'text-secondary';
-              let fileType = 'Document';
-              
-              if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
-                icon = 'fas fa-file-image';
-                colorClass = 'text-info';
-                fileType = 'Image';
-              } else if (extension === 'pdf') {
-                icon = 'fas fa-file-pdf';
-                colorClass = 'text-danger';
-                fileType = 'PDF Document';
-              } else if (['doc', 'docx'].includes(extension)) {
-                icon = 'fas fa-file-word';
-                colorClass = 'text-primary';
-                fileType = 'Word Document';
-              } else if (['xls', 'xlsx'].includes(extension)) {
-                icon = 'fas fa-file-excel';
-                colorClass = 'text-success';
-                fileType = 'Excel Spreadsheet';
-              }
-              
-              const fileName = file.split('/').pop();
-            %>
-            <div class="d-flex justify-content-between align-items-center p-2 border-bottom mb-2">
-              <div class="d-flex align-items-center">
-                <i class="<%= icon %> fa-lg me-3 <%= colorClass %>"></i>
-                <div>
-                  <div class="fw-bold"><%= fileName %></div>
-                  <small class="text-muted"><%= fileType %></small>
-                </div>
-              </div>
-              
-              <div>
-                <a href="<%= file %>" target="_blank" class="btn btn-sm btn-outline-primary view-file" data-file="<%= file %>" data-type="<%= fileType.toLowerCase() %>">
-                  <i class="fas fa-eye"></i>
-                </a>
-                <a href="<%= file %>" download class="btn btn-sm btn-outline-success ms-2">
-                  <i class="fas fa-download"></i>
-                </a>
-              </div>
-            </div>
-          <% }); %>
+      <!-- Test Results Section -->
+      <div class="mb-4">
+        <h5 class="text-primary mb-3">
+          <i class="fas fa-clipboard-check me-2"></i>TEST RESULTS
+        </h5>
+        
+        <% if (testRequest.Test && testRequest.Test.bilogical_ref_range) { %>
+        <div class="alert alert-info">
+          <strong>Reference Range:</strong> <%= testRequest.Test.bilogical_ref_range %>
+          <% if (testRequest.Test.unit) { %>
+            | <strong>Unit:</strong> <%= testRequest.Test.unit %>
+          <% } %>
         </div>
-      <% } else { %>
-        <div class="alert alert-warning">
-          <i class="fas fa-exclamation-triangle me-2"></i> No result files have been uploaded for this test requisition.
+        <% } %>
+        
+        <div class="result-content">
+          <div class="p-4 bg-light rounded">
+            <% if (testRequest.result) { %>
+              <pre class="mb-0"><%= testRequest.result %></pre>
+            <% } else { %>
+              <p class="text-muted mb-0">No test results available.</p>
+            <% } %>
+          </div>
         </div>
-      <% } %>
-      
-      <!-- Result Notes -->
-      <% if (requisition.resultNotes) { %>
-        <h5 class="mt-4 mb-3">Result Notes</h5>
-        <div class="bg-light p-3 mb-4">
-          <%= requisition.resultNotes %>
+      </div>
+
+      <!-- Additional Notes Section -->
+      <% if (testRequest.resultNotes) { %>
+      <div class="mb-4">
+        <h5 class="text-primary mb-3">
+          <i class="fas fa-sticky-note me-2"></i>ADDITIONAL NOTES
+        </h5>
+        <div class="p-3 bg-light rounded">
+          <pre class="mb-0"><%= testRequest.resultNotes %></pre>
         </div>
+      </div>
       <% } %>
 
-      <!-- File Preview Modal -->
-      <div class="modal fade" id="filePreviewModal" tabindex="-1" aria-labelledby="filePreviewModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="filePreviewModalLabel">File Preview</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="filePreviewModalBody">
-              <div class="text-center p-5">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-3">Loading preview...</p>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <a href="#" class="btn btn-outline-success" id="downloadBtn">
-                <i class="fas fa-download me-1"></i> Download
-              </a>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
+      <!-- Doctor Information -->
+      <% if (testRequest.Doctor) { %>
+      <div class="mb-4">
+        <h5 class="text-primary mb-3">
+          <i class="fas fa-user-md me-2"></i>REFERRING PHYSICIAN
+        </h5>
+        <table class="table table-borderless">
+          <tbody>
+            <tr>
+              <td><strong>Name:</strong></td>
+              <td>Dr. <%= testRequest.Doctor.name %></td>
+            </tr>
+            <tr>
+              <td><strong>Specialization:</strong></td>
+              <td><%= testRequest.Doctor.specialization %></td>
+            </tr>
+            <% if (testRequest.Doctor.qualification) { %>
+            <tr>
+              <td><strong>Qualification:</strong></td>
+              <td><%= testRequest.Doctor.qualification %></td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+      <% } %>
+
+      <!-- Footer -->
+      <div class="row mt-5">
+        <div class="col-md-6">
+          <div class="border-top pt-3">
+            <p class="mb-0"><strong>Laboratory Signature</strong></p>
+            <small class="text-muted">Authorized Laboratory Personnel</small>
+          </div>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <div class="border-top pt-3">
+            <p class="mb-0"><strong>Date:</strong> <%= new Date().toLocaleDateString() %></p>
+            <small class="text-muted">Report Generated Date</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="card">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <h6 class="mb-3">Report Actions</h6>
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary" onclick="window.print()">
+              <i class="fas fa-print me-1"></i> Print Report
+            </button>
+            <button type="button" class="btn btn-outline-info" onclick="exportPDF()">
+              <i class="fas fa-file-pdf me-1"></i> Export PDF
+            </button>
+            <button type="button" class="btn btn-outline-success" onclick="shareReport()">
+              <i class="fas fa-share me-1"></i> Share Report
+            </button>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <h6 class="mb-3">Result Management</h6>
+          <div class="btn-group" role="group">
+            <a href="/tests/results/<%= testRequest.id %>/upload" class="btn btn-outline-warning">
+              <i class="fas fa-edit me-1"></i> Edit Results
+            </a>
+            <button type="button" class="btn btn-outline-danger" onclick="confirmDelete()">
+              <i class="fas fa-trash me-1"></i> Clear Results
+            </button>
           </div>
         </div>
       </div>
@@ -188,98 +246,203 @@
   </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">
+          <i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to clear the test results? This action cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" onclick="deleteResults()">Clear Results</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Handle print button
-    document.getElementById('print-btn').addEventListener('click', function() {
-      window.print();
+document.addEventListener('DOMContentLoaded', function() {
+  // Check if there's a success message in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const message = urlParams.get('message');
+  
+  if (message) {
+    showToast(message, 'success');
+  }
+});
+
+function exportPDF() {
+  const reportElement = document.getElementById('medical-report');
+  const originalDisplay = reportElement.style.display;
+  
+  // Show loading
+  const btn = event.target.closest('button');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating PDF...';
+  btn.disabled = true;
+  
+  // For now, just print to PDF
+  window.print();
+  
+  // Restore button
+  setTimeout(() => {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }, 2000);
+}
+
+function shareReport() {
+  const reportUrl = window.location.href;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: 'Test Report #<%= testRequest.id %>',
+      text: 'Test report for <%= testRequest.Patient ? testRequest.Patient.name : "Patient" %>',
+      url: reportUrl
     });
-    
-    // Handle file preview
-    const viewFileButtons = document.querySelectorAll('.view-file');
-    const filePreviewModal = new bootstrap.Modal(document.getElementById('filePreviewModal'));
-    const filePreviewModalBody = document.getElementById('filePreviewModalBody');
-    const filePreviewModalLabel = document.getElementById('filePreviewModalLabel');
-    const downloadBtn = document.getElementById('downloadBtn');
-    
-    viewFileButtons.forEach(button => {
-      button.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        const filePath = this.getAttribute('data-file');
-        const fileType = this.getAttribute('data-type');
-        const fileName = filePath.split('/').pop();
-        
-        filePreviewModalLabel.textContent = fileName;
-        downloadBtn.href = filePath;
-        
-        // Clear previous content
-        filePreviewModalBody.innerHTML = '';
-        
-        // Show appropriate preview based on file type
-        if (fileType.includes('image')) {
-          const img = document.createElement('img');
-          img.src = filePath;
-          img.className = 'img-fluid';
-          img.alt = fileName;
-          filePreviewModalBody.appendChild(img);
-        } else if (fileType.includes('pdf')) {
-          const embed = document.createElement('embed');
-          embed.src = filePath;
-          embed.type = 'application/pdf';
-          embed.width = '100%';
-          embed.height = '500px';
-          filePreviewModalBody.appendChild(embed);
-        } else {
-          // For other file types, show a download message
-          filePreviewModalBody.innerHTML = `
-            <div class="text-center p-5">
-              <i class="fas fa-file fa-4x mb-3 text-primary"></i>
-              <h5>Preview not available</h5>
-              <p>This file type (${fileType}) cannot be previewed directly. Please download the file to view it.</p>
-              <a href="${filePath}" download class="btn btn-primary mt-3">
-                <i class="fas fa-download me-1"></i> Download File
-              </a>
-            </div>
-          `;
-        }
-        
-        filePreviewModal.show();
-      });
+  } else {
+    // Fallback - copy to clipboard
+    navigator.clipboard.writeText(reportUrl).then(() => {
+      showToast('Report URL copied to clipboard!', 'success');
     });
+  }
+}
+
+function confirmDelete() {
+  const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+  modal.show();
+}
+
+function deleteResults() {
+  fetch('/tests/results/<%= testRequest.id %>', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showToast(data.message, 'success');
+      setTimeout(() => {
+        window.location.href = '/tests/requisition/<%= testRequest.id %>';
+      }, 1500);
+    } else {
+      showToast(data.message || 'Error clearing results', 'error');
+    }
+  })
+  .catch(error => {
+    showToast('Error clearing results', 'error');
   });
+  
+  // Close modal
+  const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+  modal.hide();
+}
+
+function showToast(message, type = 'info') {
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+  toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+  toast.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+  
+  document.body.appendChild(toast);
+  
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.parentNode.removeChild(toast);
+    }
+  }, 5000);
+}
 </script>
 
 <style>
-  @media print {
-    .btn, .navbar, .no-print {
-      display: none !important;
-    }
-    
-    .container {
-      width: 100%;
-      max-width: 100%;
-      padding: 0;
-    }
-    
-    .card {
-      border: none !important;
-      box-shadow: none !important;
-    }
-    
-    body {
-      font-size: 12pt;
-    }
-    
-    a {
-      text-decoration: none !important;
-      color: #000 !important;
-    }
-    
-    .view-file, .download-file {
-      display: none !important;
-    }
+@media print {
+  .btn, .navbar, .breadcrumb, .no-print {
+    display: none !important;
   }
+  
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+  }
+  
+  .card {
+    border: 1px solid #000 !important;
+    box-shadow: none !important;
+  }
+  
+  .card-header {
+    background-color: #f8f9fa !important;
+    color: #000 !important;
+  }
+  
+  .result-content {
+    border: 1px solid #dee2e6;
+    page-break-inside: avoid;
+  }
+  
+  .badge {
+    border: 1px solid #000;
+  }
+}
+
+.result-content pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.medical-report {
+  font-family: 'Times New Roman', serif;
+}
+
+.alert-info {
+  border-left: 4px solid #0dcaf0;
+}
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+
+.border-top {
+  border-top: 2px solid #dee2e6 !important;
+}
+
+.card-header h3 {
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.text-primary {
+  color: #0d6efd !important;
+  font-weight: 600;
+}
+
+table td {
+  padding: 0.25rem 0.5rem;
+  vertical-align: top;
+}
+
+table td:first-child {
+  width: 30%;
+  font-weight: 500;
+}
 </style>
 
 <%- include('partials/footer') %> 

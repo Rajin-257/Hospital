@@ -182,15 +182,19 @@ function formatDate(date) {
                                             </td>
                                             <td><%= test.deliveryOption || 'Collect' %></td>
                                             <td><%= test.deliveryDate ? formatDate(test.deliveryDate) : 'N/A' %></td>
-                                            <td>
-                                                <% if (test.status === 'Completed') { %>
-                                                    <a href="/tests/results/<%= test.id %>" class="btn btn-sm btn-outline-primary">
-                                                        <i class="fas fa-file-medical me-1"></i> View
-                                                    </a>
-                                                <% } else { %>
-                                                    -
-                                                <% } %>
-                                            </td>
+                                                                        <td>
+                                <% if (test.status === 'Completed' && (test.result || test.resultNotes)) { %>
+                                    <a href="/tests/results/<%= test.id %>" class="btn btn-sm btn-success">
+                                        <i class="fas fa-file-medical me-1"></i> View Results
+                                    </a>
+                                <% } else if (test.status === 'Completed') { %>
+                                    <span class="badge bg-warning">Results Pending</span>
+                                <% } else if (test.status === 'In Progress') { %>
+                                    <span class="badge bg-info">In Progress</span>
+                                <% } else { %>
+                                    <span class="text-muted">Not Available</span>
+                                <% } %>
+                            </td>
                                         </tr>
                                     <% }); %>
                                 <% } else { %>

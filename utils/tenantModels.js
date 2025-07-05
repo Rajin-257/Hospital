@@ -165,10 +165,120 @@ const getTenantTest = () => {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0
+      },
+      test_group_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'TestGroup',
+          key: 'id'
+        }
+      },
+      unit: {
+        type: DataTypes.STRING(50),
+        allowNull: true
+      },
+      bilogical_ref_range: {
+        type: DataTypes.STRING(255),
+        allowNull: true
       }
     });
 
+    // Set up associations
+    const TestGroup = sequelize.models.TestGroup || getTenantTestGroup();
+    Test.belongsTo(TestGroup, { foreignKey: 'test_group_id' });
+    TestGroup.hasMany(Test, { foreignKey: 'test_group_id' });
+
     return Test;
+  });
+};
+
+/**
+ * Get TestDepartment model for current tenant
+ */
+const getTenantTestDepartment = () => {
+  return getTenantModel('TestDepartment', (sequelize) => {
+    const TestDepartment = sequelize.define('TestDepartment', {
+      id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+      },
+      name: {
+        type: DataTypes.STRING(100),
+        allowNull: false
+      }
+    });
+
+    return TestDepartment;
+  });
+};
+
+/**
+ * Get TestCategory model for current tenant
+ */
+const getTenantTestCategory = () => {
+  return getTenantModel('TestCategory', (sequelize) => {
+    const TestCategory = sequelize.define('TestCategory', {
+      id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+      },
+      name: {
+        type: DataTypes.STRING(100),
+        allowNull: false
+      },
+      test_department_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'TestDepartment',
+          key: 'id'
+        }
+      }
+    });
+
+    // Set up associations
+    const TestDepartment = sequelize.models.TestDepartment || getTenantTestDepartment();
+    TestCategory.belongsTo(TestDepartment, { foreignKey: 'test_department_id' });
+    TestDepartment.hasMany(TestCategory, { foreignKey: 'test_department_id' });
+
+    return TestCategory;
+  });
+};
+
+/**
+ * Get TestGroup model for current tenant
+ */
+const getTenantTestGroup = () => {
+  return getTenantModel('TestGroup', (sequelize) => {
+    const TestGroup = sequelize.define('TestGroup', {
+      id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+      },
+      name: {
+        type: DataTypes.STRING(100),
+        allowNull: false
+      },
+      test_category_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'TestCategory',
+          key: 'id'
+        }
+      }
+    });
+
+    // Set up associations
+    const TestCategory = sequelize.models.TestCategory || getTenantTestCategory();
+    TestGroup.belongsTo(TestCategory, { foreignKey: 'test_category_id' });
+    TestCategory.hasMany(TestGroup, { foreignKey: 'test_category_id' });
+
+    return TestGroup;
   });
 };
 
@@ -299,10 +409,9 @@ const getTenantTestRequest = () => {
         type: DataTypes.ENUM('Pending', 'In Progress', 'Completed', 'Delivered', 'Cancelled'),
         defaultValue: 'Pending'
       },
-      resultFile: {
+      result: {
         type: DataTypes.TEXT,
-        allowNull: true,
-        comment: 'JSON string of file paths or single path'
+        allowNull: true
       },
       resultNotes: {
         type: DataTypes.TEXT,
@@ -550,6 +659,9 @@ module.exports = {
   getTenantModel,
   getTenantUser,
   getTenantTest,
+  getTenantTestDepartment,
+  getTenantTestCategory,
+  getTenantTestGroup,
   getTenantSetting,
   clearModelCache,
   getTenantTestRequest,

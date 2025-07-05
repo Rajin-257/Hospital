@@ -110,11 +110,6 @@
             <i class="fas fa-arrow-left me-1"></i> Back to Requisitions
           </a>
           <div>
-            <% if (requisition.status !== 'Completed' && requisition.status !== 'Delivered') { %>
-              <a href="/tests/results/upload/<%= requisition.id %>" class="btn btn-info me-2">
-                <i class="fas fa-file-upload me-1"></i> Upload Results
-              </a>
-            <% } %>
             <button type="submit" class="btn btn-primary">
               <i class="fas fa-save me-1"></i> Save Changes
             </button>
@@ -127,20 +122,7 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const statusSelect = document.getElementById('status');
-    const uploadBtn = document.querySelector('a[href^="/tests/results/upload/"]');
-    
-    // Hide/show upload button based on status change
-    if (statusSelect && uploadBtn) {
-      statusSelect.addEventListener('change', function() {
-        const status = this.value;
-        if (status === 'Completed' || status === 'Delivered') {
-          uploadBtn.classList.add('d-none');
-        } else {
-          uploadBtn.classList.remove('d-none');
-        }
-      });
-    }
+    // Initialize any required functionality here
   });
 </script>
 
