@@ -71,10 +71,10 @@ const saasDbConfig = {
     user: process.env.SAAS_DB_USER || 'root',
     password: process.env.SAAS_DB_PASSWORD || '',
     database: process.env.SAAS_DB_NAME || 'hospx_saas',
-    acquireTimeout: 60000,
-    timeout: 60000,
-    reconnect: true,
-    connectionLimit: 10
+    connectTimeout: 60000,        // Connection timeout in milliseconds
+    timeout: 60000,               // Query timeout in milliseconds
+    reconnect: true               // Automatically reconnect if connection is lost
+    // Note: acquireTimeout and connectionLimit are for connection pools, not single connections
 };
 
 let saasConnection;

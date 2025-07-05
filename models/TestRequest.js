@@ -3,6 +3,7 @@ const { sequelize } = require('../config/db');
 const Patient = require('./Patient');
 const Test = require('./Test');
 const Doctor = require('./Doctor');
+const Billing = require('./Billing');
 
 const TestRequest = sequelize.define('TestRequest', {
   id: {
@@ -55,6 +56,14 @@ const TestRequest = sequelize.define('TestRequest', {
   notes: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  billing_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Billings',
+      key: 'id'
+    }
   }
 });
 
@@ -62,5 +71,6 @@ const TestRequest = sequelize.define('TestRequest', {
 TestRequest.belongsTo(Patient);
 TestRequest.belongsTo(Test);
 TestRequest.belongsTo(Doctor);
+TestRequest.belongsTo(Billing, { foreignKey: 'billing_id' });
 
 module.exports = TestRequest;

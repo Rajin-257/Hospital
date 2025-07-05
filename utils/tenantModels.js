@@ -441,6 +441,14 @@ const getTenantTestRequest = () => {
       notes: {
         type: DataTypes.TEXT,
         allowNull: true
+      },
+      billing_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'Billings',
+          key: 'id'
+        }
       }
     });
 
@@ -448,6 +456,7 @@ const getTenantTestRequest = () => {
     TestRequest.belongsTo(sequelize.models.Patient || getTenantPatient(), { foreignKey: 'PatientId' });
     TestRequest.belongsTo(sequelize.models.Test || getTenantTest(), { foreignKey: 'TestId' });
     TestRequest.belongsTo(sequelize.models.Doctor || getTenantDoctor(), { foreignKey: 'DoctorId' });
+    TestRequest.belongsTo(sequelize.models.Billing || getTenantBilling(), { foreignKey: 'billing_id' });
 
     return TestRequest;
   });
@@ -548,10 +557,19 @@ const getTenantBilling = () => {
         primaryKey: true,
         autoIncrement: true
       },
+      billNumber: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+      },
       billDate: {
         type: DataTypes.DATEONLY,
         allowNull: false,
         defaultValue: DataTypes.NOW
+      },
+      billdelivaridate: {
+        type: DataTypes.DATEONLY,
+        allowNull: true
       },
       totalAmount: {
         type: DataTypes.DECIMAL(10, 2),
@@ -580,21 +598,35 @@ const getTenantBilling = () => {
         defaultValue: 0
       },
       paymentMethod: {
-        type: DataTypes.ENUM('cash', 'card', 'mobile banking', 'bank transfer'),
+        type: DataTypes.ENUM('cash', 'card', 'insurance'),
+        allowNull: false,
         defaultValue: 'cash'
       },
       status: {
         type: DataTypes.ENUM('paid', 'due'),
         defaultValue: 'due'
       },
-      notes: {
-        type: DataTypes.TEXT
+      items: {
+        type: DataTypes.JSON,
+        allowNull: false
       },
       marketingManagerId: {
         type: DataTypes.INTEGER,
-        allowNull: true
+        allowNull: true,
+        references: {
+          model: 'Users',
+          key: 'id'
+        }
+      },
+      marketingcommission: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        defaultValue: 0
       }
     });
+
+    // Set up associations
+    Billing.belongsTo(sequelize.models.Patient || getTenantPatient(), { foreignKey: 'PatientId' });
 
     return Billing;
   });

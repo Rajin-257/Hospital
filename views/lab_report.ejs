@@ -1,0 +1,596 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+<%- include('partials/date-formatter') %>
+
+<style>
+    /* Remove Roboto Mono import and replace with system Arial */
+    @media print {
+        /* Basic print settings */
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .print-report {
+            padding: 5px;
+            max-width: 100%;
+            box-sizing: border-box;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            letter-spacing: -0.5px;
+            page-break-inside: avoid;
+        }
+        
+        /* Department page break */
+        .department-section {
+            page-break-before: always;
+            min-height: 100vh;
+            position: relative;
+            padding-bottom: 80px; /* Space for footer */
+        }
+        
+        .department-section:first-child {
+            page-break-before: auto;
+        }
+        
+        /* Header elements */
+        .department-header {
+            margin-bottom: 15px;
+        }
+        
+        .report-title {
+            font-size: 22px !important;
+            font-family: Arial, sans-serif;
+            letter-spacing: -0.5px;
+        }
+        
+        .report-subtitle {
+            font-size: 15px !important;
+            font-family: Arial, sans-serif;
+            letter-spacing: -0.5px;
+        }
+        
+        /* Information table */
+        .report-info-table {
+            border: 1px solid #000000 !important;
+            margin-bottom: 15px;
+        }
+        
+        .report-info-table td {
+            padding: 5px 8px !important;
+            border: none !important;
+        }
+        
+        .info-label {
+            font-size: 13px !important;
+            font-family: Arial, sans-serif;
+            letter-spacing: -0.5px;
+        }
+        
+        .info-value {
+            font-size: 14px !important;
+            margin-bottom: 0 !important;
+            font-family: Arial, sans-serif;
+            letter-spacing: -0.5px;
+        }
+        
+        /* Section titles */
+        .department-title {
+            font-size: 18px !important;
+            font-family: Arial, sans-serif;
+            letter-spacing: 0px;
+            text-align: center;
+            margin: 15px 0 10px 0 !important;
+        }
+        
+        .category-title {
+            font-size: 16px !important;
+            font-family: Arial, sans-serif;
+            letter-spacing: 0px;
+            margin: 10px 0 5px 0 !important;
+        }
+        
+        .group-title {
+            font-size: 14px !important;
+            font-family: Arial, sans-serif;
+            letter-spacing: 0px;
+            margin: 8px 0 5px 0 !important;
+        }
+        
+        /* Test results table */
+        .test-results-table {
+            margin-bottom: 10px !important;
+            border: 1px solid #000000 !important;
+        }
+        
+        .test-results-table th,
+        .test-results-table td {
+            font-size: 12px !important;
+            font-family: Arial, sans-serif;
+            letter-spacing: -0.5px;
+            padding: 3px 5px !important;
+            border: 1px solid #000000 !important;
+        }
+        
+        .test-results-table th {
+            background-color: #f9f9f9 !important;
+            font-weight: normal !important;
+        }
+        
+        /* Department footer */
+        .department-footer {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+        
+        /* Signature section */
+        .signature-section {
+            margin-top: 20px !important;
+            page-break-inside: avoid !important;
+        }
+        
+        .signature-title {
+            font-size: 13px !important;
+        }
+        
+        .signature-subtitle {
+            font-size: 17px !important;
+        }
+        
+        /* Page size settings */
+        @page {
+            size: A4;
+            margin: 0.5in;
+        }
+        
+        /* Diagnostic header */
+        .diagnostic-title {
+            font-size: 19px !important;
+        }
+        
+        .diagnostic-address, .diagnostic-mobile {
+            font-size: 15px !important;
+        }
+        
+        .no-print {
+            display: none !important;
+        }
+        
+        /* Prevent table rows from breaking across pages */
+        .test-results-table tr {
+            page-break-inside: avoid;
+        }
+    }
+    
+    .print-report {
+        background-color: white;
+        color: #333;
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        letter-spacing: -0.5px;
+    }
+    
+    .department-header {
+        border-bottom: 1px solid #f0f0f0;
+        text-align: center;
+        padding: 0;
+        margin: 0 0 15px 0;
+    }
+    
+    .report-title {
+        font-size: 30px;
+        color: #000000;
+        font-weight: 300;
+        margin: 0 0 5px 0;
+        line-height: 1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
+    }
+    
+    .report-subtitle {
+        color: #000000;
+        font-weight: 300;
+        margin: 0;
+        font-size: 18px;
+        line-height: 1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
+    }
+    
+    .report-info-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #000000;
+        margin-bottom: 20px;
+    }
+    
+    .report-info-table td {
+        padding: 8px 12px;
+        border: none;
+        vertical-align: top;
+        background-color: #f9f9f9;
+    }
+    
+    .info-label {
+        font-size: 14px;
+        text-transform: uppercase;
+        color: #000000;
+        padding: 0;
+        margin: 0;
+        font-weight: normal;
+        line-height: 1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
+    }
+    
+    .info-value {
+        font-size: 16px;
+        margin: 0 0 3px 0;
+        line-height: 1.1;
+        font-family: Arial, sans-serif;
+        letter-spacing: -0.5px;
+    }
+    
+    .department-section {
+        margin-bottom: 30px;
+        position: relative;
+        min-height: 80vh;
+        padding-bottom: 100px; /* Space for footer */
+    }
+    
+    .department-title {
+        font-size: 24px;
+        text-transform: uppercase;
+        color: #000000;
+        font-weight: bold;
+        text-align: center;
+        margin: 10px 0 15px 0;
+        padding: 10px;
+        border: 2px solid #000000;
+        background-color: #f9f9f9;
+        font-family: Arial, sans-serif;
+    }
+    
+    .category-title {
+        font-size: 20px;
+        text-transform: uppercase;
+        color: #000000;
+        font-weight: bold;
+        margin: 20px 0 10px 0;
+        padding: 8px;
+        border-bottom: 2px solid #000000;
+        font-family: Arial, sans-serif;
+    }
+    
+    .group-title {
+        font-size: 16px;
+        text-transform: uppercase;
+        color: #333;
+        font-weight: bold;
+        margin: 15px 0 8px 0;
+        padding: 5px;
+        background-color: #f5f5f5;
+        border-left: 4px solid #007bff;
+        font-family: Arial, sans-serif;
+    }
+    
+    .test-results-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+        border: 1px solid #000000;
+    }
+    
+    .test-results-table th {
+        background-color: #f9f9f9;
+        padding: 8px;
+        text-align: left;
+        font-weight: bold;
+        color: #000000;
+        font-size: 14px;
+        border: 1px solid #000000;
+        font-family: Arial, sans-serif;
+    }
+    
+    .test-results-table td {
+        padding: 8px;
+        border: 1px solid #000000;
+        font-size: 14px;
+        font-family: Arial, sans-serif;
+        vertical-align: top;
+    }
+    
+    .test-results-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    
+    .department-footer {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        margin-top: 30px;
+        border-top: 1px solid #ddd;
+        padding-top: 15px;
+        left: 0;
+        right: 0;
+    }
+    
+    .signature-section {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    
+    .signature-box {
+        flex: 1;
+        text-align: center;
+        padding: 0 20px;
+    }
+    
+    .signature-line {
+        border-top: 1px solid #333;
+        margin-bottom: 8px;
+        width: 80%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .signature-title {
+        font-weight: bold;
+        font-size: 16px;
+        margin: 0 0 5px 0;
+        font-family: Arial, sans-serif;
+    }
+    
+    .signature-subtitle {
+        font-size: 14px;
+        color: #666;
+        margin: 0;
+        font-family: Arial, sans-serif;
+    }
+    
+    .diagnostic-header {
+        text-align: center;
+        margin: 0 0 5px 0;
+    }
+    
+    .diagnostic-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+        font-family: Arial, sans-serif;
+    }
+    
+    .diagnostic-address {
+        font-size: 16px;
+        color: #333;
+        font-family: Arial, sans-serif;
+    }
+    
+    .diagnostic-mobile {
+        font-size: 16px;
+        color: #333;
+        font-family: Arial, sans-serif;
+    }
+    
+    .no-results {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        margin: 20px 0;
+    }
+    
+    .report-footer {
+        text-align: center;
+        color: #666;
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+        margin-top: 10px;
+    }
+</style>
+
+<div class="container mb-4 no-print">
+    <div class="d-flex justify-content-end mt-4">
+        <button class="btn btn-outline-secondary me-2" onclick="window.print()">
+            <i class="fas fa-print me-1"></i> Print Report
+        </button>
+        <a href="/billing/receipt/<%= billing.id %>" class="btn btn-primary">
+            <i class="fas fa-arrow-left me-1"></i> Back to Invoice
+        </a>
+    </div>
+</div>
+
+<div class="print-report">
+    <% if (organizedResults.length === 0) { %>
+        <!-- Header for no results page -->
+        <div class="diagnostic-header">
+            <div class="diagnostic-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'HOSPITAL MANAGEMENT SYSTEM' %></div>
+            <div class="diagnostic-address">Address: <%= locals.settings && settings.address ? settings.address : 'No Address' %></div>
+            <div class="diagnostic-mobile">Mobile: <%= locals.settings && settings.phone ? settings.phone : 'No Phone' %></div>
+        </div>
+        
+        <div class="department-header">
+            <div class="report-title">LABORATORY REPORT</div>
+        </div>
+
+        <table class="report-info-table">
+            <tr>
+                <td style="width: 50%;">
+                    <div class="info-value">Name: <%= patient.name %></div>
+                    <div class="info-value">Patient ID: <%= patient.patientId %></div>
+                    <div class="info-value">Age: <%= calculateAge(patient.dateOfBirth) %></div>
+                    <div class="info-value">Gender: <%= patient.gender %></div>
+                    <div class="info-value">Mobile: <%= patient.phone %></div>
+                </td>
+                <td style="width: 50%;">
+                    <div class="info-label">Report Details</div>
+                    <div class="info-value">Report ID: <%= billing.billNumber %></div>
+                    <div class="info-value">Report Date: <%= formatDate(billing.billDate) %></div>
+                    <div class="info-value">Generated: <%= formatDate(new Date()) %></div>
+                    <div class="info-value">Generated By: <%= user.username %></div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="no-results">
+            <h4>No test results available</h4>
+            <p>Test results are either pending or have not been entered yet.</p>
+        </div>
+    <% } else { %>
+        <% organizedResults.forEach((departmentData, deptIndex) => { %>
+            <div class="department-section">
+                <!-- Department Header -->
+                <div class="diagnostic-header">
+                    <div class="diagnostic-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'HOSPITAL MANAGEMENT SYSTEM' %></div>
+                    <div class="diagnostic-address">Address: <%= locals.settings && settings.address ? settings.address : 'No Address' %></div>
+                    <div class="diagnostic-mobile">Mobile: <%= locals.settings && settings.phone ? settings.phone : 'No Phone' %></div>
+                </div>
+                
+                <div class="department-header">
+                    <div class="report-title">LABORATORY REPORT</div>
+                </div>
+
+                <table class="report-info-table">
+                    <tr>
+                        <td style="width: 50%;">
+                            <div class="info-value">Name: <%= patient.name %></div>
+                            <div class="info-value">Patient ID: <%= patient.patientId %></div>
+                            <div class="info-value">Age: <%= calculateAge(patient.dateOfBirth) %></div>
+                            <div class="info-value">Gender: <%= patient.gender %></div>
+                            <div class="info-value">Mobile: <%= patient.phone %></div>
+                        </td>
+                        <td style="width: 50%;">
+                            <div class="info-label">Report Details</div>
+                            <div class="info-value">Report ID: <%= billing.billNumber %></div>
+                            <div class="info-value">Report Date: <%= formatDate(billing.billDate) %></div>
+                            <div class="info-value">Generated: <%= formatDate(new Date()) %></div>
+                            <div class="info-value">Generated By: <%= user.username %></div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Department Content -->
+                <div class="department-title"><%= departmentData.department.name %></div>
+                
+                <% departmentData.categories.forEach((categoryData) => { %>
+                    <div class="category-title"><%= categoryData.category.name %></div>
+                    
+                    <% categoryData.groups.forEach((groupData) => { %>
+                        <div class="group-title"><%= groupData.group.name %></div>
+                        
+                        <% if (groupData.tests.length > 0) { %>
+                            <table class="test-results-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30%;">Test Name</th>
+                                        <th style="width: 20%;">Result</th>
+                                        <th style="width: 15%;">Unit</th>
+                                        <th style="width: 25%;">Reference Range</th>
+                                        <th style="width: 10%;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% groupData.tests.forEach((testData) => { %>
+                                        <tr>
+                                            <td><strong><%= testData.test.name %></strong></td>
+                                            <td>
+                                                <% if (testData.result && testData.result !== 'Pending') { %>
+                                                    <pre style="margin: 0; font-family: Arial, sans-serif; white-space: pre-wrap;"><%= testData.result %></pre>
+                                                <% } else { %>
+                                                    <span style="color: #666; font-style: italic;">Pending</span>
+                                                <% } %>
+                                            </td>
+                                            <td><%= testData.unit %></td>
+                                            <td><%= testData.referenceRange %></td>
+                                            <td>
+                                                <% if (testData.testRequest.status === 'Completed') { %>
+                                                    <span style="color: #28a745; font-weight: bold;">✓</span>
+                                                <% } else if (testData.testRequest.status === 'In Progress') { %>
+                                                    <span style="color: #ffc107; font-weight: bold;">⚠</span>
+                                                <% } else { %>
+                                                    <span style="color: #dc3545; font-weight: bold;">⏳</span>
+                                                <% } %>
+                                            </td>
+                                        </tr>
+                                        <% if (testData.notes) { %>
+                                            <tr>
+                                                <td colspan="5" style="background-color: #f8f9fa; font-style: italic; color: #666;">
+                                                    <strong>Notes:</strong> <%= testData.notes %>
+                                                </td>
+                                            </tr>
+                                        <% } %>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        <% } else { %>
+                            <div class="no-results">No tests found in this group.</div>
+                        <% } %>
+                    <% }) %>
+                <% }) %>
+                
+                <!-- Department Footer -->
+                <div class="department-footer">
+                    <!-- Signature Section -->
+                    <div class="signature-section">
+                        <div class="signature-box">
+                            <div class="signature-subtitle"><%- user.username %></div>
+                            <div class="signature-line"></div>
+                            <div class="signature-title">Prepared By</div>
+                        </div>
+                        <div class="signature-box">
+                            <div class="signature-subtitle">&nbsp;</div>
+                            <div class="signature-line"></div>
+                            <div class="signature-title">Checked By</div>
+                        </div>
+                        <div class="signature-box">
+                            <div class="signature-subtitle">&nbsp;</div>
+                            <div class="signature-line"></div>
+                            <div class="signature-title">Lab Incharge</div>
+                        </div>
+                    </div>
+                    
+                    <div class="report-footer">
+                        Laboratory Report - <%= departmentData.department.name %> | Generated on: <%= formatDate(new Date()) %> <%= new Date().toLocaleTimeString() %>
+                    </div>
+                </div>
+            </div>
+        <% }) %>
+    <% } %>
+</div>
+
+<script>
+    // Auto-print functionality
+    window.addEventListener('load', function() {
+        // Add print-specific styles for better page breaks
+        const style = document.createElement('style');
+        style.textContent = `
+            @media print {
+                .department-section:not(:first-child) {
+                    page-break-before: always;
+                }
+                .category-title {
+                    page-break-after: avoid;
+                }
+                .group-title {
+                    page-break-after: avoid;
+                }
+                .test-results-table {
+                    page-break-inside: avoid;
+                }
+                .signature-section {
+                    page-break-inside: avoid;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    });
+</script>
+
+<%- include('partials/footer') %> 

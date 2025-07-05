@@ -49,7 +49,7 @@
         </div>
         <div class="col-md-3">
           <label for="search" class="form-label">Search</label>
-          <input type="text" class="form-control" id="search" name="search" placeholder="Search by patient name, ID, or test name" value="<%= search || '' %>">
+          <input type="text" class="form-control" id="search" name="search" placeholder="Search by last 6 digits of bill number" value="<%= search || '' %>" maxlength="6" pattern="[0-9]*" title="Please enter only numbers">
         </div>
         <div class="col-md-12 d-flex align-items-end justify-content-end">
           <button type="submit" class="btn btn-primary me-2">
@@ -78,7 +78,8 @@
               <th>Status</th>
               <th>Priority</th>
               <th>Results</th>
-              <th>Billing</th>
+              <th>Billing Status</th>
+              <th>Bill Reference</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -145,6 +146,19 @@
                     <span class="badge rounded-pill <%= req.billingStatus === 'billed' ? 'bg-success' : 'bg-warning' %>">
                       <%= req.billingStatus === 'billed' ? 'Billed' : 'Not Billed' %>
                     </span>
+                  </td>
+                  <td>
+                    <% if (req.billing_id && req.Billing) { %>
+                      <a href="/billing/receipt/<%= req.billing_id %>" class="btn btn-sm btn-outline-primary" title="View Bill">
+                        <i class="fas fa-file-invoice"></i> #<%= req.Billing.billNumber %>
+                      </a>
+                    <% } else if (req.billingStatus === 'billed' && req.billing_id) { %>
+                      <a href="/billing/receipt/<%= req.billing_id %>" class="btn btn-sm btn-outline-primary" title="View Bill">
+                        <i class="fas fa-file-invoice"></i> Bill #<%= req.billing_id %>
+                      </a>
+                    <% } else { %>
+                      <span class="text-muted">No Bill</span>
+                    <% } %>
                   </td>
                   <td>
                     <div class="btn-group">
@@ -249,6 +263,13 @@
         document.getElementById('filter-form').submit();
       });
     }
+    
+    // Restrict search input to numbers only
+    const searchInput = document.getElementById('search');
+    searchInput.addEventListener('input', function(e) {
+      // Remove any non-numeric characters
+      this.value = this.value.replace(/[^0-9]/g, '');
+    });
     
     // Handle delete button
     const deleteButtons = document.querySelectorAll('.btn-delete');

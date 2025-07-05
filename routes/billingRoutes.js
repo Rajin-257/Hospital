@@ -18,6 +18,9 @@ router.post('/', checkFeatureAccess('Billing Management'), billingController.cre
 // Get billing receipt - accessible to anyone who can access billing
 router.get('/receipt/:id', checkFeatureAccess('Billing Management'), billingController.getBilling);
 
+// Get lab report - accessible to anyone who can access billing
+router.get('/lab-report/:id', checkFeatureAccess('Billing Management'), billingController.getLabReport);
+
 // Get billings by patient
 router.get('/patient/:patientId', checkAnyFeatureAccess(['Billing Management', 'Patient Dashboard']), billingController.getBillingsByPatient);
 

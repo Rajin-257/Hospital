@@ -296,6 +296,7 @@ exports.createBilling = async (req, res) => {
           requestDate: today,
           status: 'Pending',
           billingStatus: 'billed',
+          billing_id: billing.id,
           deliveryOption: test.deliveryOption || 'Not Collected',
           deliveryDate: deliveryDate,
           commission: test.commission || 0
@@ -368,10 +369,15 @@ exports.getBilling = async (req, res) => {
       return res.json(billing);
     }
     
+    // Parse items to get test data for lab report button visibility
+    const items = JSON.parse(billing.items);
+    const tests = items.filter(item => item.type === 'test');
+    
     res.render('billing_receipt', {
       title: 'Billing Receipt',
       billing,
-      marketingManager
+      marketingManager,
+      tests
     });
   } catch (error) {
     console.error(error);
@@ -909,6 +915,7 @@ async function processTestRequests(oldItems, newItems, patientId, billingId) {
             requestDate: today,
             status: 'Pending',
             billingStatus: 'billed',
+            billing_id: billingId,
             deliveryOption: test.deliveryOption || 'Not Collected',
             deliveryDate: test.deliveryDate ? new Date(test.deliveryDate) : null,
             commission: test.commission || 0
@@ -1237,5 +1244,192 @@ async function updateAppointmentStatus(appointmentId, status) {
     throw error; // Rethrow to be caught and handled by the caller
   }
 }
+
+// Get lab report by billing ID
+exports.getLabReport = async (req, res) => {
+  try {
+    const { getTenantBilling, getTenantPatient, getTenantTestRequest, getTenantTest, getTenantTestGroup, getTenantTestCategory, getTenantTestDepartment, getTenantSetting, getTenantUser } = require('../utils/tenantModels');
+    
+    const TenantBilling = getTenantBilling();
+    const TenantPatient = getTenantPatient();
+    const TenantTestRequest = getTenantTestRequest();
+    const TenantTest = getTenantTest();
+    const TenantTestGroup = getTenantTestGroup();
+    const TenantTestCategory = getTenantTestCategory();
+    const TenantTestDepartment = getTenantTestDepartment();
+    const TenantSetting = getTenantSetting();
+    const TenantUser = getTenantUser();
+    
+    const billing = await TenantBilling.findByPk(req.params.id, {
+      include: [
+        { model: TenantPatient }
+      ]
+    });
+    
+    if (!billing) {
+      return res.status(404).json({ message: 'Billing not found' });
+    }
+    
+    // Parse items to get test items
+    const items = JSON.parse(billing.items);
+    const testItems = items.filter(item => item.type === 'test');
+    
+    if (testItems.length === 0) {
+      return res.status(404).render('error', {
+        title: 'No Test Results',
+        message: 'No test results found for this billing record.'
+      });
+    }
+    
+    // Get test requests with results for this billing
+    const testRequests = await TenantTestRequest.findAll({
+      where: { 
+        PatientId: billing.PatientId,
+        billingStatus: 'billed',
+        TestId: {
+          [Op.in]: testItems.map(item => item.id)
+        }
+      },
+      include: [
+        { 
+          model: TenantTest,
+          include: [
+            {
+              model: TenantTestGroup,
+              include: [
+                {
+                  model: TenantTestCategory,
+                  include: [
+                    {
+                      model: TenantTestDepartment
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+    
+    // Organize test results by department, then by category, then by group
+    const departmentMap = new Map();
+    
+    for (const testRequest of testRequests) {
+      const test = testRequest.Test;
+      
+      // Skip if test doesn't have proper hierarchy
+      if (!test || !test.TestGroup || !test.TestGroup.TestCategory || !test.TestGroup.TestCategory.TestDepartment) {
+        continue;
+      }
+      
+      const department = test.TestGroup.TestCategory.TestDepartment;
+      const category = test.TestGroup.TestCategory;
+      const group = test.TestGroup;
+      
+      // Initialize department if not exists
+      if (!departmentMap.has(department.id)) {
+        departmentMap.set(department.id, {
+          department: department,
+          categories: new Map()
+        });
+      }
+      
+      const departmentData = departmentMap.get(department.id);
+      
+      // Initialize category if not exists
+      if (!departmentData.categories.has(category.id)) {
+        departmentData.categories.set(category.id, {
+          category: category,
+          groups: new Map()
+        });
+      }
+      
+      const categoryData = departmentData.categories.get(category.id);
+      
+      // Initialize group if not exists
+      if (!categoryData.groups.has(group.id)) {
+        categoryData.groups.set(group.id, {
+          group: group,
+          tests: []
+        });
+      }
+      
+      const groupData = categoryData.groups.get(group.id);
+      
+      // Add test result to group
+      groupData.tests.push({
+        testRequest: testRequest,
+        test: test,
+        result: testRequest.result || 'Pending',
+        unit: test.unit || '',
+        referenceRange: test.bilogical_ref_range || '',
+        notes: testRequest.resultNotes || ''
+      });
+    }
+    
+    // Convert Maps to Arrays for easier template handling
+    const organizedResults = Array.from(departmentMap.values()).map(dept => ({
+      department: dept.department,
+      categories: Array.from(dept.categories.values()).map(cat => ({
+        category: cat.category,
+        groups: Array.from(cat.groups.values()).map(grp => ({
+          group: grp.group,
+          tests: grp.tests.sort((a, b) => a.test.name.localeCompare(b.test.name))
+        })).sort((a, b) => a.group.name.localeCompare(b.group.name))
+      })).sort((a, b) => a.category.name.localeCompare(b.category.name))
+    })).sort((a, b) => a.department.name.localeCompare(b.department.name));
+    
+    // Get settings for hospital information
+    const settings = await TenantSetting.findOne();
+    
+    // Get user information
+    const user = await TenantUser.findByPk(req.user.id);
+    
+    res.render('lab_report', {
+      title: 'Laboratory Report',
+      billing,
+      patient: billing.Patient,
+      organizedResults,
+      settings,
+      user,
+      formatDate: (date) => {
+        if (!date) return 'N/A';
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return 'Invalid Date';
+        const day = d.getDate().toString().padStart(2, '0');
+        const month = d.toLocaleString('en-US', { month: 'short' });
+        const year = d.getFullYear().toString().slice(-2);
+        return `${day}-${month}-${year}`;
+      },
+      calculateAge: (dateOfBirth) => {
+        const dob = new Date(dateOfBirth);
+        const today = new Date();
+        let years = today.getFullYear() - dob.getFullYear();
+        let months = today.getMonth() - dob.getMonth();
+        let days = today.getDate() - dob.getDate();
+        
+        if (days < 0) {
+          months--;
+          const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+          days += lastMonth.getDate();
+        }
+        
+        if (months < 0) {
+          years--;
+          months += 12;
+        }
+        
+        return `${years} Y, ${months} M, ${days} D`;
+      }
+    });
+  } catch (error) {
+    console.error('Error in getLabReport:', error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to generate lab report: ' + error.message
+    });
+  }
+};
 
 module.exports = exports;

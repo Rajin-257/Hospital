@@ -2,6 +2,7 @@ const Test = require('../models/Test');
 const TestRequest = require('../models/TestRequest');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
+const Billing = require('../models/Billing');
 const { Op } = require('sequelize');
 const { getTenantTestDepartment, getTenantTestCategory, getTenantTestGroup, getTenantTest, getTenantTestRequest } = require('../utils/tenantModels');
 
@@ -81,6 +82,9 @@ exports.getAllTestRequisitions = async (req, res) => {
     const limit = 10;
     const offset = (page - 1) * limit;
     
+    // Use tenant models
+    const TestRequest = getTenantTestRequest();
+    
     // Build query conditions
     const whereConditions = {};
     
@@ -133,7 +137,7 @@ exports.getAllTestRequisitions = async (req, res) => {
       }
     }
     
-    // Search filter
+    // Search filter - only search by last 6 digits of bill number
     if (search) {
       // We need to join related models to search in their fields
       // This will be handled in the include options
@@ -142,20 +146,22 @@ exports.getAllTestRequisitions = async (req, res) => {
     // Setup include options for related models
     const includeOptions = [
       { 
-        model: Patient,
-        where: search ? {
-          [Op.or]: [
-            { name: { [Op.like]: `%${search}%` } },
-            { patientId: { [Op.like]: `%${search}%` } }
-          ]
-        } : undefined
+        model: Patient
       },
       { 
-        model: Test,
-        where: search ? { name: { [Op.like]: `%${search}%` } } : undefined
+        model: Test
       },
       { 
         model: Doctor
+      },
+      { 
+        model: Billing,
+        required: search ? true : false, // Inner join when searching, left join otherwise
+        where: search ? {
+          billNumber: {
+            [Op.like]: `%${search}` // Search for bills ending with the search term (last 6 digits)
+          }
+        } : undefined
       }
     ];
     

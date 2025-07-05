@@ -653,6 +653,11 @@
         <button class="btn btn-outline-secondary me-2" onclick="window.print()">
             <i class="fas fa-print me-1"></i> Print Invoice
         </button>
+        <% if (typeof tests !== 'undefined' && tests.length > 0) { %>
+        <a href="/billing/lab-report/<%= billing.id %>" class="btn btn-outline-info me-2" target="_blank">
+            <i class="fas fa-flask me-1"></i> Print Lab Report
+        </a>
+        <% } %>
         <a href="/billing" class="btn btn-primary">
             <i class="fas fa-arrow-left me-1"></i> Back
         </a>
@@ -677,7 +682,7 @@ function formatDate(date) {
 const items = JSON.parse(billing.items);
 const appointments = items.filter(item => item.type === 'appointment');
 const cabins = items.filter(item => item.type === 'cabin');
-const tests = items.filter(item => item.type === 'test');
+const testItems = items.filter(item => item.type === 'test');
 
 // Calculate age from date of birth
 function calculateAge(dateOfBirth) {
@@ -869,7 +874,7 @@ function formatAmount(amount) {
     </table>
     <% } %>
     
-    <% if (tests.length > 0) { %>
+    <% if (testItems.length > 0) { %>
     <div class="section-title text-center">Laboratory Tests</div>
     <table class="invoice-table">
         <thead>
@@ -883,7 +888,7 @@ function formatAmount(amount) {
             </tr>
         </thead>
         <tbody>
-            <% tests.forEach((item, index) => { %>
+            <% testItems.forEach((item, index) => { %>
                 <tr>
                     <td class="text-center"><%= index + 1 %></td>
                     <td><%= item.name %></td>
@@ -913,7 +918,7 @@ function formatAmount(amount) {
     
     <% 
     // Check if any tests have delivery options other than 'Not Collected'
-    const specialDeliveryTests = tests.filter(item => 
+    const specialDeliveryTests = testItems.filter(item => 
         item.deliveryOption && item.deliveryOption !== 'Not Collected'
     );
     
