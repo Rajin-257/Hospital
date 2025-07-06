@@ -65,4 +65,11 @@ router.post('/import-test-data', checkFeatureAccess('General Settings'), setting
 // Import feature permissions - only softadmin can access
 router.post('/import-feature-permissions', checkFeatureAccess('Permission Management'), settingController.importFeaturePermissions);
 
+// Print Template routes - admin/softadmin can access with General Settings permission
+router.get('/print-templates', checkFeatureAccess('General Settings'), settingController.getPrintTemplates);
+router.get('/print-templates/:id', checkFeatureAccess('General Settings'), settingController.getPrintTemplate);
+router.post('/print-templates', checkFeatureAccess('General Settings'), settingController.createPrintTemplate);
+router.put('/print-templates/:id', checkFeatureAccess('General Settings'), settingController.updatePrintTemplate);
+router.delete('/print-templates/:id', checkFeatureAccess('General Settings'), settingController.deletePrintTemplate);
+
 module.exports = router;

@@ -57,6 +57,7 @@ app.use('/css', express.static(path.join(__dirname, 'public/css')));
 app.use('/js', express.static(path.join(__dirname, 'public/js')));
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Handle favicon specifically (BEFORE SaaS middleware)
 app.get('/favicon.ico', (req, res) => {
