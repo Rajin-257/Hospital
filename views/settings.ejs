@@ -294,7 +294,7 @@
                     
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="templateName" class="form-label">Template Name *</label>
+                            <label for="name" class="form-label">Template Name *</label>
                             <select name="name" id="name" class="form-select" required>
                                 <option value="lab">Lab</option>
                             </select>
@@ -695,7 +695,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Fill form with template data
                 document.getElementById('templateId').value = template.id;
-                document.getElementById('templateName').value = template.name;
+                document.getElementById('name').value = template.name;
                 document.getElementById('templateStatus').value = template.status;
                 document.getElementById('headerWidth').value = template.header_width || '';
                 document.getElementById('headerHeight').value = template.header_height || '';

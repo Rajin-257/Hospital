@@ -1248,7 +1248,7 @@ async function updateAppointmentStatus(appointmentId, status) {
 // Get lab report by billing ID
 exports.getLabReport = async (req, res) => {
   try {
-    const { getTenantBilling, getTenantPatient, getTenantTestRequest, getTenantTest, getTenantTestGroup, getTenantTestCategory, getTenantTestDepartment, getTenantSetting, getTenantUser } = require('../utils/tenantModels');
+    const { getTenantBilling, getTenantPatient, getTenantTestRequest, getTenantTest, getTenantTestGroup, getTenantTestCategory, getTenantTestDepartment, getTenantSetting, getTenantUser, getTenantPrintTemplate } = require('../utils/tenantModels');
     
     const TenantBilling = getTenantBilling();
     const TenantPatient = getTenantPatient();
@@ -1259,7 +1259,8 @@ exports.getLabReport = async (req, res) => {
     const TenantTestDepartment = getTenantTestDepartment();
     const TenantSetting = getTenantSetting();
     const TenantUser = getTenantUser();
-    
+    const TenantPrintTemplate = getTenantPrintTemplate();
+
     const billing = await TenantBilling.findByPk(req.params.id, {
       include: [
         { model: TenantPatient }
@@ -1386,6 +1387,11 @@ exports.getLabReport = async (req, res) => {
     // Get user information
     const user = await TenantUser.findByPk(req.user.id);
     
+    // Get active print template
+    const printTemplate = await TenantPrintTemplate.findOne({
+      where: { status: 'active' }
+    });
+
     res.render('lab_report', {
       title: 'Laboratory Report',
       billing,
@@ -1393,6 +1399,7 @@ exports.getLabReport = async (req, res) => {
       organizedResults,
       settings,
       user,
+      printTemplate,
       formatDate: (date) => {
         if (!date) return 'N/A';
         const d = new Date(date);

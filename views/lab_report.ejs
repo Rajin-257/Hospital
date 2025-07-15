@@ -10,16 +10,16 @@
             margin: 0;
             padding: 0;
         }
-        .diagnostic-header {
+        /* .diagnostic-header {
             position: fixed !important;
             top: 0;
             left: 0;
             right: 0;
             width: 100%;
-        }
-        .report-body {
+        } */
+        /* .report-body {
             margin-top: 60px;
-        }
+        } */
         
         .print-report {
             padding: 5px;
@@ -154,6 +154,32 @@
         
         .diagnostic-address, .diagnostic-mobile {
             font-size: 15px !important;
+        }
+        
+        /* Print template elements */
+        .print-template-header {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        
+        .print-template-header-space {
+            position: fixed !important;
+            top: 0; 
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+        
+        .print-template-footer {
+            margin-top: 20px !important;
+        }
+        
+        .print-template-footer-space {
+            margin-top: 20px !important;
         }
         
         .no-print {
@@ -393,6 +419,8 @@
     }
 </style>
 
+<!-- Dynamic margin-top calculation will be handled by JavaScript -->
+
 <div class="container mb-4 no-print">
     <div class="d-flex justify-content-end mt-4">
         <button class="btn btn-outline-secondary me-2" onclick="window.print()">
@@ -407,11 +435,24 @@
 <div class="print-report">
     <% if (organizedResults.length === 0) { %>
         <!-- Header for no results page -->
-        <div class="diagnostic-header">
-            <div class="diagnostic-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'HOSPITAL MANAGEMENT SYSTEM' %></div>
-            <div class="diagnostic-address">Address: <%= locals.settings && settings.address ? settings.address : 'No Address' %></div>
-            <div class="diagnostic-mobile">Mobile: <%= locals.settings && settings.phone ? settings.phone : 'No Phone' %></div>
-        </div>
+        <% if (printTemplate && printTemplate.status === 'active') { %>
+            <% if (printTemplate.header_img) { %>
+                <div class="print-template-header" style="text-align: center; margin-bottom: 10px;">
+                    <img src="<%= printTemplate.header_img %>" 
+                         style="width: <%= printTemplate.header_width || 600 %>px; height: <%= printTemplate.header_height || 100 %>px;" 
+                         alt="Header Image">
+                </div>
+            <% } else if (printTemplate.header_width && printTemplate.header_height) { %>
+                <div class="print-template-header-space" 
+                     style="width: <%= printTemplate.header_width %>px; height: <%= printTemplate.header_height %>px;"></div>
+            <% } %>
+        <% } else { %>
+            <div class="diagnostic-header">
+                <div class="diagnostic-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'HOSPITAL MANAGEMENT SYSTEM' %></div>
+                <div class="diagnostic-address">Address: <%= locals.settings && settings.address ? settings.address : 'No Address' %></div>
+                <div class="diagnostic-mobile">Mobile: <%= locals.settings && settings.phone ? settings.phone : 'No Phone' %></div>
+            </div>
+        <% } %>
         <div class="report-body">
             <div class="department-header">
                 <div class="report-title">LABORATORY REPORT</div>
@@ -440,16 +481,43 @@
                 <h4>No test results available</h4>
                 <p>Test results are either pending or have not been entered yet.</p>
             </div>
+            
+            <!-- Print Template Footer for no results -->
+            <% if (printTemplate && printTemplate.status === 'active') { %>
+                <% if (printTemplate.footer_image) { %>
+                    <div class="print-template-footer" style="text-align: center; margin-top: 20px;">
+                        <img src="<%= printTemplate.footer_image %>" 
+                             style="width: <%= printTemplate.footer_width || 600 %>px; height: <%= printTemplate.footer_height || 50 %>px;" 
+                             alt="Footer Image">
+                    </div>
+                <% } else if (printTemplate.footer_width && printTemplate.footer_height) { %>
+                    <div class="print-template-footer-space" 
+                         style="width: <%= printTemplate.footer_width %>px; height: <%= printTemplate.footer_height %>px; "></div>
+                <% } %>
+            <% } %>
         </div>
     <% } else { %>
         <% organizedResults.forEach((departmentData, deptIndex) => { %>
             <div class="department-section">
                 <!-- Department Header -->
-                <div class="diagnostic-header">
-                    <div class="diagnostic-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'HOSPITAL MANAGEMENT SYSTEM' %></div>
-                    <div class="diagnostic-address">Address: <%= locals.settings && settings.address ? settings.address : 'No Address' %></div>
-                    <div class="diagnostic-mobile">Mobile: <%= locals.settings && settings.phone ? settings.phone : 'No Phone' %></div>
-                </div>
+                <% if (printTemplate && printTemplate.status === 'active') { %>
+                    <% if (printTemplate.header_img) { %>
+                        <div class="print-template-header" style="text-align: center; margin-bottom: 10px;">
+                            <img src="<%= printTemplate.header_img %>" 
+                                 style="width: <%= printTemplate.header_width || 600 %>px; height: <%= printTemplate.header_height || 100 %>px;" 
+                                 alt="Header Image">
+                        </div>
+                    <% } else if (printTemplate.header_width && printTemplate.header_height) { %>
+                        <div class="print-template-header-space" 
+                             style="width: <%= printTemplate.header_width %>px; height: <%= printTemplate.header_height %>px; "></div>
+                    <% } %>
+                <% } else { %>
+                    <div class="diagnostic-header">
+                        <div class="diagnostic-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'HOSPITAL MANAGEMENT SYSTEM' %></div>
+                        <div class="diagnostic-address">Address: <%= locals.settings && settings.address ? settings.address : 'No Address' %></div>
+                        <div class="diagnostic-mobile">Mobile: <%= locals.settings && settings.phone ? settings.phone : 'No Phone' %></div>
+                    </div>
+                <% } %>
                 <div class="report-body">
                     <div class="department-header">
                         <div class="report-title">LABORATORY REPORT</div>
@@ -558,6 +626,20 @@
                         Laboratory Report - <%= departmentData.department.name %> | Generated on: <%= formatDate(new Date()) %> <%= new Date().toLocaleTimeString() %>
                     </div>
                 </div>
+                
+                <!-- Print Template Footer -->
+                <% if (printTemplate && printTemplate.status === 'active') { %>
+                    <% if (printTemplate.footer_image) { %>
+                        <div class="print-template-footer" style="text-align: center; margin-top: 10px;">
+                            <img src="<%= printTemplate.footer_image %>" 
+                                 style="width: <%= printTemplate.footer_width || 600 %>px; height: <%= printTemplate.footer_height || 50 %>px;" 
+                                 alt="Footer Image">
+                        </div>
+                    <% } else if (printTemplate.footer_width && printTemplate.footer_height) { %>
+                        <div class="print-template-footer-space" 
+                             style="width: <%= printTemplate.footer_width %>px; height: <%= printTemplate.footer_height %>px; background-color: white;"></div>
+                    <% } %>
+                <% } %>
             </div>
         <% }) %>
     <% } %>
@@ -566,29 +648,62 @@
 <script>
     // Auto-print functionality
     window.addEventListener('load', function() {
-        // Add print-specific styles for better page breaks
-        const style = document.createElement('style');
-        style.textContent = `
-            @media print {
-                .department-section:not(:first-child) {
-                    page-break-before: always;
-                    margin-top: 100px !important;
+        <% if (printTemplate && printTemplate.status === 'active' && printTemplate.header_height) { %>
+            // Calculate dynamic margin-top based on header height
+            const headerHeight = <%= printTemplate.header_height %>;
+            const dynamicMarginTop = headerHeight + 20; // Add 20px buffer
+            
+            // Add print-specific styles for better page breaks with dynamic margin
+            const style = document.createElement('style');
+            style.textContent = `
+                @media print {
+                    .report-body {
+                        margin-top: ${dynamicMarginTop}px !important;
+                    }
+                    .department-section:not(:first-child) {
+                        page-break-before: always;
+                        margin-top: ${dynamicMarginTop}px !important;
+                    }
+                    .category-title {
+                        page-break-after: avoid;
+                    }
+                    .group-title {
+                        page-break-after: avoid;
+                    }
+                    .test-results-table {
+                        page-break-inside: avoid;
+                    }
+                    .signature-section {
+                        page-break-inside: avoid;
+                    }
                 }
-                .category-title {
-                    page-break-after: avoid;
+            `;
+            document.head.appendChild(style);
+        <% } else { %>
+            // Add print-specific styles for better page breaks with default margin
+            const style = document.createElement('style');
+            style.textContent = `
+                @media print {
+                    .department-section:not(:first-child) {
+                        page-break-before: always;
+                        margin-top: 100px !important;
+                    }
+                    .category-title {
+                        page-break-after: avoid;
+                    }
+                    .group-title {
+                        page-break-after: avoid;
+                    }
+                    .test-results-table {
+                        page-break-inside: avoid;
+                    }
+                    .signature-section {
+                        page-break-inside: avoid;
+                    }
                 }
-                .group-title {
-                    page-break-after: avoid;
-                }
-                .test-results-table {
-                    page-break-inside: avoid;
-                }
-                .signature-section {
-                    page-break-inside: avoid;
-                }
-            }
-        `;
-        document.head.appendChild(style);
+            `;
+            document.head.appendChild(style);
+        <% } %>
     });
 </script>
 
