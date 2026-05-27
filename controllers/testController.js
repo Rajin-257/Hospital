@@ -2,9 +2,7 @@ const Test = require('../models/Test');
 const TestRequest = require('../models/TestRequest');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
-const Billing = require('../models/Billing');
 const { Op } = require('sequelize');
-const { getTenantTestDepartment, getTenantTestCategory, getTenantTestGroup, getTenantTest, getTenantTestRequest } = require('../utils/tenantModels');
 
 // Get all tests
 exports.getAllTests = async (req, res) => {
@@ -12,9 +10,6 @@ exports.getAllTests = async (req, res) => {
     const { search, priceRange, page = 1 } = req.query;
     const limit = 10;
     const offset = (page - 1) * limit;
-    
-    // Use tenant model
-    const Test = getTenantTest();
     
     // Define where conditions for search and filters
     const whereConditions = {};
@@ -82,9 +77,6 @@ exports.getAllTestRequisitions = async (req, res) => {
     const limit = 10;
     const offset = (page - 1) * limit;
     
-    // Use tenant models
-    const TestRequest = getTenantTestRequest();
-    
     // Build query conditions
     const whereConditions = {};
     
@@ -137,7 +129,7 @@ exports.getAllTestRequisitions = async (req, res) => {
       }
     }
     
-    // Search filter - only search by last 6 digits of bill number
+    // Search filter
     if (search) {
       // We need to join related models to search in their fields
       // This will be handled in the include options
@@ -146,22 +138,20 @@ exports.getAllTestRequisitions = async (req, res) => {
     // Setup include options for related models
     const includeOptions = [
       { 
-        model: Patient
+        model: Patient,
+        where: search ? {
+          [Op.or]: [
+            { name: { [Op.like]: `%${search}%` } },
+            { patientId: { [Op.like]: `%${search}%` } }
+          ]
+        } : undefined
       },
       { 
-        model: Test
+        model: Test,
+        where: search ? { name: { [Op.like]: `%${search}%` } } : undefined
       },
       { 
         model: Doctor
-      },
-      { 
-        model: Billing,
-        required: search ? true : false, // Inner join when searching, left join otherwise
-        where: search ? {
-          billNumber: {
-            [Op.like]: `%${search}` // Search for bills ending with the search term (last 6 digits)
-          }
-        } : undefined
       }
     ];
     
@@ -200,7 +190,6 @@ exports.getAllTestRequisitions = async (req, res) => {
 // Get single test
 exports.getTest = async (req, res) => {
   try {
-    const Test = getTenantTest();
     const test = await Test.findByPk(req.params.id);
     
     if (!test) {
@@ -217,18 +206,13 @@ exports.getTest = async (req, res) => {
 // Create new test
 exports.createTest = async (req, res) => {
   try {
-    const { name, price, description, commission, test_group_id, unit, bilogical_ref_range } = req.body;
-    
-    const Test = getTenantTest();
+    const { name, price, description, commission } = req.body;
     
     const test = await Test.create({
       name,
       price,
       description,
-      commission: commission || 0,
-      test_group_id: test_group_id || null,
-      unit: unit || null,
-      bilogical_ref_range: bilogical_ref_range || null
+      commission: commission || 0
     });
     
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
@@ -245,9 +229,8 @@ exports.createTest = async (req, res) => {
 // Update test
 exports.updateTest = async (req, res) => {
   try {
-    const { name, price, description, commission, test_group_id, unit, bilogical_ref_range } = req.body;
+    const { name, price, description, commission } = req.body;
     
-    const Test = getTenantTest();
     let test = await Test.findByPk(req.params.id);
     
     if (!test) {
@@ -258,10 +241,7 @@ exports.updateTest = async (req, res) => {
       name,
       price,
       description,
-      commission: commission || 0,
-      test_group_id: test_group_id || null,
-      unit: unit || null,
-      bilogical_ref_range: bilogical_ref_range || null
+      commission: commission || 0
     });
     
     res.json(test);
@@ -274,7 +254,6 @@ exports.updateTest = async (req, res) => {
 // Delete test
 exports.deleteTest = async (req, res) => {
   try {
-    const Test = getTenantTest();
     const test = await Test.findByPk(req.params.id);
     
     if (!test) {
@@ -411,21 +390,34 @@ exports.deleteTestRequisition = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const TestRequest = getTenantTestRequest();
     const testRequisition = await TestRequest.findByPk(id);
     
     if (!testRequisition) {
-      return res.status(404).json({ message: 'Test requisition not found' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Test requisition not found' 
+      });
+    }
+    
+    // Check if the test requisition is already billed - don't allow deletion if billed
+    if (testRequisition.billingStatus === 'billed') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cannot delete a billed test requisition' 
+      });
     }
     
     await testRequisition.destroy();
     
-    res.json({ message: 'Test requisition deleted successfully' });
+    res.json({ 
+      success: true, 
+      message: 'Test requisition deleted successfully' 
+    });
   } catch (error) {
     console.error('Error deleting test requisition:', error);
     res.status(500).json({ 
-      success: false,
-      message: 'Failed to delete test requisition'
+      success: false, 
+      message: 'Server error while deleting test requisition' 
     });
   }
 };
@@ -545,525 +537,127 @@ exports.updateTestRequisition = async (req, res) => {
   }
 };
 
-// Test Department Methods
-exports.getAllTestDepartments = async (req, res) => {
-  try {
-    const TestDepartment = getTenantTestDepartment();
-    const departments = await TestDepartment.findAll({
-      order: [['name', 'ASC']]
-    });
-    
-    res.json(departments);
-  } catch (error) {
-    console.error('Error fetching test departments:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.createTestDepartment = async (req, res) => {
-  try {
-    const { name } = req.body;
-    const TestDepartment = getTenantTestDepartment();
-    
-    const department = await TestDepartment.create({ name });
-    
-    res.status(201).json(department);
-  } catch (error) {
-    console.error('Error creating test department:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.getTestDepartment = async (req, res) => {
-  try {
-    const TestDepartment = getTenantTestDepartment();
-    const department = await TestDepartment.findByPk(req.params.id);
-    
-    if (!department) {
-      return res.status(404).json({ message: 'Test department not found' });
-    }
-    
-    res.json(department);
-  } catch (error) {
-    console.error('Error fetching test department:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.updateTestDepartment = async (req, res) => {
-  try {
-    const { name } = req.body;
-    const TestDepartment = getTenantTestDepartment();
-    
-    let department = await TestDepartment.findByPk(req.params.id);
-    
-    if (!department) {
-      return res.status(404).json({ message: 'Test department not found' });
-    }
-    
-    department = await department.update({ name });
-    
-    res.json(department);
-  } catch (error) {
-    console.error('Error updating test department:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.deleteTestDepartment = async (req, res) => {
-  try {
-    const TestDepartment = getTenantTestDepartment();
-    const department = await TestDepartment.findByPk(req.params.id);
-    
-    if (!department) {
-      return res.status(404).json({ message: 'Test department not found' });
-    }
-    
-    await department.destroy();
-    
-    res.json({ message: 'Test department removed' });
-  } catch (error) {
-    console.error('Error deleting test department:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-// Test Category Methods
-exports.getAllTestCategories = async (req, res) => {
-  try {
-    const TestCategory = getTenantTestCategory();
-    const TestDepartment = getTenantTestDepartment();
-    
-    // Get all categories with their department information
-    const categories = await TestCategory.findAll({
-      order: [['name', 'ASC']]
-    });
-    
-    // Manually fetch department information for each category
-    const categoriesWithDepartments = await Promise.all(
-      categories.map(async (category) => {
-        const department = await TestDepartment.findByPk(category.test_department_id);
-        return {
-          ...category.toJSON(),
-          TestDepartment: department
-        };
-      })
-    );
-    
-    res.json(categoriesWithDepartments);
-  } catch (error) {
-    console.error('Error fetching test categories:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.createTestCategory = async (req, res) => {
-  try {
-    const { name, test_department_id } = req.body;
-    const TestCategory = getTenantTestCategory();
-    
-    const category = await TestCategory.create({ name, test_department_id });
-    
-    res.status(201).json(category);
-  } catch (error) {
-    console.error('Error creating test category:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.getTestCategory = async (req, res) => {
-  try {
-    const TestCategory = getTenantTestCategory();
-    const TestDepartment = getTenantTestDepartment();
-    
-    const category = await TestCategory.findByPk(req.params.id);
-    
-    if (!category) {
-      return res.status(404).json({ message: 'Test category not found' });
-    }
-    
-    // Manually fetch department information
-    const department = await TestDepartment.findByPk(category.test_department_id);
-    const categoryWithDepartment = {
-      ...category.toJSON(),
-      TestDepartment: department
-    };
-    
-    res.json(categoryWithDepartment);
-  } catch (error) {
-    console.error('Error fetching test category:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.updateTestCategory = async (req, res) => {
-  try {
-    const { name, test_department_id } = req.body;
-    const TestCategory = getTenantTestCategory();
-    
-    let category = await TestCategory.findByPk(req.params.id);
-    
-    if (!category) {
-      return res.status(404).json({ message: 'Test category not found' });
-    }
-    
-    category = await category.update({ name, test_department_id });
-    
-    res.json(category);
-  } catch (error) {
-    console.error('Error updating test category:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.deleteTestCategory = async (req, res) => {
-  try {
-    const TestCategory = getTenantTestCategory();
-    const category = await TestCategory.findByPk(req.params.id);
-    
-    if (!category) {
-      return res.status(404).json({ message: 'Test category not found' });
-    }
-    
-    await category.destroy();
-    
-    res.json({ message: 'Test category removed' });
-  } catch (error) {
-    console.error('Error deleting test category:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-// Test Group Methods
-exports.getAllTestGroups = async (req, res) => {
-  try {
-    const TestGroup = getTenantTestGroup();
-    const TestCategory = getTenantTestCategory();
-    const TestDepartment = getTenantTestDepartment();
-    
-    const groups = await TestGroup.findAll({
-      order: [['name', 'ASC']]
-    });
-    
-    // Manually fetch category and department information
-    const groupsWithDetails = await Promise.all(
-      groups.map(async (group) => {
-        const category = await TestCategory.findByPk(group.test_category_id);
-        const department = category ? await TestDepartment.findByPk(category.test_department_id) : null;
-        return {
-          ...group.toJSON(),
-          TestCategory: category ? {
-            ...category.toJSON(),
-            TestDepartment: department
-          } : null
-        };
-      })
-    );
-    
-    res.json(groupsWithDetails);
-  } catch (error) {
-    console.error('Error fetching test groups:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.createTestGroup = async (req, res) => {
-  try {
-    const { name, test_category_id } = req.body;
-    const TestGroup = getTenantTestGroup();
-    
-    const group = await TestGroup.create({ name, test_category_id });
-    
-    res.status(201).json(group);
-  } catch (error) {
-    console.error('Error creating test group:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.getTestGroup = async (req, res) => {
-  try {
-    const TestGroup = getTenantTestGroup();
-    const TestCategory = getTenantTestCategory();
-    const TestDepartment = getTenantTestDepartment();
-    
-    const group = await TestGroup.findByPk(req.params.id);
-    
-    if (!group) {
-      return res.status(404).json({ message: 'Test group not found' });
-    }
-    
-    // Manually fetch category and department information
-    const category = await TestCategory.findByPk(group.test_category_id);
-    const department = category ? await TestDepartment.findByPk(category.test_department_id) : null;
-    const groupWithDetails = {
-      ...group.toJSON(),
-      TestCategory: category ? {
-        ...category.toJSON(),
-        TestDepartment: department
-      } : null
-    };
-    
-    res.json(groupWithDetails);
-  } catch (error) {
-    console.error('Error fetching test group:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.updateTestGroup = async (req, res) => {
-  try {
-    const { name, test_category_id } = req.body;
-    const TestGroup = getTenantTestGroup();
-    
-    let group = await TestGroup.findByPk(req.params.id);
-    
-    if (!group) {
-      return res.status(404).json({ message: 'Test group not found' });
-    }
-    
-    group = await group.update({ name, test_category_id });
-    
-    res.json(group);
-  } catch (error) {
-    console.error('Error updating test group:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-exports.deleteTestGroup = async (req, res) => {
-  try {
-    const TestGroup = getTenantTestGroup();
-    const group = await TestGroup.findByPk(req.params.id);
-    
-    if (!group) {
-      return res.status(404).json({ message: 'Test group not found' });
-    }
-    
-    await group.destroy();
-    
-    res.json({ message: 'Test group removed' });
-  } catch (error) {
-    console.error('Error deleting test group:', error);
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-// Test Result Methods
-exports.getTestResult = async (req, res) => {
+// Show upload result page
+exports.showResultUploadPage = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const testRequest = await TestRequest.findByPk(id, {
+    const testRequisition = await TestRequest.findByPk(id, {
       include: [
         { model: Patient },
-        { model: Test },
-        { model: Doctor }
+        { model: Test }
       ]
     });
     
-    if (!testRequest) {
+    if (!testRequisition) {
       return res.status(404).render('error', {
         title: 'Error',
-        message: 'Test request not found'
-      });
-    }
-    
-    // Check if test has results
-    if (!testRequest.result && !testRequest.resultNotes) {
-      return res.status(404).render('error', {
-        title: 'Error',
-        message: 'No results available for this test'
-      });
-    }
-    
-    res.render('test_result_view', {
-      title: 'Test Results',
-      testRequest
-    });
-  } catch (error) {
-    console.error('Error getting test result:', error);
-    res.status(500).render('error', {
-      title: 'Error',
-      message: 'Failed to fetch test results'
-    });
-  }
-};
-
-exports.showUploadResultForm = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const testRequest = await TestRequest.findByPk(id, {
-      include: [
-        { model: Patient },
-        { model: Test },
-        { model: Doctor }
-      ]
-    });
-    
-    if (!testRequest) {
-      return res.status(404).render('error', {
-        title: 'Error',
-        message: 'Test request not found'
+        message: 'Test requisition not found'
       });
     }
     
     res.render('test_result_upload', {
-      title: 'Upload Test Result',
-      testRequest
+      title: 'Upload Test Results',
+      requisition: testRequisition
     });
   } catch (error) {
-    console.error('Error showing upload form:', error);
+    console.error('Error showing upload page:', error);
     res.status(500).render('error', {
       title: 'Error',
-      message: 'Failed to load upload form'
+      message: 'Failed to load result upload page'
     });
   }
 };
 
-exports.uploadTestResult = async (req, res) => {
+// Upload test results
+exports.uploadTestResults = async (req, res) => {
   try {
     const { id } = req.params;
-    const { result, resultNotes } = req.body;
+    const { notes } = req.body;
     
-    const testRequest = await TestRequest.findByPk(id);
-    
-    if (!testRequest) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Test request not found' 
+    // Check if there are files in the request
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).render('error', {
+        title: 'Error',
+        message: 'No files were uploaded'
       });
     }
     
-    // Update test request with results
-    await testRequest.update({
-      result: result || null,
-      resultNotes: resultNotes || null,
+    const testRequisition = await TestRequest.findByPk(id);
+    
+    if (!testRequisition) {
+      return res.status(404).render('error', {
+        title: 'Error',
+        message: 'Test requisition not found'
+      });
+    }
+    
+    // Create array of file paths
+    const filePaths = req.files.map(file => file.path.replace(/\\/g, '/').replace('public/', '/'));
+    
+    // Update test requisition with result file paths and change status
+    await testRequisition.update({
+      resultFile: JSON.stringify(filePaths),
+      resultNotes: notes || null,
       status: 'Completed',
       completedDate: new Date()
     });
     
-    // For API requests
-    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.json({
-        success: true,
-        message: 'Test result uploaded successfully',
-        testRequest: await TestRequest.findByPk(id, {
-          include: [
-            { model: Patient },
-            { model: Test },
-            { model: Doctor }
-          ]
-        })
-      });
-    }
-    
-    // For form submissions
-    res.redirect(`/tests/results/${id}?message=Test result uploaded successfully`);
+    res.redirect('/tests/requisitions?message=Test results uploaded successfully');
   } catch (error) {
-    console.error('Error uploading test result:', error);
-    
-    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to upload test result'
-      });
-    }
-    
+    console.error('Error uploading test results:', error);
     res.status(500).render('error', {
       title: 'Error',
-      message: 'Failed to upload test result'
+      message: 'Failed to upload test results'
     });
   }
 };
 
-exports.updateTestResult = async (req, res) => {
+// View test result
+exports.viewTestResult = async (req, res) => {
   try {
     const { id } = req.params;
-    const { result, resultNotes } = req.body;
     
-    const testRequest = await TestRequest.findByPk(id);
-    
-    if (!testRequest) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Test request not found' 
-      });
-    }
-    
-    // Update test request with results
-    await testRequest.update({
-      result: result || null,
-      resultNotes: resultNotes || null,
-      status: 'Completed',
-      completedDate: new Date()
+    const testRequisition = await TestRequest.findByPk(id, {
+      include: [
+        { model: Patient },
+        { model: Test },
+        { model: Doctor }
+      ]
     });
     
-    // For API requests
-    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.json({
-        success: true,
-        message: 'Test result updated successfully',
-        testRequest: await TestRequest.findByPk(id, {
-          include: [
-            { model: Patient },
-            { model: Test },
-            { model: Doctor }
-          ]
-        })
+    if (!testRequisition) {
+      return res.status(404).render('error', {
+        title: 'Error',
+        message: 'Test requisition not found'
       });
     }
     
-    // For form submissions
-    res.redirect(`/tests/results/${id}?message=Test result updated successfully`);
+    // Parse result file paths from JSON
+    let resultFiles = [];
+    if (testRequisition.resultFile) {
+      try {
+        resultFiles = JSON.parse(testRequisition.resultFile);
+        // If it's not an array, make it an array
+        if (!Array.isArray(resultFiles)) {
+          resultFiles = [resultFiles];
+        }
+      } catch (e) {
+        // If parsing fails, assume it's a single file path string
+        resultFiles = [testRequisition.resultFile];
+      }
+    }
+    
+    res.render('test_result_view', {
+      title: 'Test Results',
+      requisition: testRequisition,
+      resultFiles
+    });
   } catch (error) {
-    console.error('Error updating test result:', error);
-    
-    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to update test result'
-      });
-    }
-    
+    console.error('Error viewing test results:', error);
     res.status(500).render('error', {
       title: 'Error',
-      message: 'Failed to update test result'
-    });
-  }
-};
-
-exports.deleteTestResult = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const testRequest = await TestRequest.findByPk(id);
-    
-    if (!testRequest) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Test request not found' 
-      });
-    }
-    
-    // Clear test results
-    await testRequest.update({
-      result: null,
-      resultNotes: null,
-      status: 'Pending',
-      completedDate: null
-    });
-    
-    res.json({
-      success: true,
-      message: 'Test result cleared successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting test result:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to clear test result'
+      message: 'Failed to view test results'
     });
   }
 };

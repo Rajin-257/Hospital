@@ -3,7 +3,6 @@ const { sequelize } = require('../config/db');
 const Patient = require('./Patient');
 const Test = require('./Test');
 const Doctor = require('./Doctor');
-const Billing = require('./Billing');
 
 const TestRequest = sequelize.define('TestRequest', {
   id: {
@@ -24,9 +23,10 @@ const TestRequest = sequelize.define('TestRequest', {
     type: DataTypes.ENUM('Pending', 'In Progress', 'Completed', 'Delivered', 'Cancelled'),
     defaultValue: 'Pending'
   },
-  result:{
+  resultFile: {
     type: DataTypes.TEXT,
-    allowNull: true
+    allowNull: true,
+    comment: 'JSON string of file paths or single path'
   },
   resultNotes: {
     type: DataTypes.TEXT,
@@ -56,21 +56,12 @@ const TestRequest = sequelize.define('TestRequest', {
   notes: {
     type: DataTypes.TEXT,
     allowNull: true
-  },
-  billing_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    references: {
-      model: 'Billings',
-      key: 'id'
-    }
   }
 });
 
-// Relationships  
+// Relationships
 TestRequest.belongsTo(Patient);
 TestRequest.belongsTo(Test);
 TestRequest.belongsTo(Doctor);
-TestRequest.belongsTo(Billing, { foreignKey: 'billing_id' });
 
 module.exports = TestRequest;

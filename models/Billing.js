@@ -76,6 +76,5 @@ const Billing = sequelize.define('Billing', {
 
 // Relationships
 Billing.belongsTo(Patient);
-// Note: TestRequest association will be defined in TestRequest model to avoid circular dependency
 
 module.exports = Billing;
