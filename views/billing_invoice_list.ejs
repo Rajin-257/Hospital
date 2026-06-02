@@ -1,0 +1,142 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+<%- include('partials/date-formatter') %>
+
+<%
+function formatListDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return d;
+  return dt.toLocaleDateString('en-GB');
+}
+%>
+
+<div class="container-fluid py-4">
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <i class="fas fa-list me-2"></i>Invoice List
+        <small class="text-muted ms-2">
+          (<%= formatListDate(filters.startDate) %>
+          <% if (filters.startDate !== filters.endDate) { %>
+            – <%= formatListDate(filters.endDate) %>
+          <% } %>)
+        </small>
+      </h5>
+      <a href="/billing" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> New Invoice
+      </a>
+    </div>
+    <div class="card-body border-bottom">
+      <form method="GET" action="/billing/invoices/today" class="row g-3 align-items-end">
+        <div class="col-md-2">
+          <label for="startDate" class="form-label">From Date</label>
+          <input type="date" class="form-control" id="startDate" name="startDate" value="<%= filters.startDate %>">
+        </div>
+        <div class="col-md-2">
+          <label for="endDate" class="form-label">To Date</label>
+          <input type="date" class="form-control" id="endDate" name="endDate" value="<%= filters.endDate %>">
+        </div>
+        <div class="col-md-2">
+          <label for="status" class="form-label">Status</label>
+          <select class="form-select" id="status" name="status">
+            <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All</option>
+            <option value="Fit" <%= filters.status === 'Fit' ? 'selected' : '' %>>Fit</option>
+            <option value="Unfit" <%= filters.status === 'Unfit' ? 'selected' : '' %>>Unfit</option>
+            <option value="Held UP" <%= filters.status === 'Held UP' ? 'selected' : '' %>>Held UP</option>
+            <option value="none" <%= filters.status === 'none' ? 'selected' : '' %>>No Report</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="searchType" class="form-label">Search By</label>
+          <select class="form-select" id="searchType" name="searchType">
+            <option value="all" <%= filters.searchType === 'all' ? 'selected' : '' %>>All</option>
+            <option value="billNumber" <%= filters.searchType === 'billNumber' ? 'selected' : '' %>>Invoice No.</option>
+            <option value="passport" <%= filters.searchType === 'passport' ? 'selected' : '' %>>Passport No.</option>
+            <option value="patientName" <%= filters.searchType === 'patientName' ? 'selected' : '' %>>Patient Name</option>
+            <option value="patientId" <%= filters.searchType === 'patientId' ? 'selected' : '' %>>Patient ID</option>
+            <option value="phone" <%= filters.searchType === 'phone' ? 'selected' : '' %>>Mobile No</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="searchQuery" class="form-label">Search Term</label>
+          <input type="text" class="form-control" id="searchQuery" name="searchQuery" value="<%= filters.searchQuery %>" placeholder="Search...">
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-grow-1">
+            <i class="fas fa-filter me-1"></i> Filter
+          </button>
+          <a href="/billing/invoices/today" class="btn btn-outline-secondary" title="Reset">
+            <i class="fas fa-redo"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+    <div class="card-body pt-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 50px;">SL</th>
+              <th>Report Date</th>
+              <th>Invoice No.</th>
+              <th>Passport No.</th>
+              <th>Patient Name</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (bills && bills.length > 0) { %>
+              <% bills.forEach(function (bill, index) { %>
+              <tr>
+                <td><%= index + 1 %></td>
+                <td><%= bill.MedicalReport ? formatListDate(bill.MedicalReport.reportDate) : '—' %></td>
+                <td><%= bill.billNumber %></td>
+                <td><%= bill.Patient && bill.Patient.nidPassportNo ? bill.Patient.nidPassportNo : '—' %></td>
+                <td><%= bill.Patient ? bill.Patient.name : 'Unknown' %></td>
+                <td>
+                  <% if (bill.MedicalReport && bill.MedicalReport.status) { %>
+                  <span class="badge bg-<%= bill.MedicalReport.status === 'Fit' ? 'success' : (bill.MedicalReport.status === 'Unfit' ? 'danger' : 'warning text-dark') %>">
+                    <%= bill.MedicalReport.status %>
+                  </span>
+                  <% } else { %>
+                  <span class="text-muted">—</span>
+                  <% } %>
+                </td>
+                <td>
+                  <a href="/billing/receipt/<%= bill.id %>" class="btn btn-sm btn-outline-primary" title="View Invoice">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <a href="/billing/edit/<%= bill.id %>" class="btn btn-sm btn-outline-secondary" title="Edit Invoice">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="/billing/medical-report/<%= bill.id %>" class="btn btn-sm btn-outline-success" title="Medical Report">
+                    <i class="fas fa-file-medical"></i>
+                  </a>
+                  <% if (bill.MedicalReport) { %>
+                  <a href="/billing/medical-report/<%= bill.id %>/print" class="btn btn-sm btn-outline-info" title="Print Medical Report">
+                    <i class="fas fa-print"></i>
+                  </a>
+                  <% } %>
+                </td>
+              </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">No invoices found for the selected filters.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+      <% if (totalRecords > 0) { %>
+      <div class="text-center mt-3">
+        <small class="text-muted"><%= totalRecords %> invoice<%= totalRecords !== 1 ? 's' : '' %> found</small>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

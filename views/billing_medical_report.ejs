@@ -1,0 +1,532 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<style>
+  .medical-result-form .inner_table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+  }
+  .medical-result-form .inner_table td {
+    padding: 4px 8px;
+    border: 1px solid #dee2e6;
+  }
+  .medical-result-form .inner_table tr:first-child td {
+    border-top: none;
+  }
+  .medical-result-form .inner_table td:first-child {
+    border-left: none;
+  }
+  .medical-result-form .inner_table td:last-child {
+    border-right: none;
+  }
+  .medical-result-form .result .table {
+    table-layout: fixed;
+    width: 100%;
+  }
+  .medical-result-form .table-2col col.col-name { width: 50%; }
+  .medical-result-form .table-2col col.col-value { width: 50%; }
+  .medical-result-form .biochem-nested-table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .medical-result-form .biochem-nested-table col.col-name { width: 28%; }
+  .medical-result-form .biochem-nested-table col.col-result { width: 22%; }
+  .medical-result-form .biochem-nested-table col.col-ref { width: 50%; }
+  .medical-result-form .biochem-nested-table th,
+  .medical-result-form .biochem-nested-table td {
+    border: 1px solid #dee2e6;
+    padding: 4px 8px;
+    vertical-align: middle;
+  }
+  .medical-result-form .biochem-cell {
+    padding: 0 !important;
+  }
+  .medical-result-form .result .table td {
+    vertical-align: middle;
+  }
+  .medical-result-form .section-head td {
+    font-weight: 800;
+    text-align: center;
+    background: #f8f9fa;
+  }
+  .medical-result-form .ref-value-cell {
+    font-size: 0.82rem;
+    line-height: 1.3;
+    white-space: pre-line;
+    vertical-align: middle;
+    background: #fafafa;
+  }
+  .medical-result-form .xray-label {
+    border-bottom: 1px solid #000;
+    margin-bottom: 0;
+  }
+  .required { color: red; }
+  .medical-result-form input.prefilled-value:not(.user-edited),
+  .medical-result-form select.prefilled-value:not(.user-edited),
+  .medical-result-form textarea.prefilled-value:not(.user-edited) {
+    color: red;
+  }
+  .medical-result-form input.prefilled-value:focus,
+  .medical-result-form select.prefilled-value:focus,
+  .medical-result-form textarea.prefilled-value:focus,
+  .medical-result-form .prefilled-value.user-edited {
+    color: #212529;
+  }
+</style>
+
+<div class="container-fluid py-4 medical-result-form">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="fas fa-file-medical me-2"></i>Insert Medical Report</h4>
+    <a href="/billing/receipt/<%= billing.id %>" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Back to Invoice
+    </a>
+  </div>
+
+  <form id="frmMedicalResult" action="/billing/medical-report/<%= billing.id %>" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="update_id" id="update_id" value="<%= report ? report.id : '' %>">
+
+    <div class="box-body">
+      <div class="row">
+        <div class="col-md-2">
+          <div class="form-group mb-3">
+            <label for="report_date">Report (<span class="required">*</span>)</label>
+            <input type="date" class="form-control" id="report_date" name="report_date" value="<%= reportData.reportDate %>" required>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group mb-3">
+            <label for="invoice_id">Invoice No (<span class="required">*</span>)</label>
+            <select id="invoice_id" name="invoice_id" class="form-select select-search" data-live-search="true" required>
+              <option value="">--Select--</option>
+              <% allBillings.forEach(function (inv) { %>
+              <% if (inv.Patient) { %>
+              <option value="<%= inv.id %>"
+                data-weight="<%= inv.optionWeight %>"
+                data-height="<%= inv.optionHeight %>"
+                data-patient_id="<%= inv.Patient.id %>"
+                <%= inv.id === billing.id ? 'selected' : '' %>>
+                <%= inv.id %> - <%= inv.Patient.name %>[<%= inv.Patient.patientId %>]
+              </option>
+              <% } %>
+              <% }); %>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <label for="height">Height (CM)</label>
+          <input type="text" class="form-control" id="height" name="height" value="<%= reportData.height %>">
+        </div>
+        <div class="col-md-2">
+          <label for="weight">Weight (KG)</label>
+          <input type="text" class="form-control" id="weight" name="weight" value="<%= reportData.weight %>">
+        </div>
+        <div class="col-md-2">
+          <div class="form-group mb-3">
+            <label for="report_status">Status</label>
+            <select id="report_status" name="report_status" class="form-select">
+              <option value="Held UP" <%= reportData.status === 'Held UP' ? 'selected' : '' %>>Held UP</option>
+              <option value="Fit" <%= reportData.status === 'Fit' ? 'selected' : '' %>>Fit</option>
+              <option value="Unfit" <%= reportData.status === 'Unfit' ? 'selected' : '' %>>Unfit</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group mb-3">
+            <label for="remarks">Comment</label>
+            <input type="text" class="form-control" id="remarks" name="remarks" value="<%= reportData.comment %>">
+          </div>
+        </div>
+
+        <div class="w-100"></div>
+
+        <div class="col-md-2">
+          <div class="form-group mb-3">
+            <label for="issue_date">Issue Date</label>
+            <input type="date" class="form-control" id="issue_date" name="issue_date" value="<%= reportData.issueDate %>">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group mb-3" style="padding-top: 25px;">
+            <label for="show_sign">Show Sign</label>
+            <div>
+              <label class="form-check form-check-inline">
+                <input type="radio" class="form-check-input" name="show_sign" value="1" <%= reportData.showSign ? 'checked' : '' %>> Yes
+              </label>
+              <label class="form-check form-check-inline">
+                <input type="radio" class="form-check-input" name="show_sign" value="0" <%= !reportData.showSign ? 'checked' : '' %>> No
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <br>
+
+      <div class="row">
+        <!-- Left: Medical Examination + X-Ray -->
+        <div class="col-md-6 col-xs-6 table-responsive result">
+          <table class="table table-bordered table-2col">
+            <colgroup>
+              <col class="col-name">
+              <col class="col-value">
+            </colgroup>
+            <tbody>
+              <tr>
+                <td colspan="2" align="center" style="border-top:1px solid #000;"><b>Medical Examination</b></td>
+              </tr>
+              <tr>
+                <td align="center"><b>Type of the Examination</b></td>
+                <td align="center"><b>Results</b></td>
+              </tr>
+              <tr>
+                <td class="section-head">Eye Visual Acuity</td>
+                <td style="padding: 0;">
+                  <table class="inner_table">
+                    <tr>
+                      <td width="50%">R</td>
+                      <td><input type="text" class="form-control" name="eye_right" value="<%= reportData.examination.eye_right %>"></td>
+                    </tr>
+                    <tr>
+                      <td width="50%">L</td>
+                      <td><input type="text" class="form-control" name="eye_left" value="<%= reportData.examination.eye_left %>"></td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td class="section-head">Ear</td>
+                <td style="padding: 0;">
+                  <table class="inner_table">
+                    <tr>
+                      <td width="50%">R</td>
+                      <td><input type="text" class="form-control" name="ear_right" value="<%= reportData.examination.ear_right %>"></td>
+                    </tr>
+                    <tr>
+                      <td width="50%">L</td>
+                      <td><input type="text" class="form-control" name="ear_left" value="<%= reportData.examination.ear_left %>"></td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr><td colspan="2" class="section-head">Systemic Exam: Cardio-Vascular</td></tr>
+              <tr>
+                <td width="50%">Heart</td>
+                <td><input type="text" class="form-control" name="heart" value="<%= reportData.examination.heart %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">B.P.</td>
+                <td><input type="text" class="form-control" name="bp" value="<%= reportData.examination.bp %>"></td>
+              </tr>
+              <tr><td colspan="2" class="section-head">Respiratory Exam</td></tr>
+              <tr>
+                <td width="50%">Lungs</td>
+                <td><input type="text" class="form-control" name="lungs" value="<%= reportData.examination.lungs %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">Gastrointestinal Abdomen</td>
+                <td><input type="text" class="form-control" name="gastrointestinal_abdomen" value="<%= reportData.examination.gastrointestinal_abdomen %>"></td>
+              </tr>
+              <tr><td colspan="2" class="section-head">Others</td></tr>
+              <tr>
+                <td width="50%">Hernia</td>
+                <td><input type="text" class="form-control" name="hernia" value="<%= reportData.examination.hernia %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">Varicoseveins</td>
+                <td><input type="text" class="form-control" name="varicoseveins" value="<%= reportData.examination.varicoseveins %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">Deformities</td>
+                <td><input type="text" class="form-control" name="deformities" value="<%= reportData.examination.deformities %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">Skin</td>
+                <td><input type="text" class="form-control" name="skin" value="<%= reportData.examination.skin %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">C.N.S.</td>
+                <td><input type="text" class="form-control" name="cns" value="<%= reportData.examination.cns %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">Extremities</td>
+                <td><input type="text" class="form-control" name="extremities" value="<%= reportData.examination.extremities %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">Psychiatry</td>
+                <td><input type="text" class="form-control" name="psychiatry" value="<%= reportData.examination.psychiatry %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">Any Operation History</td>
+                <td><input type="text" class="form-control" name="operation_history" value="<%= reportData.examination.operation_history %>"></td>
+              </tr>
+              <tr><td colspan="2" class="section-head">Venereal Diseases</td></tr>
+              <tr>
+                <td width="50%">Symptoms</td>
+                <td><input type="text" class="form-control" name="venereal_diseases" value="<%= reportData.examination.venereal_diseases %>"></td>
+              </tr>
+              <tr><td colspan="2" class="section-head">X-Ray Investigation</td></tr>
+              <tr>
+                <td width="50%">Chest X-Ray</td>
+                <td><input type="text" class="form-control" name="xray" value="<%= reportData.xray.xray %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">ECG</td>
+                <td><input type="text" class="form-control" name="ecg" value="<%= reportData.xray.ecg %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">
+                  <p class="xray-label mb-0">X-Ray Image</p>
+                  <img src="<%= xrayImageUrl %>" alt="X-Ray" class="img-thumbnail mt-2" style="max-height: 80px;">
+                </td>
+                <td align="center">
+                  <input type="file" class="form-control" id="xray_image" name="xray_image" accept="image/jpeg,image/jpg,image/png,image/webp">
+                  <input type="hidden" id="xray_image_old" name="xray_image_old" value="<%= xrayImageUrl %>">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Right: Laboratory Investigation -->
+        <div class="col-md-6 col-xs-6 table-responsive result">
+          <table class="table table-bordered table-2col">
+            <colgroup>
+              <col class="col-name">
+              <col class="col-value">
+            </colgroup>
+            <tbody>
+              <tr>
+                <td colspan="2" align="center" style="border-top:1px solid #000;"><b>Laboratory Investigation</b></td>
+              </tr>
+              <tr>
+                <td align="center"><b>Type of the Examination</b></td>
+                <td align="center"><b>Results</b></td>
+              </tr>
+              <tr><td colspan="2" class="section-head">Urine R/E</td></tr>
+              <tr>
+                <td>Sugar</td>
+                <td><input type="text" class="form-control" name="sugar" value="<%= reportData.laboratory.sugar %>"></td>
+              </tr>
+              <tr>
+                <td>Albumin</td>
+                <td><input type="text" class="form-control" name="albumin" value="<%= reportData.laboratory.albumin %>"></td>
+              </tr>
+              <tr>
+                <td>Bilharziasis (If Endemic)</td>
+                <td><input type="text" class="form-control" name="bilharziasis" value="<%= reportData.laboratory.bilharziasis %>"></td>
+              </tr>
+              <tr>
+                <td>Pregnancy Test</td>
+                <td><input type="text" class="form-control" name="pregnancy" value="<%= reportData.laboratory.pregnancy %>"></td>
+              </tr>
+              <tr>
+                <td>Others</td>
+                <td><input type="text" class="form-control" name="urine_other" value="<%= reportData.laboratory.urine_other %>"></td>
+              </tr>
+              <tr><td colspan="2" class="section-head">Stool R/E (If Required)</td></tr>
+              <tr>
+                <td>Helminthes</td>
+                <td><input type="text" class="form-control" name="helminthes" value="<%= reportData.laboratory.helminthes %>"></td>
+              </tr>
+              <tr>
+                <td>Giardia</td>
+                <td><input type="text" class="form-control" name="giardia" value="<%= reportData.laboratory.giardia %>"></td>
+              </tr>
+              <tr>
+                <td>Bilharziasis (If Endemic)</td>
+                <td><input type="text" class="form-control" name="stool_bilharziasis" value="<%= reportData.laboratory.stool_bilharziasis %>"></td>
+              </tr>
+              <tr>
+                <td>Culture</td>
+                <td><input type="text" class="form-control" name="culture" value="<%= reportData.laboratory.culture %>"></td>
+              </tr>
+              <tr><td colspan="2" class="section-head">Blood-CBC &amp; Grouping</td></tr>
+              <tr>
+                <td>Malaria</td>
+                <td><input type="text" class="form-control" name="malaria" value="<%= reportData.laboratory.malaria %>"></td>
+              </tr>
+              <tr>
+                <td>Microfilaria</td>
+                <td><input type="text" class="form-control" name="microfilaria" value="<%= reportData.laboratory.microfilaria %>"></td>
+              </tr>
+              <tr>
+                <td>Blood Group</td>
+                <td><input type="text" class="form-control" name="blood_group" value="<%= reportData.laboratory.blood_group %>"></td>
+              </tr>
+              <tr>
+                <td>Haemoglobin</td>
+                <td><input type="text" class="form-control" name="haemoglobin" value="<%= reportData.laboratory.haemoglobin %>"></td>
+              </tr>
+              <tr>
+                <td>ESR</td>
+                <td><input type="text" class="form-control" name="esr" value="<%= reportData.laboratory.esr %>"></td>
+              </tr>
+              <tr><td colspan="2" class="section-head">Blood-Biochemistry</td></tr>
+              <tr>
+                <td colspan="2" class="biochem-cell">
+                  <table class="biochem-nested-table">
+                    <colgroup>
+                      <col class="col-name">
+                      <col class="col-result">
+                      <col class="col-ref">
+                    </colgroup>
+                    <tr>
+                      <td align="center"><b>Test Name</b></td>
+                      <td align="center"><b>Result</b></td>
+                      <td align="center"><b>Reference Value</b></td>
+                    </tr>
+                    <% bloodBiochemistryTests.forEach(function (test) { %>
+                    <tr>
+                      <td><%= test.name %></td>
+                      <td><input type="text" class="form-control" name="<%= test.field %>" value="<%= reportData.laboratory[test.field] %>"></td>
+                      <td class="ref-value-cell"><%= test.reference %></td>
+                    </tr>
+                    <% }); %>
+                  </table>
+                </td>
+              </tr>
+              <tr><td colspan="2" class="section-head">Blood-ELISA &amp; Serology</td></tr>
+              <tr>
+                <td>HIV I &amp; HIV II</td>
+                <td><input type="text" class="form-control" name="hivi_hivii" value="<%= reportData.laboratory.hivi_hivii %>"></td>
+              </tr>
+              <tr>
+                <td>HB<sub>s</sub>Ag</td>
+                <td><input type="text" class="form-control" name="hbag" value="<%= reportData.laboratory.hbag %>"></td>
+              </tr>
+              <tr>
+                <td>Anti HCV</td>
+                <td><input type="text" class="form-control" name="anti_hcv" value="<%= reportData.laboratory.anti_hcv %>"></td>
+              </tr>
+              <tr>
+                <td>TPHA (If VDRL Positive)</td>
+                <td><input type="text" class="form-control" name="tpha" value="<%= reportData.laboratory.tpha %>"></td>
+              </tr>
+              <tr>
+                <td>VDRL</td>
+                <td><input type="text" class="form-control" name="vdrl" value="<%= reportData.laboratory.vdrl %>"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="col-md-12">
+          <div class="form-group text-center">
+            <% if (report) { %>
+            <a href="/billing/medical-report/<%= billing.id %>/print" class="btn btn-outline-primary me-2" style="margin-top: 25px;">
+              <i class="fas fa-print me-1"></i> View Report
+            </a>
+            <% } %>
+            <button type="submit" class="btn btn-success" id="btn-submit-report" style="margin-top: 25px;">
+              Submit <i class="fas fa-arrow-circle-right ms-1"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+(function () {
+  const form = document.getElementById('frmMedicalResult');
+  const invoiceSelect = document.getElementById('invoice_id');
+  const heightInput = document.getElementById('height');
+  const weightInput = document.getElementById('weight');
+  const currentBillingId = '<%= billing.id %>';
+
+  $(invoiceSelect).select2({
+    theme: 'bootstrap-5',
+    width: '100%',
+    placeholder: '--Select--'
+  });
+
+  function markPrefilled(el) {
+    if (!el) return;
+    if (el.value && el.value.trim() !== '') {
+      el.classList.add('prefilled-value');
+    } else {
+      el.classList.remove('prefilled-value', 'user-edited');
+    }
+  }
+
+  function initPrefilledStyle(root) {
+    root.querySelectorAll('input:not([type="hidden"]):not([type="file"]), select, textarea').forEach(function (el) {
+      markPrefilled(el);
+      el.addEventListener('focus', function () { el.classList.add('user-edited'); });
+      el.addEventListener('input', function () { el.classList.add('user-edited'); });
+      el.addEventListener('change', function () {
+        el.classList.add('user-edited');
+        markPrefilled(el);
+      });
+    });
+  }
+
+  function applyInvoiceMeta(option) {
+    if (!option || !option.value) return;
+    const h = option.getAttribute('data-height');
+    const w = option.getAttribute('data-weight');
+    if (h) {
+      heightInput.value = h;
+      markPrefilled(heightInput);
+    }
+    if (w) {
+      weightInput.value = w;
+      markPrefilled(weightInput);
+    }
+  }
+
+  initPrefilledStyle(form);
+
+  $(invoiceSelect).on('change', function () {
+    const selectedId = this.value;
+    const option = this.options[this.selectedIndex];
+
+    if (selectedId && selectedId !== currentBillingId) {
+      window.location.href = '/billing/medical-report/' + selectedId;
+      return;
+    }
+
+    applyInvoiceMeta(option);
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    if (!invoiceSelect.value) {
+      alert('Please select an invoice.');
+      return;
+    }
+
+    const btn = document.getElementById('btn-submit-report');
+    const formData = new FormData(form);
+    const billingId = invoiceSelect.value;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Submitting...';
+
+    fetch('/billing/medical-report/' + billingId, {
+      method: 'POST',
+      body: formData
+    })
+    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+    .then(function (result) {
+      if (!result.ok) {
+        throw new Error(result.data.message || 'Failed to save report');
+      }
+      window.location.href = result.data.redirect;
+    })
+    .catch(function (err) {
+      alert(err.message || 'Could not save medical report');
+      btn.disabled = false;
+      btn.innerHTML = 'Submit <i class="fas fa-arrow-circle-right ms-1"></i>';
+    });
+  });
+})();
+</script>
+
+<%- include('partials/footer') %>

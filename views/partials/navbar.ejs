@@ -17,7 +17,7 @@
                 <% if ((locals.isFeatureVisible('Billing')) || 
                       (locals.isFeatureVisible('Pay Bill'))) { %>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <%= (title === 'Billing' || title === 'Due Bill') ? 'active' : '' %>" href="#" id="invoiceDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a class="nav-link dropdown-toggle <%= (title === 'Billing' || title === 'Due Bill' || title === 'Invoice List') ? 'active' : '' %>" href="#" id="invoiceDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-file-invoice-dollar me-1"></i>Invoice
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="invoiceDropdown">
@@ -25,6 +25,11 @@
                         <li>
                             <a class="dropdown-item <%= title === 'Billing' ? 'active' : '' %>" href="/billing">
                                 <i class="fas fa-file-invoice-dollar me-1"></i>Billing
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item <%= title === 'Invoice List' ? 'active' : '' %>" href="/billing/invoices/today">
+                                <i class="fas fa-list me-1"></i>Invoice List
                             </a>
                         </li>
                         <% } %>

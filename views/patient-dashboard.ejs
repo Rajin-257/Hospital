@@ -42,7 +42,7 @@ function formatDate(date) {
                 </div>
                 <div class="col-md-6 text-md-end">
                     <p class="mb-0"><i class="fas fa-phone me-2"></i><%= patient.phone %></p>
-                    <p class="mb-0"><i class="fas fa-envelope me-2"></i><%= patient.email || 'No email' %></p>
+                    <p class="mb-0"><i class="fas fa-id-card me-2"></i><%= patient.nidPassportNo || 'No NID / Passport' %></p>
                 </div>
             </div>
 
@@ -107,8 +107,16 @@ function formatDate(date) {
                                         <div class="col-md-8"><%= age %> years</div>
                                     </div>
                                     <div class="row mb-2">
-                                        <div class="col-md-4 fw-bold">Blood Group:</div>
-                                        <div class="col-md-8"><%= patient.bloodGroup || 'Not specified' %></div>
+                                        <div class="col-md-4 fw-bold">Height:</div>
+                                        <div class="col-md-8"><%= patient.height || 'Not specified' %></div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-4 fw-bold">Weight:</div>
+                                        <div class="col-md-8"><%= patient.weight || 'Not specified' %></div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-4 fw-bold">NID / Passport No:</div>
+                                        <div class="col-md-8"><%= patient.nidPassportNo || 'Not specified' %></div>
                                     </div>
                                 </div>
                             </div>
@@ -120,12 +128,8 @@ function formatDate(date) {
                                 </div>
                                 <div class="card-body">
                                     <div class="row mb-2">
-                                        <div class="col-md-4 fw-bold">Phone:</div>
+                                        <div class="col-md-4 fw-bold">Mobile No:</div>
                                         <div class="col-md-8"><%= patient.phone %></div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-4 fw-bold">Email:</div>
-                                        <div class="col-md-8"><%= patient.email || 'Not provided' %></div>
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-md-4 fw-bold">Address:</div>
@@ -319,6 +323,9 @@ function formatDate(date) {
                                             <td>
                                                 <button class="btn btn-sm btn-info" onclick="window.location.href='/billing/receipt/<%= invoice.id %>'">
                                                     <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="window.location.href='/billing/medical-report/<%= invoice.id %>'" title="Medical Report">
+                                                    <i class="fas fa-file-medical"></i>
                                                 </button>
                                                 <% if (invoice.status !== 'paid') { %>
                                                     <button class="btn btn-sm btn-outline-success pay-button" data-id="<%= invoice.id %>" data-amount="<%= invoice.dueAmount %>">

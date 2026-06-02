@@ -28,8 +28,8 @@
                             <th>Name</th>
                             <th>Gender</th>
                             <th>Age</th>
-                            <th>Phone</th>
-                            <th>Blood Group</th>
+                            <th>Mobile No</th>
+                            <th>NID / Passport</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -47,7 +47,7 @@
                                     <%= age %>
                                 </td>
                                 <td><%= patient.phone %></td>
-                                <td><%= patient.bloodGroup || '-' %></td>
+                                <td><%= patient.nidPassportNo || '-' %></td>
                                 <td>
                                     <a href="/patients/<%= patient.id %>/dashboard" class="btn btn-sm btn-info">
                                         <i class="fas fa-eye"></i>
@@ -101,52 +101,45 @@
                 <div class="modal-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label required-label">Full Name</label>
+                            <label class="form-label required-label">Patient Name (*)</label>
                             <input type="text" class="form-control" name="name" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label required-label">Gender</label>
-                            <select class="form-select" name="gender" required>
-                                <option value="">Select Gender</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label required-label">Date of Birth</label>
-                            <input type="date" class="form-control" name="dateOfBirth" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label required-label">Phone</label>
+                            <label class="form-label required-label">Mobile No (*)</label>
                             <input type="tel" class="form-control" name="phone" required>
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" name="email">
+                            <label class="form-label required-label">Gender (*)</label>
+                            <select class="form-select" name="gender" required>
+                                <option value="male" selected>Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Blood Group</label>
-                            <select class="form-select" name="bloodGroup">
-                                <option value="">Select Blood Group</option>
-                                <option value="A+">A+</option>
-                                <option value="A-">A-</option>
-                                <option value="B+">B+</option>
-                                <option value="B-">B-</option>
-                                <option value="AB+">AB+</option>
-                                <option value="AB-">AB-</option>
-                                <option value="O+">O+</option>
-                                <option value="O-">O-</option>
-                            </select>
+                            <label class="form-label required-label">Date of Birth (*)</label>
+                            <input type="date" class="form-control" name="dateOfBirth" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Height</label>
+                            <input type="text" class="form-control" name="height" placeholder="e.g. 170 cm">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Weight</label>
+                            <input type="text" class="form-control" name="weight" placeholder="e.g. 65 kg">
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Address</label>
                         <textarea class="form-control" name="address" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-label">NID / Passport No (*)</label>
+                        <input type="text" class="form-control" name="nidPassportNo" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -171,52 +164,45 @@
                 <div class="modal-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label required-label">Full Name</label>
+                            <label class="form-label required-label">Patient Name (*)</label>
                             <input type="text" class="form-control" id="edit-patient-name" name="name" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label required-label">Gender</label>
-                            <select class="form-select" id="edit-patient-gender" name="gender" required>
-                                <option value="">Select Gender</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label required-label">Date of Birth</label>
-                            <input type="date" class="form-control" id="edit-patient-dob" name="dateOfBirth" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label required-label">Phone</label>
+                            <label class="form-label required-label">Mobile No (*)</label>
                             <input type="tel" class="form-control" id="edit-patient-phone" name="phone" required>
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" id="edit-patient-email" name="email">
+                            <label class="form-label required-label">Gender (*)</label>
+                            <select class="form-select" id="edit-patient-gender" name="gender" required>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Blood Group</label>
-                            <select class="form-select" id="edit-patient-blood" name="bloodGroup">
-                                <option value="">Select Blood Group</option>
-                                <option value="A+">A+</option>
-                                <option value="A-">A-</option>
-                                <option value="B+">B+</option>
-                                <option value="B-">B-</option>
-                                <option value="AB+">AB+</option>
-                                <option value="AB-">AB-</option>
-                                <option value="O+">O+</option>
-                                <option value="O-">O-</option>
-                            </select>
+                            <label class="form-label required-label">Date of Birth (*)</label>
+                            <input type="date" class="form-control" id="edit-patient-dob" name="dateOfBirth" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Height</label>
+                            <input type="text" class="form-control" id="edit-patient-height" name="height" placeholder="e.g. 170 cm">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Weight</label>
+                            <input type="text" class="form-control" id="edit-patient-weight" name="weight" placeholder="e.g. 65 kg">
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Address</label>
                         <textarea class="form-control" id="edit-patient-address" name="address" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-label">NID / Passport No (*)</label>
+                        <input type="text" class="form-control" id="edit-patient-nid" name="nidPassportNo" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -259,19 +245,25 @@
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <p class="mb-1 fw-bold">Phone:</p>
+                        <p class="mb-1 fw-bold">Mobile No:</p>
                         <p id="view-patient-phone"></p>
                     </div>
                     <div class="col-md-6">
-                        <p class="mb-1 fw-bold">Email:</p>
-                        <p id="view-patient-email"></p>
+                        <p class="mb-1 fw-bold">NID / Passport No:</p>
+                        <p id="view-patient-nid"></p>
                     </div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <p class="mb-1 fw-bold">Blood Group:</p>
-                        <p id="view-patient-blood"></p>
+                        <p class="mb-1 fw-bold">Height:</p>
+                        <p id="view-patient-height"></p>
                     </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Weight:</p>
+                        <p id="view-patient-weight"></p>
+                    </div>
+                </div>
+                <div class="row mb-3">
                     <div class="col-md-6">
                         <p class="mb-1 fw-bold">Registration Date:</p>
                         <p id="view-patient-created"></p>
@@ -335,7 +327,7 @@
                                     <td>${patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)}</td>
                                     <td>${age}</td>
                                     <td>${patient.phone}</td>
-                                    <td>${patient.bloodGroup || '-'}</td>
+                                    <td>${patient.nidPassportNo || '-'}</td>
                                     <td>
                                         <a href="/patients/${patient.id}/dashboard" class="btn btn-sm btn-info">
                                             <i class="fas fa-eye"></i>
@@ -412,9 +404,10 @@
                     $('#edit-patient-gender').val(patient.gender).trigger('change');
                     $('#edit-patient-dob').val(patient.dateOfBirth);
                     $('#edit-patient-phone').val(patient.phone);
-                    $('#edit-patient-email').val(patient.email);
-                    $('#edit-patient-blood').val(patient.bloodGroup).trigger('change');
-                    $('#edit-patient-address').val(patient.address);
+                    $('#edit-patient-height').val(patient.height || '');
+                    $('#edit-patient-weight').val(patient.weight || '');
+                    $('#edit-patient-address').val(patient.address || '');
+                    $('#edit-patient-nid').val(patient.nidPassportNo || '');
                     
                     $('#editPatientModal').modal('show');
                 },
@@ -460,8 +453,9 @@
                     $('#view-patient-gender').text(patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1));
                     $('#view-patient-dob').text(new Date(patient.dateOfBirth).toLocaleDateString());
                     $('#view-patient-phone').text(patient.phone);
-                    $('#view-patient-email').text(patient.email || '-');
-                    $('#view-patient-blood').text(patient.bloodGroup || '-');
+                    $('#view-patient-nid').text(patient.nidPassportNo || '-');
+                    $('#view-patient-height').text(patient.height || '-');
+                    $('#view-patient-weight').text(patient.weight || '-');
                     $('#view-patient-address').text(patient.address || '-');
                     $('#view-patient-created').text(new Date(patient.createdAt).toLocaleDateString());
                     

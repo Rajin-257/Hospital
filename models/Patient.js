@@ -34,6 +34,18 @@ const Patient = sequelize.define('Patient', {
   address: {
     type: DataTypes.TEXT
   },
+  height: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  weight: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  nidPassportNo: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   bloodGroup: {
     type: DataTypes.ENUM('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'),
     allowNull: true

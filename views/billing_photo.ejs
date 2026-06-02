@@ -1,0 +1,232 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-camera me-2"></i>Patient Photo</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <strong>Bill #<%= billing.billNumber %></strong>
+                        <% if (billing.Patient) { %>
+                        &mdash; <%= billing.Patient.name %> (<%= billing.Patient.patientId %>)
+                        <% } %>
+                    </div>
+
+                    <div class="row g-4">
+                        <!-- Webcam -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Take photo from webcam</label>
+                            <div class="border rounded bg-dark position-relative overflow-hidden" style="aspect-ratio: 4/3;">
+                                <video id="webcam-video" class="w-100 h-100" style="object-fit: cover;" autoplay playsinline muted></video>
+                                <div id="webcam-placeholder" class="position-absolute top-50 start-50 translate-middle text-white text-center px-3">
+                                    <i class="fas fa-video fa-2x mb-2 d-block opacity-75"></i>
+                                    <small>Click "Start Camera" to begin</small>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="btn-start-camera">
+                                    <i class="fas fa-video me-1"></i> Start Camera
+                                </button>
+                                <button type="button" class="btn btn-primary btn-sm" id="btn-capture" disabled>
+                                    <i class="fas fa-camera me-1"></i> Capture Photo
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-stop-camera" disabled>
+                                    <i class="fas fa-stop me-1"></i> Stop
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Upload -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Or upload a picture</label>
+                            <div class="border rounded d-flex flex-column align-items-center justify-content-center p-4 bg-light" style="min-height: 200px;">
+                                <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                <p class="text-muted small text-center mb-2">JPEG, PNG, or WebP (max 5 MB)</p>
+                                <input type="file" class="form-control" id="photo-upload" accept="image/jpeg,image/jpg,image/png,image/webp">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="mt-4" id="preview-section" style="display: none;">
+                        <label class="form-label fw-semibold">Preview</label>
+                        <div class="text-center border rounded p-3 bg-light">
+                            <img id="photo-preview" src="" alt="Photo preview" class="img-fluid rounded shadow-sm" style="max-height: 320px;">
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-outline-warning btn-sm" id="btn-retake">
+                                <i class="fas fa-redo me-1"></i> Retake / Choose Again
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex flex-wrap gap-2 justify-content-between">
+                        <a href="/billing/receipt/<%= billing.id %>" class="btn btn-outline-secondary">
+                            <i class="fas fa-forward me-1"></i> Skip Photo
+                        </a>
+                        <button type="button" class="btn btn-success" id="btn-save-photo" disabled>
+                            <i class="fas fa-check me-1"></i> Save & View Receipt
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<canvas id="capture-canvas" class="d-none"></canvas>
+
+<script>
+(function () {
+    const billingId = '<%= billing.id %>';
+    const video = document.getElementById('webcam-video');
+    const canvas = document.getElementById('capture-canvas');
+    const preview = document.getElementById('photo-preview');
+    const previewSection = document.getElementById('preview-section');
+    const placeholder = document.getElementById('webcam-placeholder');
+    const fileInput = document.getElementById('photo-upload');
+    const btnStart = document.getElementById('btn-start-camera');
+    const btnCapture = document.getElementById('btn-capture');
+    const btnStop = document.getElementById('btn-stop-camera');
+    const btnRetake = document.getElementById('btn-retake');
+    const btnSave = document.getElementById('btn-save-photo');
+
+    let stream = null;
+    let photoBlob = null;
+
+    function showPreviewFromBlob(blob) {
+        photoBlob = blob;
+        preview.src = URL.createObjectURL(blob);
+        previewSection.style.display = 'block';
+        btnSave.disabled = false;
+    }
+
+    function showPreviewFromFile(file) {
+        photoBlob = file;
+        preview.src = URL.createObjectURL(file);
+        previewSection.style.display = 'block';
+        btnSave.disabled = false;
+    }
+
+    function clearPreview() {
+        if (preview.src && preview.src.startsWith('blob:')) {
+            URL.revokeObjectURL(preview.src);
+        }
+        preview.src = '';
+        photoBlob = null;
+        previewSection.style.display = 'none';
+        btnSave.disabled = true;
+        fileInput.value = '';
+    }
+
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false
+            });
+            video.srcObject = stream;
+            placeholder.style.display = 'none';
+            btnCapture.disabled = false;
+            btnStop.disabled = false;
+            btnStart.disabled = true;
+        } catch (err) {
+            alert('Could not access webcam. Please allow camera permission or upload a picture instead.');
+            console.error(err);
+        }
+    }
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(function (track) { track.stop(); });
+            stream = null;
+        }
+        video.srcObject = null;
+        placeholder.style.display = 'block';
+        btnCapture.disabled = true;
+        btnStop.disabled = true;
+        btnStart.disabled = false;
+    }
+
+    btnStart.addEventListener('click', startCamera);
+
+    btnStop.addEventListener('click', stopCamera);
+
+    btnCapture.addEventListener('click', function () {
+        if (!stream) return;
+        const w = video.videoWidth;
+        const h = video.videoHeight;
+        if (!w || !h) {
+            alert('Camera is not ready yet. Please wait a moment and try again.');
+            return;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+        canvas.toBlob(function (blob) {
+            if (blob) {
+                showPreviewFromBlob(blob);
+            }
+        }, 'image/jpeg', 0.92);
+    });
+
+    fileInput.addEventListener('change', function () {
+        const file = fileInput.files[0];
+        if (!file) return;
+        if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
+            alert('Please select a JPEG, PNG, or WebP image.');
+            fileInput.value = '';
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image must be 5 MB or smaller.');
+            fileInput.value = '';
+            return;
+        }
+        showPreviewFromFile(file);
+    });
+
+    btnRetake.addEventListener('click', clearPreview);
+
+    btnSave.addEventListener('click', function () {
+        if (!photoBlob) {
+            alert('Please capture or upload a photo first.');
+            return;
+        }
+
+        const formData = new FormData();
+        const filename = photoBlob.name || 'webcam-capture.jpg';
+        formData.append('photo', photoBlob, filename);
+
+        btnSave.disabled = true;
+        btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+        fetch('/billing/photo/' + billingId, {
+            method: 'POST',
+            body: formData
+        })
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (result) {
+            if (!result.ok) {
+                throw new Error(result.data.message || 'Failed to save photo');
+            }
+            window.location.href = result.data.redirect;
+        })
+        .catch(function (err) {
+            alert(err.message || 'Could not save photo');
+            btnSave.disabled = false;
+            btnSave.innerHTML = '<i class="fas fa-check me-1"></i> Save & View Receipt';
+        });
+    });
+
+    window.addEventListener('beforeunload', stopCamera);
+})();
+</script>
+
+<%- include('partials/footer') %>

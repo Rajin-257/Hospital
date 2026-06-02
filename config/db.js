@@ -17,8 +17,13 @@ const connectDB = async () => {
     await sequelize.authenticate();
     console.log('Database connected successfully');
     
+    // Ensure all models are registered before sync
+    require('../models/MedicalReport');
+    const Patient = require('../models/Patient');
+    
     // Sync database
     await sequelize.sync({ alter: false });
+    await Patient.sync({ alter: true });
     console.log('Database synchronized');
     
     setTimeout(async () => {

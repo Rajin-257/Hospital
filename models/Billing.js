@@ -71,6 +71,10 @@ const Billing = sequelize.define('Billing', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
     defaultValue : 0
+  },
+  patientPhoto: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 });
 

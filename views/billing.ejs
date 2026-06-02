@@ -64,22 +64,26 @@
             <form id="patient-form">
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label class="form-label required-label">Full Name</label>
+                        <label class="form-label required-label">Patient Name (*)</label>
                         <input type="text" class="form-control" name="name" id="patient-name" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label required-label">Gender</label>
+                        <label class="form-label required-label">Mobile No (*)</label>
+                        <input type="tel" class="form-control" name="phone" id="patient-phone" required>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label required-label">Gender (*)</label>
                         <select class="form-select" name="gender" id="patient-gender" required>
                             <option value="male" selected>Male</option>
                             <option value="female">Female</option>
                             <option value="other">Other</option>
                         </select>
                     </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="d-flex align-items-center mb-2">
-                            <label class="form-label required-label mb-0">Date of Birth</label>
+                            <label class="form-label required-label mb-0">Date of Birth (*)</label>
                             <div class="form-check form-check-inline" style="margin-left: 10px;">
                                 <input class="form-check-input" type="radio" name="dobType" id="dobTypeAge" value="age" checked>
                                 <label class="form-check-label" for="dobTypeAge">Age</label>
@@ -102,23 +106,27 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label required-label">Phone</label>
-                        <input type="tel" class="form-control" name="phone" id="patient-phone" required>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Height</label>
+                        <input type="text" class="form-control" name="height" id="patient-height" placeholder="e.g. 170 cm">
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Blood Group</label>
-                        <select class="form-select" name="bloodGroup" id="patient-blood-group">
-                            <option value="">Select Blood Group</option>
-                            <option value="A+">A+</option>
-                            <option value="A-">A-</option>
-                            <option value="B+">B+</option>
-                            <option value="B-">B-</option>
-                            <option value="AB+">AB+</option>
-                            <option value="AB-">AB-</option>
-                            <option value="O+">O+</option>
-                            <option value="O-">O-</option>
-                        </select>
+                    <div class="col-md-6">
+                        <label class="form-label">Weight</label>
+                        <input type="text" class="form-control" name="weight" id="patient-weight" placeholder="e.g. 65 kg">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" name="address" id="patient-address" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label required-label">NID / Passport No (*)</label>
+                        <input type="text" class="form-control" name="nidPassportNo" id="patient-nid" required>
                     </div>
                 </div>
                 <div class="text-end">
@@ -579,7 +587,7 @@
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 btn-save">
-                            <i class="fas fa-save me-1"></i> Complete Billing
+                            <i class="fas fa-camera me-1"></i> Complete Billing & Take Photo
                         </button>
                     </form>
                 </div>
@@ -1309,8 +1317,7 @@
                 type: 'POST',
                 data: $(this).serialize(),
                 success: function(response) {
-                    alert('Billing completed successfully');
-                    window.location.href = '/billing/receipt/' + response.id;
+                    window.location.href = '/billing/photo/' + response.id;
                 },
                 error: function(error) {
                     alert('Error: ' + (error.responseJSON?.message || 'Could not complete billing'));
@@ -1494,9 +1501,9 @@
         });
 
         // Automatically save patient data when form fields change
-        $('#patient-form input, #patient-form select').on('change', function() {
-            // Only save if we have at least name and phone
-            if ($('#patient-name').val() && $('#patient-phone').val()) {
+        $('#patient-form input, #patient-form select, #patient-form textarea').on('change', function() {
+            // Only save if we have all required fields
+            if ($('#patient-name').val() && $('#patient-phone').val() && $('#patient-nid').val()) {
                 savePatientData();
             }
         });
@@ -1504,7 +1511,7 @@
         // Function to save patient data
         function savePatientData() {
             // Check if we have at least the required fields
-            if (!$('#patient-name').val() || !$('#patient-phone').val()) {
+            if (!$('#patient-name').val() || !$('#patient-phone').val() || !$('#patient-nid').val()) {
                 return; // Don't save if required fields are missing
             }
             
@@ -1512,9 +1519,12 @@
             const formData = new FormData($('#patient-form')[0]);
             const data = {};
             
-            // Convert FormData to object and handle blood group
+            // Convert FormData to object
             for (let [key, value] of formData.entries()) {
-                if (key === 'bloodGroup' && value === '') {
+                if (value === '') {
+                    if (key !== 'height' && key !== 'weight' && key !== 'address') {
+                        continue;
+                    }
                     data[key] = null;
                 } else {
                     data[key] = value;
@@ -1577,7 +1587,8 @@
             // Set gender to Male
             $('#patient-gender').val('male');
             
-            // Clear the patient selection in dropdown
+            // Clear optional fields
+            $('#patient-height, #patient-weight, #patient-address, #patient-nid').val('');
             $('#patient-select').val(null).trigger('change');
             
             // Clear patient ID in billing form

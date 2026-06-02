@@ -17,7 +17,8 @@ exports.getAllPatients = async (req, res) => {
         { name: { [Op.like]: `%${search}%` } },
         { patientId: { [Op.like]: `%${search}%` } },
         { phone: { [Op.like]: `%${search}%` } },
-        { email: { [Op.like]: `%${search}%` } }
+        { email: { [Op.like]: `%${search}%` } },
+        { nidPassportNo: { [Op.like]: `%${search}%` } }
       ];
     }
     
@@ -73,7 +74,11 @@ exports.getPatient = async (req, res) => {
 // Create new patient
 exports.createPatient = async (req, res) => {
   try {
-    const { name, gender, dateOfBirth, phone, email, address, bloodGroup } = req.body;
+    const { name, gender, dateOfBirth, phone, email, address, height, weight, nidPassportNo, bloodGroup } = req.body;
+
+    if (!name || !phone || !gender || !dateOfBirth || !nidPassportNo) {
+      return res.status(400).json({ message: 'Patient Name, Mobile No, Gender, Date of Birth, and NID / Passport No are required' });
+    }
     
     // Generate patient ID (e.g., P + current year + 4-digit sequence)
     const latestPatient = await Patient.findOne({
@@ -98,6 +103,9 @@ exports.createPatient = async (req, res) => {
       phone,
       email,
       address,
+      height,
+      weight,
+      nidPassportNo,
       bloodGroup
     });
     
@@ -115,7 +123,11 @@ exports.createPatient = async (req, res) => {
 // Update patient
 exports.updatePatient = async (req, res) => {
   try {
-    const { name, gender, dateOfBirth, phone, email, address, bloodGroup } = req.body;
+    const { name, gender, dateOfBirth, phone, email, address, height, weight, nidPassportNo, bloodGroup } = req.body;
+
+    if (!name || !phone || !gender || !dateOfBirth || !nidPassportNo) {
+      return res.status(400).json({ message: 'Patient Name, Mobile No, Gender, Date of Birth, and NID / Passport No are required' });
+    }
     
     let patient = await Patient.findByPk(req.params.id);
     
@@ -130,6 +142,9 @@ exports.updatePatient = async (req, res) => {
       phone,
       email,
       address,
+      height,
+      weight,
+      nidPassportNo,
       bloodGroup
     });
     
@@ -169,7 +184,8 @@ exports.searchPatients = async (req, res) => {
           { name: { [Op.like]: `%${term}%` } },
           { patientId: { [Op.like]: `%${term}%` } },
           { phone: { [Op.like]: `%${term}%` } },
-          { email: { [Op.like]: `%${term}%` } }
+          { email: { [Op.like]: `%${term}%` } },
+          { nidPassportNo: { [Op.like]: `%${term}%` } }
         ]
       }
     });

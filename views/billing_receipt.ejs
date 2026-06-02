@@ -41,6 +41,28 @@
     .invoice-info-table td {
         padding: 5px 8px !important;
         border: none !important;
+        vertical-align: top !important;
+    }
+
+    .invoice-info-table td.invoice-info-middle {
+        border-left: 1px solid #000000 !important;
+        border-right: 1px solid #000000 !important;
+    }
+
+    .invoice-info-table td.invoice-info-photo {
+        width: 110px !important;
+        min-width: 110px !important;
+        text-align: center !important;
+        vertical-align: middle !important;
+    }
+
+    .invoice-info-table .patient-photo-img {
+        width: 100px !important;
+        height: 100px !important;
+        aspect-ratio: 1 / 1 !important;
+        object-fit: cover !important;
+        display: block !important;
+        margin: 0 auto !important;
     }
     
     .info-label {
@@ -226,7 +248,35 @@
         vertical-align: top;
         background-color: #f9f9f9;
     }
-    
+
+    .invoice-info-table td.invoice-info-middle {
+        border-left: 1px solid #000000;
+        border-right: 1px solid #000000;
+    }
+
+    .invoice-info-table td.invoice-info-photo {
+        width: 130px;
+        min-width: 130px;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .invoice-info-table td.invoice-info-left,
+    .invoice-info-table td.invoice-info-middle {
+        width: auto;
+    }
+
+    .invoice-info-table .patient-photo-img {
+        display: block;
+        margin: 0 auto;
+        width: 120px;
+        height: 120px;
+        aspect-ratio: 1 / 1;
+        object-fit: cover;
+        border: 1px solid #cccccc;
+        border-radius: 0;
+    }
+
     .info-label {
         font-size: 14px;
         text-transform: uppercase;
@@ -650,6 +700,9 @@
 
 <div class="container mb-4 no-print">
     <div class="d-flex justify-content-end mt-4">
+        <a href="/billing/medical-report/<%= billing.id %>" class="btn btn-outline-primary me-2">
+            <i class="fas fa-file-medical me-1"></i> Medical Report
+        </a>
         <button class="btn btn-outline-secondary me-2" onclick="window.print()">
             <i class="fas fa-print me-1"></i> Print Invoice
         </button>
@@ -674,7 +727,7 @@ function formatDate(date) {
     return `${day}-${month}-${year}`;
 }
 
-const items = JSON.parse(billing.items);
+const items = typeof billing.items === 'string' ? JSON.parse(billing.items) : (billing.items || []);
 const appointments = items.filter(item => item.type === 'appointment');
 const cabins = items.filter(item => item.type === 'cabin');
 const tests = items.filter(item => item.type === 'test');
@@ -772,14 +825,15 @@ function formatAmount(amount) {
 
     <table class="invoice-info-table">
         <tr>
-            <td style="width: 50%;">
+            <td class="invoice-info-left">
+                <div class="info-label">Patient Info</div>
                 <div class="info-value">Name: <%= billing.Patient.name %></div>
                 <div class="info-value">Patient ID: <%= billing.Patient.patientId %></div>
                 <div class="info-value">Age: <%= calculateAge(billing.Patient.dateOfBirth) %></div>
                 <div class="info-value">Gender: <%= billing.Patient.gender %></div>
                 <div class="info-value">Mobile: <%= billing.Patient.phone %></div>
             </td>
-            <td style="width: 50%;">
+            <td class="invoice-info-middle">
                 <div class="info-label">Invoice Details</div>
                 <div class="info-value">Invoice #: <%= billing.billNumber %></div>
                 <div class="info-value">Billing Date: <%= formatDate(billing.billDate) %></div>
@@ -789,14 +843,10 @@ function formatAmount(amount) {
                 <% if (billing.referringDoctor) { %>
                 <div class="info-value">Ref: <%= billing.referringDoctor.replace(/[()]/g, '') %></div>
                 <% } %>
-                
                 <% 
-                // Display all doctors associated with tests
                 if (Array.isArray(items)) {
                     const testItems = items.filter(item => item.type === 'test' && item.doctorId && item.doctorName);
-                    
                     if (testItems.length > 0) {
-                        // Get all doctor names without duplicates and remove brackets
                         const uniqueDoctors = [...new Set(testItems.map(item => 
                             item.doctorName ? item.doctorName.replace(/[()]/g, '') : ''
                         ))];
@@ -809,13 +859,19 @@ function formatAmount(amount) {
                 }
                 %>
                 <% if (billing.marketingManagerId) { %>
-                        <div class="info-value">Marketing_by: 
-                        <% if (locals.marketingManager) { %>
-                            <%= marketingManager.username %>
-                        <% } else { %>
-                            -
-                        <% } %>
-                        </div>
+                <div class="info-value">Marketing_by:
+                    <% if (locals.marketingManager) { %>
+                        <%= marketingManager.username %>
+                    <% } else { %>
+                        -
+                    <% } %>
+                </div>
+                <% } %>
+                <div class="info-value">Passport No: <%= billing.Patient.nidPassportNo || 'N/A' %></div>
+            </td>
+            <td class="invoice-info-photo">
+                <% if (billing.patientPhoto) { %>
+                <img src="<%= billing.patientPhoto %>" alt="Patient photo" class="patient-photo-img">
                 <% } %>
             </td>
         </tr>

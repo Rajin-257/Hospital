@@ -8,6 +8,7 @@ const CabinBooking = require('../models/CabinBooking');
 const TestRequest = require('../models/TestRequest');
 const DoctorCommission = require('../models/DoctorCommission');
 const MarketingCommission = require('../models/MarketingCommission');
+const MedicalReport = require('../models/MedicalReport');
 const User = require('../models/User');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
@@ -63,6 +64,101 @@ exports.renderBillingPage = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send('Server Error');
+  }
+};
+
+exports.renderTodayInvoiceList = async (req, res) => {
+  try {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const {
+      startDate = todayStr,
+      endDate = todayStr,
+      searchType = 'all',
+      searchQuery = '',
+      status = 'all'
+    } = req.query;
+
+    const fromDate = startDate || todayStr;
+    const toDate = endDate || todayStr;
+
+    const whereClause = {
+      billDate: {
+        [Op.between]: [fromDate, toDate]
+      }
+    };
+
+    if (status === 'Fit' || status === 'Unfit' || status === 'Held UP') {
+      whereClause['$MedicalReport.status$'] = status;
+    }
+
+    const patientWhereClause = {};
+    const term = String(searchQuery || '').trim();
+
+    if (term && searchType !== 'all') {
+      switch (searchType) {
+        case 'billNumber':
+          whereClause.billNumber = { [Op.like]: `%${term}%` };
+          break;
+        case 'patientId':
+          patientWhereClause.patientId = { [Op.like]: `%${term}%` };
+          break;
+        case 'patientName':
+          patientWhereClause.name = { [Op.like]: `%${term}%` };
+          break;
+        case 'phone':
+          patientWhereClause.phone = { [Op.like]: `%${term}%` };
+          break;
+        case 'passport':
+          patientWhereClause.nidPassportNo = { [Op.like]: `%${term}%` };
+          break;
+        default:
+          break;
+      }
+    } else if (term) {
+      whereClause[Op.or] = [
+        { billNumber: { [Op.like]: `%${term}%` } },
+        { '$Patient.name$': { [Op.like]: `%${term}%` } },
+        { '$Patient.patientId$': { [Op.like]: `%${term}%` } },
+        { '$Patient.phone$': { [Op.like]: `%${term}%` } },
+        { '$Patient.nidPassportNo$': { [Op.like]: `%${term}%` } }
+      ];
+    }
+
+    let bills = await Billing.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Patient,
+          where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+        },
+        { model: MedicalReport, required: false }
+      ],
+      subQuery: false,
+      order: [['billDate', 'DESC'], ['createdAt', 'DESC']]
+    });
+
+    if (status === 'none') {
+      bills = bills.filter((bill) => !bill.MedicalReport);
+    }
+
+    res.render('billing_invoice_list', {
+      title: 'Invoice List',
+      bills,
+      filters: {
+        startDate: fromDate,
+        endDate: toDate,
+        searchType,
+        searchQuery: term,
+        status
+      },
+      totalRecords: bills.length
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to load invoices'
+    });
   }
 };
 
@@ -325,7 +421,53 @@ exports.createBilling = async (req, res) => {
       return res.status(201).json(fullBilling);
     }
     
-    res.redirect(`/billing/receipt/${billing.id}`);
+    res.redirect(`/billing/photo/${billing.id}`);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Render patient photo capture page (after billing is created)
+exports.renderBillingPhotoPage = async (req, res) => {
+  try {
+    const billing = await Billing.findByPk(req.params.id, {
+      include: [{ model: Patient }]
+    });
+
+    if (!billing) {
+      return res.status(404).send('Billing not found');
+    }
+
+    res.render('billing_photo', {
+      title: 'Patient Photo',
+      billing
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server Error');
+  }
+};
+
+// Save patient photo from webcam capture or file upload
+exports.uploadBillingPhoto = async (req, res) => {
+  try {
+    const billing = await Billing.findByPk(req.params.id);
+
+    if (!billing) {
+      return res.status(404).json({ message: 'Billing not found' });
+    }
+
+    if (req.file) {
+      await billing.update({
+        patientPhoto: `/uploads/billing_photos/${req.file.filename}`
+      });
+    }
+
+    res.json({
+      success: true,
+      redirect: `/billing/receipt/${billing.id}`
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
@@ -1173,6 +1315,15 @@ exports.deleteBilling = async (req, res) => {
         transaction: t
       });
       console.log(`Deleted ${mktDelResult} marketing commission records`);
+
+      // Delete medical report if any
+      const reportDelResult = await MedicalReport.destroy({
+        where: { BillingId: id },
+        transaction: t
+      });
+      if (reportDelResult > 0) {
+        console.log(`Deleted ${reportDelResult} medical report record(s)`);
+      }
       
       // Delete the billing record
       await billing.destroy({ transaction: t });
