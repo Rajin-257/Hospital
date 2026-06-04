@@ -1,5 +1,35 @@
 const Patient = require('../models/Patient');
+const User = require('../models/User');
 const { Op } = require('sequelize');
+
+function buildPatientAccessWhere(req) {
+  if (req.user?.role === 'receptionist') {
+    return { createdBy: req.user.id };
+  }
+  return {};
+}
+
+function buildBillingAccessWhere(req) {
+  if (req.user?.role === 'receptionist') {
+    return { createdBy: req.user.id };
+  }
+  return {};
+}
+
+const patientCreatorInclude = {
+  model: User,
+  as: 'creator',
+  attributes: ['id', 'username']
+};
+
+async function findPatientForUser(req, id) {
+  return Patient.findOne({
+    where: { id, ...buildPatientAccessWhere(req) },
+    include: [patientCreatorInclude]
+  });
+}
+
+exports.buildPatientAccessWhere = buildPatientAccessWhere;
 
 // Get all patients
 exports.getAllPatients = async (req, res) => {
@@ -9,7 +39,7 @@ exports.getAllPatients = async (req, res) => {
     const offset = (page - 1) * limit;
     
     // Build query conditions
-    const whereConditions = {};
+    const whereConditions = { ...buildPatientAccessWhere(req) };
     
     // Search filter
     if (search) {
@@ -25,6 +55,7 @@ exports.getAllPatients = async (req, res) => {
     // Count total patients matching filters
     const { count, rows: patients } = await Patient.findAndCountAll({
       where: whereConditions,
+      include: [patientCreatorInclude],
       order: [['createdAt', 'DESC']],
       limit,
       offset
@@ -58,7 +89,7 @@ exports.getAllPatients = async (req, res) => {
 // Get single patient
 exports.getPatient = async (req, res) => {
   try {
-    const patient = await Patient.findByPk(req.params.id);
+    const patient = await findPatientForUser(req, req.params.id);
     
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found' });
@@ -106,7 +137,8 @@ exports.createPatient = async (req, res) => {
       height,
       weight,
       nidPassportNo,
-      bloodGroup
+      bloodGroup,
+      createdBy: req.user?.id || null
     });
     
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
@@ -129,7 +161,7 @@ exports.updatePatient = async (req, res) => {
       return res.status(400).json({ message: 'Patient Name, Mobile No, Gender, Date of Birth, and NID / Passport No are required' });
     }
     
-    let patient = await Patient.findByPk(req.params.id);
+    let patient = await findPatientForUser(req, req.params.id);
     
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found' });
@@ -158,7 +190,7 @@ exports.updatePatient = async (req, res) => {
 // Delete patient
 exports.deletePatient = async (req, res) => {
   try {
-    const patient = await Patient.findByPk(req.params.id);
+    const patient = await findPatientForUser(req, req.params.id);
     
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found' });
@@ -180,6 +212,7 @@ exports.searchPatients = async (req, res) => {
     
     const patients = await Patient.findAll({
       where: {
+        ...buildPatientAccessWhere(req),
         [Op.or]: [
           { name: { [Op.like]: `%${term}%` } },
           { patientId: { [Op.like]: `%${term}%` } },
@@ -187,7 +220,8 @@ exports.searchPatients = async (req, res) => {
           { email: { [Op.like]: `%${term}%` } },
           { nidPassportNo: { [Op.like]: `%${term}%` } }
         ]
-      }
+      },
+      include: [patientCreatorInclude]
     });
     
     res.json(patients);
@@ -209,7 +243,7 @@ exports.getPatientDashboard = async (req, res) => {
     const Cabin = require('../models/Cabin');
     const Test = require('../models/Test');
     
-    const patient = await Patient.findByPk(req.params.id);
+    const patient = await findPatientForUser(req, req.params.id);
     
     if (!patient) {
       return res.status(404).render('error', {
@@ -243,7 +277,10 @@ exports.getPatientDashboard = async (req, res) => {
       
       // Get invoices (billings)
       Billing.findAll({
-        where: { PatientId: patient.id },
+        where: {
+          PatientId: patient.id,
+          ...buildBillingAccessWhere(req)
+        },
         order: [['createdAt', 'DESC']]
       })
     ]);

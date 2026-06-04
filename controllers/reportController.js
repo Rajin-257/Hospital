@@ -6,7 +6,16 @@ const CabinBooking = require('../models/CabinBooking');
 const Doctor = require('../models/Doctor');
 const Test = require('../models/Test');
 const DoctorCommission = require('../models/DoctorCommission');
+const User = require('../models/User');
 const { Op } = require('sequelize');
+const { buildPatientAccessWhere } = require('./patientController');
+
+function buildBillingAccessWhere(req) {
+  if (req.user?.role === 'receptionist') {
+    return { createdBy: req.user.id };
+  }
+  return {};
+}
 
 // Get reports dashboard
 exports.getReportsDashboard = async (req, res) => {
@@ -60,7 +69,9 @@ exports.getReportsDashboard = async (req, res) => {
 // Get patient statistics
 exports.getPatientStats = async (req, res) => {
   try {
-    const totalPatients = await Patient.count();
+    const accessWhere = buildPatientAccessWhere(req);
+
+    const totalPatients = await Patient.count({ where: accessWhere });
     
     // Get patients registered in the last 30 days
     const thirtyDaysAgo = new Date();
@@ -68,6 +79,7 @@ exports.getPatientStats = async (req, res) => {
     
     const newPatients = await Patient.count({
       where: {
+        ...accessWhere,
         createdAt: {
           [Op.gte]: thirtyDaysAgo
         }
@@ -82,6 +94,7 @@ exports.getPatientStats = async (req, res) => {
     
     const todayPatients = await Patient.count({
       where: {
+        ...accessWhere,
         createdAt: {
           [Op.gte]: today,
           [Op.lt]: tomorrow
@@ -161,8 +174,10 @@ exports.getTestStats = async (req, res) => {
 // Get billing statistics
 exports.getBillingStats = async (req, res) => {
   try {
+    const billingAccessWhere = buildBillingAccessWhere(req);
+
     // Get total revenue
-    const billings = await Billing.findAll();
+    const billings = await Billing.findAll({ where: billingAccessWhere });
     const totalRevenue = billings.reduce((sum, bill) => sum + Number(bill.totalAmount), 0);
     const totalNet = billings.reduce((sum, bill) => sum + Number(bill.netPayable), 0);
     
@@ -177,6 +192,7 @@ exports.getBillingStats = async (req, res) => {
     
     const todayBillings = await Billing.findAll({
       where: {
+        ...billingAccessWhere,
         billDate: {
           [Op.gte]: today,
           [Op.lt]: tomorrow
@@ -265,6 +281,8 @@ exports.getDailyBillingStats = async (req, res) => {
     const endDate = new Date();
     endDate.setHours(23, 59, 59, 999);
     
+    const billingAccessWhere = buildBillingAccessWhere(req);
+
     // Get dates for the range
     const dateRange = [];
     for (let i = 0; i < days; i++) {
@@ -281,6 +299,7 @@ exports.getDailyBillingStats = async (req, res) => {
         
         const billings = await Billing.findAll({
           where: {
+            ...billingAccessWhere,
             billDate: {
               [Op.gte]: date,
               [Op.lt]: nextDay
@@ -309,9 +328,12 @@ exports.getDailyBillingStats = async (req, res) => {
 // Get due invoice statistics
 exports.getDueInvoiceStats = async (req, res) => {
   try {
+    const billingAccessWhere = buildBillingAccessWhere(req);
+
     // Get count of invoices with due amount > 0
     const dueInvoiceCount = await Billing.count({
       where: {
+        ...billingAccessWhere,
         dueAmount: {
           [Op.gt]: 0
         }
@@ -322,6 +344,7 @@ exports.getDueInvoiceStats = async (req, res) => {
     const dueInvoices = await Billing.findAll({
       attributes: ['dueAmount'],
       where: {
+        ...billingAccessWhere,
         dueAmount: {
           [Op.gt]: 0
         }
@@ -348,7 +371,7 @@ exports.getAllBillingRecords = async (req, res) => {
     const offset = (page - 1) * limit;
     
     // Build where clause based on filters
-    let whereClause = {};
+    let whereClause = { ...buildBillingAccessWhere(req) };
     let patientWhereClause = {};
     
     // Date range filter
@@ -477,6 +500,7 @@ exports.getPartialPaymentBills = async (req, res) => {
     
     // Build where clause based on filters
     let whereClause = {
+      ...buildBillingAccessWhere(req),
       dueAmount: {
         [Op.gt]: 0
       },
@@ -568,6 +592,7 @@ exports.getFullyPaidBills = async (req, res) => {
     
     // Build where clause based on filters
     let whereClause = {
+      ...buildBillingAccessWhere(req),
       dueAmount: 0
     };
     let patientWhereClause = {};
@@ -654,6 +679,7 @@ exports.getDuePaymentBills = async (req, res) => {
     
     // Build where clause based on filters
     let whereClause = {
+      ...buildBillingAccessWhere(req),
       dueAmount: {
         [Op.gt]: 0
       },
@@ -744,6 +770,7 @@ exports.getDailyBillingReport = async (req, res) => {
     
     // Build where clause based on filters
     let whereClause = {
+      ...buildBillingAccessWhere(req),
       createdAt: {
         [Op.between]: [startOfDay, endOfDay]
       }
@@ -810,6 +837,8 @@ exports.getMonthlyRevenueReport = async (req, res) => {
     const { year } = req.query;
     const selectedYear = year || new Date().getFullYear();
     
+    const billingAccessWhere = buildBillingAccessWhere(req);
+
     const months = Array.from({ length: 12 }, (_, i) => {
       const startDate = new Date(selectedYear, i, 1);
       const endDate = new Date(selectedYear, i + 1, 0);
@@ -820,6 +849,7 @@ exports.getMonthlyRevenueReport = async (req, res) => {
       months.map(async ({ startDate, endDate }, index) => {
         const billings = await Billing.findAll({
           where: {
+            ...billingAccessWhere,
             createdAt: {
               [Op.between]: [startDate, endDate]
             }
@@ -846,12 +876,12 @@ exports.getMonthlyRevenueReport = async (req, res) => {
 // Get all payment types report (both paid and due)
 exports.getAllPaymentTypesReport = async (req, res) => {
   try {
-    const { startDate, endDate, searchType, searchQuery, page = 1 } = req.query;
+    const { startDate, endDate, searchType, searchQuery, collectedBy = '', page = 1 } = req.query;
     const limit = 15;
     const offset = (page - 1) * limit;
     
     // Build where clause based on filters
-    let whereClause = {};
+    let whereClause = { ...buildBillingAccessWhere(req) };
     let patientWhereClause = {};
     
     // Date range filter
@@ -880,13 +910,30 @@ exports.getAllPaymentTypesReport = async (req, res) => {
         // If 'all' or any other value, we don't add specific filter criteria
       }
     }
+
+    const selectedCollectedBy = String(collectedBy || '').trim();
+    const canFilterByCollector = ['softadmin', 'admin'].includes(req.user?.role);
+    if (canFilterByCollector && selectedCollectedBy) {
+      const collectorId = parseInt(selectedCollectedBy, 10);
+      if (!Number.isNaN(collectorId)) {
+        whereClause.createdBy = collectorId;
+      }
+    }
     
     const { count, rows: bills } = await Billing.findAndCountAll({
       where: whereClause,
-      include: [{ 
-        model: Patient,
-        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
-      }],
+      include: [
+        { 
+          model: Patient,
+          where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'username'],
+          required: false
+        }
+      ],
       order: [['billDate', 'DESC']],
       limit,
       offset,
@@ -896,11 +943,29 @@ exports.getAllPaymentTypesReport = async (req, res) => {
     // Get all records for summary calculation (without pagination)
     const allBills = await Billing.findAll({
       where: whereClause,
-      include: [{ 
-        model: Patient,
-        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
-      }]
+      include: [
+        { 
+          model: Patient,
+          where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'username'],
+          required: false
+        }
+      ]
     });
+
+    const collectors = canFilterByCollector
+      ? await User.findAll({
+          where: {
+            isActive: true
+          },
+          attributes: ['id', 'username'],
+          order: [['username', 'ASC']]
+        })
+      : [];
     
     const totalPages = Math.ceil(count / limit);
     
@@ -915,6 +980,8 @@ exports.getAllPaymentTypesReport = async (req, res) => {
       endDate: endDate || '',
       searchType: searchType || 'all',
       searchQuery: searchQuery || '',
+      collectedBy: selectedCollectedBy,
+      collectors,
       currentPage: parseInt(page),
       totalPages,
       totalRecords: count
@@ -985,6 +1052,7 @@ exports.getAllBillingRecordsApi = async (req, res) => {
     const { limit = 5 } = req.query;
     
     const bills = await Billing.findAll({
+      where: buildBillingAccessWhere(req),
       include: [
         { model: Patient }
       ],
@@ -1019,10 +1087,10 @@ exports.getAllBillingRecordsApi = async (req, res) => {
 // Get all billing records for printing (no pagination)
 exports.getBillingRecordsForPrint = async (req, res) => {
   try {
-    const { startDate, endDate, searchType, searchQuery, reportType } = req.query;
+    const { startDate, endDate, searchType, searchQuery, collectedBy = '', reportType } = req.query;
     
     // Build where clause based on report type and filters
-    let whereClause = {};
+    let whereClause = { ...buildBillingAccessWhere(req) };
     let patientWhereClause = {};
     
     // Apply report type specific filters
@@ -1076,13 +1144,30 @@ exports.getBillingRecordsForPrint = async (req, res) => {
           break;
       }
     }
+
+    const selectedCollectedBy = String(collectedBy || '').trim();
+    const canFilterByCollector = ['softadmin', 'admin'].includes(req.user?.role);
+    if (reportType === 'all-payment-types' && canFilterByCollector && selectedCollectedBy) {
+      const collectorId = parseInt(selectedCollectedBy, 10);
+      if (!Number.isNaN(collectorId)) {
+        whereClause.createdBy = collectorId;
+      }
+    }
     
     const bills = await Billing.findAll({
       where: whereClause,
-      include: [{ 
-        model: Patient,
-        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
-      }],
+      include: [
+        { 
+          model: Patient,
+          where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'username'],
+          required: false
+        }
+      ],
       order: [['billDate', 'DESC']]
     });
     

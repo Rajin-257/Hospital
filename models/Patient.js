@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
+const User = require('./User');
 
 const Patient = sequelize.define('Patient', {
   id: {
@@ -49,7 +50,17 @@ const Patient = sequelize.define('Patient', {
   bloodGroup: {
     type: DataTypes.ENUM('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'),
     allowNull: true
+  },
+  createdBy: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
   }
 });
+
+Patient.belongsTo(User, { as: 'creator', foreignKey: 'createdBy' });
 
 module.exports = Patient;

@@ -3,6 +3,13 @@ const MedicalReport = require('../models/MedicalReport');
 const Patient = require('../models/Patient');
 const { Op } = require('sequelize');
 
+function buildBillingAccessWhere(req) {
+  if (req.user?.role === 'receptionist') {
+    return { createdBy: req.user.id };
+  }
+  return {};
+}
+
 function todayDateStr() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -272,7 +279,11 @@ function buildExaminationData(body) {
 exports.renderMedicalReportForm = async (req, res) => {
   try {
     const billingId = req.params.id;
-    const billing = await Billing.findByPk(billingId, {
+    const billing = await Billing.findOne({
+      where: {
+        id: billingId,
+        ...buildBillingAccessWhere(req)
+      },
       include: [{ model: Patient }]
     });
 
@@ -284,6 +295,7 @@ exports.renderMedicalReportForm = async (req, res) => {
     }
 
     const allBillings = await Billing.findAll({
+      where: buildBillingAccessWhere(req),
       include: [{ model: Patient, attributes: ['id', 'name', 'patientId', 'height', 'weight'] }],
       order: [['id', 'DESC']],
       attributes: ['id', 'billNumber', 'billDate']
@@ -336,7 +348,11 @@ exports.renderMedicalReportForm = async (req, res) => {
 exports.saveMedicalReport = async (req, res) => {
   try {
     const billingId = parseInt(req.body.invoice_id || req.body.billingId || req.params.id, 10);
-    const billing = await Billing.findByPk(billingId, {
+    const billing = await Billing.findOne({
+      where: {
+        id: billingId,
+        ...buildBillingAccessWhere(req)
+      },
       include: [{ model: Patient }]
     });
 
@@ -394,7 +410,11 @@ exports.saveMedicalReport = async (req, res) => {
 
 exports.renderMedicalReportPrint = async (req, res) => {
   try {
-    const billing = await Billing.findByPk(req.params.id, {
+    const billing = await Billing.findOne({
+      where: {
+        id: req.params.id,
+        ...buildBillingAccessWhere(req)
+      },
       include: [{ model: Patient }]
     });
 

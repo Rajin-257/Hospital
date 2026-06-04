@@ -64,6 +64,19 @@
               <label for="searchQuery" class="form-label">Search Term</label>
               <input type="text" class="form-control" id="searchQuery" name="searchQuery" value="<%= locals.searchQuery || '' %>" placeholder="Enter search term...">
             </div>
+            <% if (reportType === 'all-payment-types' && locals.user && ['softadmin', 'admin'].includes(user.role)) { %>
+            <div class="col-md-3">
+              <label for="collectedBy" class="form-label">Collected By</label>
+              <select class="form-select" id="collectedBy" name="collectedBy">
+                <option value="">All Collectors</option>
+                <% (locals.collectors || []).forEach(function(collector) { %>
+                  <option value="<%= collector.id %>" <%= String(locals.collectedBy || '') === String(collector.id) ? 'selected' : '' %>>
+                    <%= collector.username %>
+                  </option>
+                <% }); %>
+              </select>
+            </div>
+            <% } %>
             <div class="col-12 text-end">
               <button type="submit" class="btn btn-primary">
                 <i class="fas fa-filter me-1"></i> Apply Filters
@@ -147,6 +160,9 @@
               <th>Net</th>
               <th>Paid</th>
               <th>Due</th>
+              <% if (reportType === 'all-payment-types') { %>
+                <th class="no-print">Created By</th>
+              <% } %>
               <th>Status</th>
               <th class="no-print">Actions</th>
             </tr>
@@ -166,6 +182,9 @@
                   <td class="<%= parseFloat(bill.dueAmount || 0) > 0 ? 'text-danger' : '' %>">
                     <%= parseFloat(bill.dueAmount || 0) > 0 ? ' ' + parseFloat(bill.dueAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'Paid' %>
                   </td>
+                  <% if (reportType === 'all-payment-types') { %>
+                    <td class="no-print"><%= bill.creator ? bill.creator.username : 'N/A' %></td>
+                  <% } %>
                   <td>
                     <span class="badge bg-<%= bill.status === 'paid' ? 'success' : (bill.status === 'partial' ? 'warning' : 'danger') %>">
                       <%= bill.status === 'paid' ? 'Paid' : (bill.status === 'partial' ? 'Partial' : 'Due') %>
@@ -186,7 +205,7 @@
               <% }); %>
             <% } else { %>
               <tr>
-                <td colspan="11" class="text-center">No billing records found</td>
+                <td colspan="<%= reportType === 'all-payment-types' ? 12 : 11 %>" class="text-center">No billing records found</td>
               </tr>
             <% } %>
           </tbody>
@@ -200,7 +219,7 @@
                         currentPage: currentPage,
                         totalPages: totalPages,
                         baseUrl: '',
-                        queryParams: '&startDate=' + encodeURIComponent(startDate || '') + '&endDate=' + encodeURIComponent(endDate || '') + '&searchType=' + encodeURIComponent(searchType || '') + '&searchQuery=' + encodeURIComponent(searchQuery || ''),
+                        queryParams: '&startDate=' + encodeURIComponent(startDate || '') + '&endDate=' + encodeURIComponent(endDate || '') + '&searchType=' + encodeURIComponent(searchType || '') + '&searchQuery=' + encodeURIComponent(searchQuery || '') + '&collectedBy=' + encodeURIComponent(locals.collectedBy || ''),
                         paginationLabel: 'Billing pagination'
                     }) %>
                 </div>
@@ -612,6 +631,7 @@
         const endDate = '<%= locals.endDate || "" %>';
         const searchType = '<%= locals.searchType || "" %>';
         const searchQuery = '<%= locals.searchQuery || "" %>';
+        const collectedBy = '<%= locals.collectedBy || "" %>';
         
         // Fetch all data for printing
         const params = new URLSearchParams();
@@ -620,6 +640,7 @@
         if (endDate) params.append('endDate', endDate);
         if (searchType) params.append('searchType', searchType);
         if (searchQuery) params.append('searchQuery', searchQuery);
+        if (collectedBy) params.append('collectedBy', collectedBy);
         
         const response = await fetch(`/reports/billing-print-data?${params.toString()}`);
         if (!response.ok) throw new Error('Failed to fetch print data');
@@ -741,7 +762,6 @@
           const statusBadge = bill.status === 'paid' ? 'success' : (bill.status === 'partial' ? 'warning' : 'danger');
           const statusText = bill.status === 'paid' ? 'Paid' : (bill.status === 'partial' ? 'Partial' : 'Due');
           const dueDisplay = parseFloat(bill.dueAmount || 0) > 0 ? formatCurrency(parseFloat(bill.dueAmount || 0)) : 'Paid';
-          
                      tableRows += `
              <tr class="${statusClass}">
                <td>${bill.billNumber || 'N/A'}</td>

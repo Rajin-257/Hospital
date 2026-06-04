@@ -2,6 +2,7 @@ const Appointment = require('../models/Appointment');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const { Op } = require('sequelize');
+const { buildPatientAccessWhere } = require('./patientController');
 
 // Helper function to format dates
 function formatDate(dateString) {
@@ -90,7 +91,9 @@ exports.getAllAppointments = async (req, res) => {
     });
     
     const patients = await Patient.findAll({
-      attributes: ['id', 'name', 'patientId']
+      where: buildPatientAccessWhere(req),
+      attributes: ['id', 'name', 'patientId'],
+      order: [['name', 'ASC']]
     });
     
     const doctors = await Doctor.findAll({

@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 const Patient = require('./Patient');
+const User = require('./User');
 
 const Billing = sequelize.define('Billing', {
   id: {
@@ -75,10 +76,19 @@ const Billing = sequelize.define('Billing', {
   patientPhoto: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  createdBy: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
   }
 });
 
 // Relationships
 Billing.belongsTo(Patient);
+Billing.belongsTo(User, { as: 'creator', foreignKey: 'createdBy' });
 
 module.exports = Billing;

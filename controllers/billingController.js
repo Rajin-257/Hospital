@@ -12,11 +12,22 @@ const MedicalReport = require('../models/MedicalReport');
 const User = require('../models/User');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
+const { buildPatientAccessWhere } = require('./patientController');
+
+function buildBillingAccessWhere(req) {
+  if (req.user?.role === 'receptionist') {
+    return { createdBy: req.user.id };
+  }
+  return {};
+}
 
 // Render billing page
 exports.renderBillingPage = async (req, res) => {
   try {
-    const patients = await Patient.findAll();
+    const patients = await Patient.findAll({
+      where: buildPatientAccessWhere(req),
+      order: [['name', 'ASC']]
+    });
     const doctors = await Doctor.findAll();
     const tests = await Test.findAll();
     const cabins = await Cabin.findAll();
@@ -75,17 +86,28 @@ exports.renderTodayInvoiceList = async (req, res) => {
       endDate = todayStr,
       searchType = 'all',
       searchQuery = '',
-      status = 'all'
+      status = 'all',
+      createdBy = ''
     } = req.query;
 
     const fromDate = startDate || todayStr;
     const toDate = endDate || todayStr;
+    const selectedCreatedBy = String(createdBy || '').trim();
+    const canFilterByCreator = ['softadmin', 'admin'].includes(req.user?.role);
 
     const whereClause = {
       billDate: {
         [Op.between]: [fromDate, toDate]
-      }
+      },
+      ...buildBillingAccessWhere(req)
     };
+
+    if (canFilterByCreator && selectedCreatedBy) {
+      const creatorId = parseInt(selectedCreatedBy, 10);
+      if (!Number.isNaN(creatorId)) {
+        whereClause.createdBy = creatorId;
+      }
+    }
 
     if (status === 'Fit' || status === 'Unfit' || status === 'Held UP') {
       whereClause['$MedicalReport.status$'] = status;
@@ -131,7 +153,13 @@ exports.renderTodayInvoiceList = async (req, res) => {
           model: Patient,
           where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
         },
-        { model: MedicalReport, required: false }
+        { model: MedicalReport, required: false },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'username'],
+          required: false
+        }
       ],
       subQuery: false,
       order: [['billDate', 'DESC'], ['createdAt', 'DESC']]
@@ -141,15 +169,26 @@ exports.renderTodayInvoiceList = async (req, res) => {
       bills = bills.filter((bill) => !bill.MedicalReport);
     }
 
+    const creators = canFilterByCreator
+      ? await User.findAll({
+          where: { isActive: true },
+          attributes: ['id', 'username'],
+          order: [['username', 'ASC']]
+        })
+      : [];
+
     res.render('billing_invoice_list', {
       title: 'Invoice List',
       bills,
+      creators,
+      canFilterByCreator,
       filters: {
         startDate: fromDate,
         endDate: toDate,
         searchType,
         searchQuery: term,
-        status
+        status,
+        createdBy: selectedCreatedBy
       },
       totalRecords: bills.length
     });
@@ -255,6 +294,7 @@ exports.createBilling = async (req, res) => {
       dueAmount,
       status,
       items: JSON.parse(items),
+      createdBy: req.user?.id || null,
       marketingManagerId: marketingManagerId || null,
       marketingcommission: marketingcommission,
       referralNote: referralNote || null
@@ -431,7 +471,11 @@ exports.createBilling = async (req, res) => {
 // Render patient photo capture page (after billing is created)
 exports.renderBillingPhotoPage = async (req, res) => {
   try {
-    const billing = await Billing.findByPk(req.params.id, {
+    const billing = await Billing.findOne({
+      where: {
+        id: req.params.id,
+        ...buildBillingAccessWhere(req)
+      },
       include: [{ model: Patient }]
     });
 
@@ -452,7 +496,12 @@ exports.renderBillingPhotoPage = async (req, res) => {
 // Save patient photo from webcam capture or file upload
 exports.uploadBillingPhoto = async (req, res) => {
   try {
-    const billing = await Billing.findByPk(req.params.id);
+    const billing = await Billing.findOne({
+      where: {
+        id: req.params.id,
+        ...buildBillingAccessWhere(req)
+      }
+    });
 
     if (!billing) {
       return res.status(404).json({ message: 'Billing not found' });
@@ -477,7 +526,11 @@ exports.uploadBillingPhoto = async (req, res) => {
 // Get billing by ID
 exports.getBilling = async (req, res) => {
   try {
-    const billing = await Billing.findByPk(req.params.id, {
+    const billing = await Billing.findOne({
+      where: {
+        id: req.params.id,
+        ...buildBillingAccessWhere(req)
+      },
       include: [
         { model: Patient }
       ]
@@ -516,7 +569,10 @@ exports.getBillingsByPatient = async (req, res) => {
     const { patientId } = req.params;
     
     const billings = await Billing.findAll({
-      where: { PatientId: patientId },
+      where: {
+        PatientId: patientId,
+        ...buildBillingAccessWhere(req)
+      },
       order: [['billDate', 'DESC']]
     });
     
@@ -532,7 +588,12 @@ exports.processPayment = async (req, res) => {
   try {
     const { paidAmount, paymentMethod, secondDiscountPercentage, secondDiscountAmount } = req.body;
     
-    let billing = await Billing.findByPk(req.params.id);
+    let billing = await Billing.findOne({
+      where: {
+        id: req.params.id,
+        ...buildBillingAccessWhere(req)
+      }
+    });
     
     if (!billing) {
       return res.status(404).json({ message: 'Billing not found' });
@@ -640,7 +701,11 @@ exports.editBillingPage = async (req, res) => {
     const { id } = req.params;
     
     // Find the billing with all related data
-    const billing = await Billing.findByPk(id, {
+    const billing = await Billing.findOne({
+      where: {
+        id,
+        ...buildBillingAccessWhere(req)
+      },
       include: [
         { model: Patient }
       ]
@@ -659,7 +724,10 @@ exports.editBillingPage = async (req, res) => {
     }
     
     // Get data needed for the billing page
-    const patients = await Patient.findAll();
+    const patients = await Patient.findAll({
+      where: buildPatientAccessWhere(req),
+      order: [['name', 'ASC']]
+    });
     const doctors = await Doctor.findAll();
     const tests = await Test.findAll();
     const cabins = await Cabin.findAll();
@@ -726,7 +794,12 @@ exports.updateBilling = async (req, res) => {
     } = req.body;
     
     // Find the billing
-    const billing = await Billing.findByPk(id);
+    const billing = await Billing.findOne({
+      where: {
+        id,
+        ...buildBillingAccessWhere(req)
+      }
+    });
     
     if (!billing) {
       return res.status(404).json({ message: 'Billing record not found' });
@@ -1165,7 +1238,12 @@ exports.deleteBilling = async (req, res) => {
     const { id } = req.params;
     
     // Find the billing with items
-    const billing = await Billing.findByPk(id);
+    const billing = await Billing.findOne({
+      where: {
+        id,
+        ...buildBillingAccessWhere(req)
+      }
+    });
     
     if (!billing) {
       return res.status(404).json({ message: 'Billing record not found' });
