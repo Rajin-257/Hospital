@@ -1,4 +1,11 @@
+const path = require('path');
+const fs = require('fs');
+const { ZipArchive } = require('archiver');
 const Billing = require('../models/Billing');
+const Setting = require('../models/Setting');
+const medicalReportController = require('./medicalReportController');
+const { launchPdfBrowser } = require('../utils/reportPdf');
+const { generateAiPortrait } = require('../utils/openaiPortrait');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const Test = require('../models/Test');
@@ -19,6 +26,135 @@ function buildBillingAccessWhere(req) {
     return { createdBy: req.user.id };
   }
   return {};
+}
+
+function escapeCsvValue(value) {
+  const str = value == null ? '' : String(value);
+  if (/[",\r\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function formatInvoiceListDate(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return String(d);
+  return dt.toLocaleDateString('en-GB');
+}
+
+async function fetchFilteredInvoices(req) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const {
+    startDate = todayStr,
+    endDate = todayStr,
+    searchType = 'all',
+    searchQuery = '',
+    status = 'all',
+    createdBy = ''
+  } = req.query;
+
+  const fromDate = startDate || todayStr;
+  const toDate = endDate || todayStr;
+  const selectedCreatedBy = String(createdBy || '').trim();
+  const canFilterByCreator = ['softadmin', 'admin'].includes(req.user?.role);
+
+  const whereClause = {
+    billDate: {
+      [Op.between]: [fromDate, toDate]
+    },
+    ...buildBillingAccessWhere(req)
+  };
+
+  if (canFilterByCreator && selectedCreatedBy) {
+    const creatorId = parseInt(selectedCreatedBy, 10);
+    if (!Number.isNaN(creatorId)) {
+      whereClause.createdBy = creatorId;
+    }
+  }
+
+  if (status === 'Fit' || status === 'Unfit' || status === 'Held UP') {
+    whereClause['$MedicalReport.status$'] = status;
+  }
+
+  const patientWhereClause = {};
+  const term = String(searchQuery || '').trim();
+
+  if (term && searchType !== 'all') {
+    switch (searchType) {
+      case 'billNumber':
+        whereClause.billNumber = { [Op.like]: `%${term}%` };
+        break;
+      case 'patientId':
+        patientWhereClause.patientId = { [Op.like]: `%${term}%` };
+        break;
+      case 'patientName':
+        patientWhereClause.name = { [Op.like]: `%${term}%` };
+        break;
+      case 'phone':
+        patientWhereClause.phone = { [Op.like]: `%${term}%` };
+        break;
+      case 'passport':
+        patientWhereClause.nidPassportNo = { [Op.like]: `%${term}%` };
+        break;
+      default:
+        break;
+    }
+  } else if (term) {
+    whereClause[Op.or] = [
+      { billNumber: { [Op.like]: `%${term}%` } },
+      { '$Patient.name$': { [Op.like]: `%${term}%` } },
+      { '$Patient.patientId$': { [Op.like]: `%${term}%` } },
+      { '$Patient.phone$': { [Op.like]: `%${term}%` } },
+      { '$Patient.nidPassportNo$': { [Op.like]: `%${term}%` } }
+    ];
+  }
+
+  let bills = await Billing.findAll({
+    where: whereClause,
+    include: [
+      {
+        model: Patient,
+        where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
+      },
+      { model: MedicalReport, required: false },
+      {
+        model: User,
+        as: 'creator',
+        attributes: ['id', 'username'],
+        required: false
+      }
+    ],
+    subQuery: false,
+    order: [['billDate', 'DESC'], ['createdAt', 'DESC']]
+  });
+
+  if (status === 'none') {
+    bills = bills.filter((bill) => !bill.MedicalReport);
+  }
+
+  const creators = canFilterByCreator
+    ? await User.findAll({
+        where: { isActive: true },
+        attributes: ['id', 'username'],
+        order: [['username', 'ASC']]
+      })
+    : [];
+
+  return {
+    bills,
+    creators,
+    canFilterByCreator,
+    filters: {
+      startDate: fromDate,
+      endDate: toDate,
+      searchType,
+      searchQuery: term,
+      status,
+      createdBy: selectedCreatedBy
+    },
+    totalRecords: bills.length
+  };
 }
 
 // Render billing page
@@ -80,117 +216,15 @@ exports.renderBillingPage = async (req, res) => {
 
 exports.renderTodayInvoiceList = async (req, res) => {
   try {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const {
-      startDate = todayStr,
-      endDate = todayStr,
-      searchType = 'all',
-      searchQuery = '',
-      status = 'all',
-      createdBy = ''
-    } = req.query;
-
-    const fromDate = startDate || todayStr;
-    const toDate = endDate || todayStr;
-    const selectedCreatedBy = String(createdBy || '').trim();
-    const canFilterByCreator = ['softadmin', 'admin'].includes(req.user?.role);
-
-    const whereClause = {
-      billDate: {
-        [Op.between]: [fromDate, toDate]
-      },
-      ...buildBillingAccessWhere(req)
-    };
-
-    if (canFilterByCreator && selectedCreatedBy) {
-      const creatorId = parseInt(selectedCreatedBy, 10);
-      if (!Number.isNaN(creatorId)) {
-        whereClause.createdBy = creatorId;
-      }
-    }
-
-    if (status === 'Fit' || status === 'Unfit' || status === 'Held UP') {
-      whereClause['$MedicalReport.status$'] = status;
-    }
-
-    const patientWhereClause = {};
-    const term = String(searchQuery || '').trim();
-
-    if (term && searchType !== 'all') {
-      switch (searchType) {
-        case 'billNumber':
-          whereClause.billNumber = { [Op.like]: `%${term}%` };
-          break;
-        case 'patientId':
-          patientWhereClause.patientId = { [Op.like]: `%${term}%` };
-          break;
-        case 'patientName':
-          patientWhereClause.name = { [Op.like]: `%${term}%` };
-          break;
-        case 'phone':
-          patientWhereClause.phone = { [Op.like]: `%${term}%` };
-          break;
-        case 'passport':
-          patientWhereClause.nidPassportNo = { [Op.like]: `%${term}%` };
-          break;
-        default:
-          break;
-      }
-    } else if (term) {
-      whereClause[Op.or] = [
-        { billNumber: { [Op.like]: `%${term}%` } },
-        { '$Patient.name$': { [Op.like]: `%${term}%` } },
-        { '$Patient.patientId$': { [Op.like]: `%${term}%` } },
-        { '$Patient.phone$': { [Op.like]: `%${term}%` } },
-        { '$Patient.nidPassportNo$': { [Op.like]: `%${term}%` } }
-      ];
-    }
-
-    let bills = await Billing.findAll({
-      where: whereClause,
-      include: [
-        {
-          model: Patient,
-          where: Object.keys(patientWhereClause).length > 0 ? patientWhereClause : undefined
-        },
-        { model: MedicalReport, required: false },
-        {
-          model: User,
-          as: 'creator',
-          attributes: ['id', 'username'],
-          required: false
-        }
-      ],
-      subQuery: false,
-      order: [['billDate', 'DESC'], ['createdAt', 'DESC']]
-    });
-
-    if (status === 'none') {
-      bills = bills.filter((bill) => !bill.MedicalReport);
-    }
-
-    const creators = canFilterByCreator
-      ? await User.findAll({
-          where: { isActive: true },
-          attributes: ['id', 'username'],
-          order: [['username', 'ASC']]
-        })
-      : [];
+    const { bills, creators, canFilterByCreator, filters, totalRecords } = await fetchFilteredInvoices(req);
 
     res.render('billing_invoice_list', {
       title: 'Invoice List',
       bills,
       creators,
       canFilterByCreator,
-      filters: {
-        startDate: fromDate,
-        endDate: toDate,
-        searchType,
-        searchQuery: term,
-        status,
-        createdBy: selectedCreatedBy
-      },
-      totalRecords: bills.length
+      filters,
+      totalRecords
     });
   } catch (error) {
     console.error(error);
@@ -198,6 +232,201 @@ exports.renderTodayInvoiceList = async (req, res) => {
       title: 'Error',
       message: 'Failed to load invoices'
     });
+  }
+};
+
+exports.downloadTodayInvoiceList = async (req, res) => {
+  try {
+    const { bills, filters } = await fetchFilteredInvoices(req);
+    const headers = [
+      'SL',
+      'Report Date',
+      'Invoice No.',
+      'Passport No.',
+      'Patient Name',
+      'Status',
+      'Created By',
+      'Created Date'
+    ];
+
+    const rows = bills.map((bill, index) => [
+      index + 1,
+      bill.MedicalReport ? formatInvoiceListDate(bill.MedicalReport.reportDate) : '',
+      bill.billNumber,
+      bill.Patient && bill.Patient.nidPassportNo ? bill.Patient.nidPassportNo : '',
+      bill.Patient ? bill.Patient.name : 'Unknown',
+      bill.MedicalReport && bill.MedicalReport.status ? bill.MedicalReport.status : '',
+      bill.creator ? bill.creator.username : '',
+      formatInvoiceListDate(bill.createdAt)
+    ]);
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map(escapeCsvValue).join(','))
+      .join('\r\n');
+
+    const filename = `invoices-${filters.startDate}-to-${filters.endDate}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send('\uFEFF' + csv);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Failed to download invoices');
+  }
+};
+
+exports.downloadPassportPhoto = async (req, res) => {
+  try {
+    const billing = await Billing.findOne({
+      where: {
+        id: req.params.id,
+        ...buildBillingAccessWhere(req)
+      },
+      include: [{ model: Patient }]
+    });
+
+    if (!billing || !billing.passportPhoto) {
+      return res.status(404).send('Passport picture not found');
+    }
+
+    const relativePath = billing.passportPhoto.replace(/^\//, '');
+    const filePath = path.join(__dirname, '../public', relativePath);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).send('Passport picture file not found');
+    }
+
+    const ext = path.extname(filePath) || '.jpg';
+    const passportNo = (billing.Patient?.nidPassportNo || 'passport').replace(/[^\w.-]+/g, '_');
+    const billNumber = String(billing.billNumber || billing.id).replace(/[^\w.-]+/g, '_');
+    const filename = `${passportNo}-${billNumber}${ext}`;
+
+    res.download(filePath, filename);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Failed to download passport picture');
+  }
+};
+
+function sanitizeFileSegment(value, fallback) {
+  const cleaned = String(value || '')
+    .trim()
+    .replace(/[^\w.-]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return cleaned || fallback;
+}
+
+function buildBillingFolderBase(patient, bill, usedBases) {
+  let base = `${sanitizeFileSegment(patient?.nidPassportNo, 'passport')}_${sanitizeFileSegment(patient?.name, 'patient')}`;
+  if (usedBases.has(base)) {
+    base += `_${sanitizeFileSegment(bill.billNumber, String(bill.id))}`;
+  }
+  usedBases.add(base);
+  return base;
+}
+
+function resolvePublicFilePath(storedPath) {
+  if (!storedPath) {
+    return null;
+  }
+
+  const relativePath = String(storedPath).replace(/^\//, '');
+  const filePath = path.join(__dirname, '../public', relativePath);
+  return fs.existsSync(filePath) ? filePath : null;
+}
+
+function appendPublicFile(archive, storedPath, archivePath) {
+  const filePath = resolvePublicFilePath(storedPath);
+  if (!filePath) {
+    return false;
+  }
+
+  archive.file(filePath, { name: archivePath });
+  return true;
+}
+
+exports.downloadSelectedInvoiceBundle = async (req, res) => {
+  try {
+    const rawIds = req.body.ids ?? req.query.ids;
+    const ids = [...new Set(
+      (Array.isArray(rawIds) ? rawIds : String(rawIds || '').split(','))
+        .map((id) => parseInt(id, 10))
+        .filter((id) => !Number.isNaN(id))
+    )];
+
+    if (!ids.length) {
+      return res.status(400).send('Select at least one invoice');
+    }
+
+    const bills = await Billing.findAll({
+      where: {
+        id: { [Op.in]: ids },
+        ...buildBillingAccessWhere(req)
+      },
+      include: [
+        { model: Patient },
+        { model: MedicalReport, required: false }
+      ],
+      order: [['billDate', 'DESC'], ['createdAt', 'DESC']]
+    });
+
+    if (!bills.length) {
+      return res.status(404).send('No accessible invoices found for the selected items');
+    }
+
+    const settings = await Setting.findOne();
+    const usedBases = new Set();
+    let browser = null;
+
+    const archive = new ZipArchive({ zlib: { level: 9 } });
+    archive.on('error', (err) => {
+      throw err;
+    });
+
+    const zipName = `invoices-${new Date().toISOString().slice(0, 10)}.zip`;
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
+    archive.pipe(res);
+
+    try {
+      browser = await launchPdfBrowser();
+
+      for (const bill of bills) {
+        const base = buildBillingFolderBase(bill.Patient, bill, usedBases);
+        const folder = `${base}/`;
+
+        const profileExt = path.extname(bill.patientPhoto || '') || '.jpg';
+        const profileFile = `${base}_profile${profileExt}`;
+        appendPublicFile(archive, bill.patientPhoto, `${folder}${profileFile}`);
+
+        const passportExt = path.extname(bill.passportPhoto || '') || '.jpg';
+        const passportFile = `${base}_passport${passportExt}`;
+        appendPublicFile(archive, bill.passportPhoto, `${folder}${passportFile}`);
+
+        if (bill.MedicalReport) {
+          const reportPdf = await medicalReportController.renderMedicalReportPdfBuffer(
+            bill,
+            settings,
+            browser
+          );
+
+          if (reportPdf && reportPdf.length) {
+            const pdfBuffer = Buffer.isBuffer(reportPdf) ? reportPdf : Buffer.from(reportPdf);
+            archive.append(pdfBuffer, { name: `${folder}${base}_report.pdf` });
+          }
+        }
+      }
+
+      await archive.finalize();
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    if (!res.headersSent) {
+      res.status(500).send('Failed to download selected invoices');
+    }
   }
 };
 
@@ -493,6 +722,53 @@ exports.renderBillingPhotoPage = async (req, res) => {
   }
 };
 
+exports.generateAiPortrait = async (req, res) => {
+  try {
+    const billing = await Billing.findOne({
+      where: {
+        id: req.params.id,
+        ...buildBillingAccessWhere(req)
+      }
+    });
+
+    if (!billing) {
+      return res.status(404).json({ message: 'Billing not found' });
+    }
+
+    const photoFile = req.file;
+    if (!photoFile) {
+      return res.status(400).json({ message: 'Upload a patient profile photo first' });
+    }
+
+    const imageBuffer = await generateAiPortrait(photoFile.path);
+    const filename = `ai-${billing.id}-${Date.now()}.png`;
+    const outputPath = path.join(__dirname, '../public/uploads/billing_photos', filename);
+    fs.writeFileSync(outputPath, imageBuffer);
+
+    if (photoFile.path && fs.existsSync(photoFile.path) && !photoFile.filename.startsWith('ai-')) {
+      try {
+        fs.unlinkSync(photoFile.path);
+      } catch (unlinkErr) {
+        console.error('Could not remove temp upload:', unlinkErr);
+      }
+    }
+
+    const imageUrl = `/uploads/billing_photos/${filename}`;
+    await billing.update({ patientPhoto: imageUrl });
+
+    res.json({
+      success: true,
+      imageUrl,
+      message: 'AI portrait generated successfully'
+    });
+  } catch (error) {
+    console.error('AI portrait error:', error);
+    res.status(500).json({
+      message: error.message || 'Failed to generate AI portrait'
+    });
+  }
+};
+
 // Save patient photo from webcam capture or file upload
 exports.uploadBillingPhoto = async (req, res) => {
   try {
@@ -507,10 +783,19 @@ exports.uploadBillingPhoto = async (req, res) => {
       return res.status(404).json({ message: 'Billing not found' });
     }
 
-    if (req.file) {
-      await billing.update({
-        patientPhoto: `/uploads/billing_photos/${req.file.filename}`
-      });
+    const updates = {};
+    const photoFile = req.files?.photo?.[0];
+    const passportFile = req.files?.passportPhoto?.[0];
+
+    if (photoFile) {
+      updates.patientPhoto = `/uploads/billing_photos/${photoFile.filename}`;
+    }
+    if (passportFile) {
+      updates.passportPhoto = `/uploads/billing_photos/${passportFile.filename}`;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await billing.update(updates);
     }
 
     res.json({

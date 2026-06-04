@@ -25,7 +25,8 @@ const billingPhotoStorage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-    cb(null, `bill-${req.params.id}-${Date.now()}${ext}`);
+    const prefix = file.fieldname === 'passportPhoto' ? 'passport' : 'bill';
+    cb(null, `${prefix}-${req.params.id}-${Date.now()}${ext}`);
   }
 });
 
@@ -69,13 +70,20 @@ router.get('/', checkFeatureAccess('Billing Management'), billingController.rend
 
 // Today's invoice list
 router.get('/invoices/today', checkFeatureAccess('Billing Management'), billingController.renderTodayInvoiceList);
+router.get('/invoices/today/download', checkFeatureAccess('Billing Management'), billingController.downloadTodayInvoiceList);
+router.post('/invoices/today/download-bundle', checkFeatureAccess('Billing Management'), billingController.downloadSelectedInvoiceBundle);
+router.get('/passport-photo/:id/download', checkFeatureAccess('Billing Management'), billingController.downloadPassportPhoto);
 
 // Create billing - no permission check needed as this is a core function
 router.post('/', checkFeatureAccess('Billing Management'), billingController.createBilling);
 
 // Patient photo capture (after billing is created)
 router.get('/photo/:id', checkFeatureAccess('Billing Management'), billingController.renderBillingPhotoPage);
-router.post('/photo/:id', checkFeatureAccess('Billing Management'), uploadBillingPhoto.single('photo'), billingController.uploadBillingPhoto);
+router.post('/photo/:id', checkFeatureAccess('Billing Management'), uploadBillingPhoto.fields([
+  { name: 'photo', maxCount: 1 },
+  { name: 'passportPhoto', maxCount: 1 }
+]), billingController.uploadBillingPhoto);
+router.post('/photo/:id/ai-portrait', checkFeatureAccess('Billing Management'), uploadBillingPhoto.single('photo'), billingController.generateAiPortrait);
 
 // Get billing receipt - accessible to anyone who can access billing
 router.get('/receipt/:id', checkFeatureAccess('Billing Management'), billingController.getBilling);

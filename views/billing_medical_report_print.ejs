@@ -1,5 +1,16 @@
+<% if (locals.bundleExport) { %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Report</title>
+</head>
+<body>
+<% } else { %>
 <%- include('partials/header') %>
 <%- include('partials/navbar') %>
+<% } %>
 
 <style>
   @page {
@@ -397,8 +408,9 @@ const patient = billing.Patient;
         <p class="meta-line"><strong>Comment:</strong> <%= val(reportData.comment) %></p>
       </td>
       <td class="meta-photo">
-        <% if (billing.patientPhoto) { %>
-        <img src="<%= billing.patientPhoto %>" alt="" class="patient-photo-img">
+        <% const profileImgSrc = locals.bundleProfileSrc || billing.patientPhoto; %>
+        <% if (profileImgSrc) { %>
+        <img src="<%= profileImgSrc %>" alt="" class="patient-photo-img">
         <% } %>
       </td>
     </tr>
@@ -524,4 +536,9 @@ const patient = billing.Patient;
   </div>
 </div>
 
+<% if (locals.bundleExport) { %>
+</body>
+</html>
+<% } else { %>
 <%- include('partials/footer') %>
+<% } %>

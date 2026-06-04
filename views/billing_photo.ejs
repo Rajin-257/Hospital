@@ -1,82 +1,344 @@
 <%- include('partials/header') %>
 <%- include('partials/navbar') %>
 
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-camera me-2"></i>Patient Photo</h5>
+<style>
+.photo-page {
+    --photo-border: #dee2e6;
+    --photo-bg: #f8f9fa;
+}
+
+.photo-page .card {
+    border: 1px solid var(--photo-border);
+}
+
+.photo-page .section-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #212529;
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--photo-border);
+}
+
+.photo-page .section-title .step-badge {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    font-size: 0.75rem;
+    background: #4361ee;
+    color: #fff;
+    border-radius: 4px;
+    margin-right: 0.4rem;
+}
+
+.photo-page .meta-line {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.photo-page .meta-line strong {
+    color: #212529;
+}
+
+.photo-page .panel-box {
+    border: 1px solid var(--photo-border);
+    border-radius: 6px;
+    background: #fff;
+    padding: 0.75rem;
+    height: 100%;
+}
+
+.photo-page .webcam-wrap {
+    position: relative;
+    height: 200px;
+    background: #212529;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.photo-page .webcam-wrap video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.photo-page .webcam-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #adb5bd;
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 0.5rem;
+}
+
+.photo-page .upload-zone {
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    border: 1px dashed #ced4da;
+    border-radius: 4px;
+    background: var(--photo-bg);
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.photo-page .upload-zone.is-dragover {
+    border-color: #4361ee;
+    background: #eef2ff;
+}
+
+.photo-page .upload-zone input[type="file"] {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+}
+
+.photo-page .upload-zone i {
+    font-size: 1.5rem;
+    color: #4361ee;
+    margin-bottom: 0.35rem;
+}
+
+.photo-page .preview-box {
+    border: 1px solid var(--photo-border);
+    border-radius: 4px;
+    background: var(--photo-bg);
+    padding: 0.5rem;
+    text-align: center;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.photo-page .preview-box img {
+    max-height: 180px;
+    max-width: 100%;
+    border-radius: 4px;
+}
+
+.photo-page .preview-box.is-empty {
+    color: #adb5bd;
+    font-size: 0.8rem;
+}
+
+.photo-page .preview-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.35rem;
+}
+
+.photo-page .ai-preview-box {
+    border-color: #198754;
+    background: #f8fff9;
+}
+
+.photo-page .card-footer-bar {
+    background: var(--photo-bg);
+    border-top: 1px solid var(--photo-border);
+    padding: 0.75rem 1rem;
+}
+
+.processing-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.processing-overlay[hidden] {
+    display: none !important;
+}
+
+.processing-overlay-card {
+    background: #fff;
+    border: 1px solid var(--photo-border);
+    border-radius: 8px;
+    padding: 1.5rem 1.75rem;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+</style>
+
+<div class="container-fluid py-3 photo-page">
+    <div class="card">
+        <div class="card-header py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <h5 class="mb-0"><i class="fas fa-camera me-2"></i>Patient Photos</h5>
+                <div class="meta-line mt-1">
+                    <strong>Bill #<%= billing.billNumber %></strong>
+                    <% if (billing.Patient) { %>
+                    &nbsp;&bull;&nbsp; <%= billing.Patient.name %>
+                    &nbsp;&bull;&nbsp; <%= billing.Patient.patientId %>
+                    <% if (billing.Patient.nidPassportNo) { %>
+                    &nbsp;&bull;&nbsp; Passport: <%= billing.Patient.nidPassportNo %>
+                    <% } %>
+                    <% } %>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info mb-4">
-                        <strong>Bill #<%= billing.billNumber %></strong>
-                        <% if (billing.Patient) { %>
-                        &mdash; <%= billing.Patient.name %> (<%= billing.Patient.patientId %>)
-                        <% } %>
-                    </div>
+            </div>
+            <a href="/billing/receipt/<%= billing.id %>" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-receipt me-1"></i> View Receipt
+            </a>
+        </div>
 
-                    <div class="row g-4">
-                        <!-- Webcam -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Take photo from webcam</label>
-                            <div class="border rounded bg-dark position-relative overflow-hidden" style="aspect-ratio: 4/3;">
-                                <video id="webcam-video" class="w-100 h-100" style="object-fit: cover;" autoplay playsinline muted></video>
-                                <div id="webcam-placeholder" class="position-absolute top-50 start-50 translate-middle text-white text-center px-3">
-                                    <i class="fas fa-video fa-2x mb-2 d-block opacity-75"></i>
-                                    <small>Click "Start Camera" to begin</small>
-                                </div>
-                            </div>
-                            <div class="d-flex flex-wrap gap-2 mt-2">
-                                <button type="button" class="btn btn-outline-primary btn-sm" id="btn-start-camera">
-                                    <i class="fas fa-video me-1"></i> Start Camera
-                                </button>
-                                <button type="button" class="btn btn-primary btn-sm" id="btn-capture" disabled>
-                                    <i class="fas fa-camera me-1"></i> Capture Photo
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-stop-camera" disabled>
-                                    <i class="fas fa-stop me-1"></i> Stop
-                                </button>
+        <div class="card-body p-3">
+            <!-- Step 1: Profile -->
+            <p class="section-title">
+                <span class="step-badge">1</span>Profile photo
+                <span class="fw-normal text-muted ms-1" style="font-size:0.8rem;">— webcam, upload, or AI</span>
+            </p>
+            <div class="row g-2 mb-2">
+                <div class="col-md-4">
+                    <div class="panel-box">
+                        <div class="preview-label">Webcam</div>
+                        <div class="webcam-wrap">
+                            <video id="webcam-video" autoplay playsinline muted></video>
+                            <div id="webcam-placeholder" class="webcam-placeholder">
+                                <i class="fas fa-video mb-1"></i>
+                                <span>Start camera</span>
                             </div>
                         </div>
-
-                        <!-- Upload -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Or upload a picture</label>
-                            <div class="border rounded d-flex flex-column align-items-center justify-content-center p-4 bg-light" style="min-height: 200px;">
-                                <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
-                                <p class="text-muted small text-center mb-2">JPEG, PNG, or WebP (max 5 MB)</p>
-                                <input type="file" class="form-control" id="photo-upload" accept="image/jpeg,image/jpg,image/png,image/webp">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Preview -->
-                    <div class="mt-4" id="preview-section" style="display: none;">
-                        <label class="form-label fw-semibold">Preview</label>
-                        <div class="text-center border rounded p-3 bg-light">
-                            <img id="photo-preview" src="" alt="Photo preview" class="img-fluid rounded shadow-sm" style="max-height: 320px;">
-                        </div>
-                        <div class="mt-2">
-                            <button type="button" class="btn btn-outline-warning btn-sm" id="btn-retake">
-                                <i class="fas fa-redo me-1"></i> Retake / Choose Again
+                        <div class="d-flex flex-wrap gap-1 mt-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-start-camera">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button type="button" class="btn btn-primary btn-sm" id="btn-capture" disabled title="Capture">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-stop-camera" disabled title="Stop">
+                                <i class="fas fa-stop"></i>
                             </button>
                         </div>
                     </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="panel-box">
+                        <div class="preview-label">Upload</div>
+                        <label class="upload-zone w-100 mb-0 position-relative" id="patient-upload-zone" for="photo-upload">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Click or drop image</span>
+                            <small class="d-block mt-1">JPG, PNG, WebP · 5 MB max</small>
+                            <input type="file" id="photo-upload" accept="image/jpeg,image/jpg,image/png,image/webp">
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="panel-box">
+                        <div class="preview-label">Profile preview</div>
+                        <div id="patient-preview-empty" class="preview-box is-empty">
+                            <span>No photo yet</span>
+                        </div>
+                        <div id="patient-preview-section" class="preview-box" style="display: none;">
+                            <img id="patient-photo-preview" src="" alt="Profile">
+                        </div>
+                        <div class="d-flex flex-wrap gap-1 mt-2" id="patient-preview-actions" style="display: none;">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-retake-patient">
+                                <i class="fas fa-redo me-1"></i> Retake
+                            </button>
+                            <button type="button" class="btn btn-info btn-sm" id="btn-proceed-ai">
+                                <i class="fas fa-magic me-1"></i> Proceed to AI
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                    <hr class="my-4">
+            <div class="row g-2 mb-3" id="ai-preview-row" style="display: none;">
+                <div class="col-12">
+                    <div class="panel-box ai-preview-box py-2">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-auto">
+                                <span class="badge bg-success">AI Portrait</span>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="preview-box py-1" style="min-height:100px;">
+                                    <img id="ai-photo-preview" src="" alt="AI portrait" style="max-height:100px;">
+                                </div>
+                            </div>
+                            <div class="col">
+                                <small class="text-muted mb-0">Saved as profile photo when you click Save.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                    <div class="d-flex flex-wrap gap-2 justify-content-between">
-                        <a href="/billing/receipt/<%= billing.id %>" class="btn btn-outline-secondary">
-                            <i class="fas fa-forward me-1"></i> Skip Photo
-                        </a>
-                        <button type="button" class="btn btn-success" id="btn-save-photo" disabled>
-                            <i class="fas fa-check me-1"></i> Save & View Receipt
-                        </button>
+            <!-- Step 2: Passport -->
+            <p class="section-title mb-2">
+                <span class="step-badge">2</span>Passport picture
+            </p>
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <div class="panel-box">
+                        <div class="preview-label">Upload passport</div>
+                        <label class="upload-zone w-100 mb-0" id="passport-upload-zone" for="passport-upload" style="height:160px;">
+                            <i class="fas fa-id-card"></i>
+                            <span>Click or drop passport image</span>
+                            <small class="d-block mt-1">JPG, PNG, WebP · 5 MB max</small>
+                            <input type="file" id="passport-upload" accept="image/jpeg,image/jpg,image/png,image/webp">
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="panel-box">
+                        <div class="preview-label">Passport preview</div>
+                        <div id="passport-preview-empty" class="preview-box is-empty" style="height:160px;">
+                            <span>No passport image</span>
+                        </div>
+                        <div id="passport-preview-section" class="preview-box" style="display: none; height:160px;">
+                            <img id="passport-photo-preview" src="" alt="Passport" style="max-height:140px;">
+                        </div>
+                        <div class="mt-2" id="passport-retake-wrap" style="display: none;">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-retake-passport">
+                                <i class="fas fa-redo me-1"></i> Choose again
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div class="card-footer-bar d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <small class="text-muted mb-0">Add at least one photo, or skip.</small>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/billing/receipt/<%= billing.id %>" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-forward me-1"></i> Skip
+                </a>
+                <button type="button" class="btn btn-success btn-sm" id="btn-save-photo" disabled>
+                    <i class="fas fa-check me-1"></i> Save &amp; View Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="processing-overlay" class="processing-overlay" hidden aria-live="polite" aria-busy="true">
+    <div class="processing-overlay-card" role="alertdialog" aria-modal="true" aria-labelledby="processing-overlay-title">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h6 class="mb-2" id="processing-overlay-title">Processing</h6>
+        <p class="text-danger fw-semibold mb-2">Please do not close or refresh this window.</p>
+        <p class="text-muted small mb-0" id="processing-overlay-message">Please wait...</p>
     </div>
 </div>
 
@@ -87,43 +349,152 @@
     const billingId = '<%= billing.id %>';
     const video = document.getElementById('webcam-video');
     const canvas = document.getElementById('capture-canvas');
-    const preview = document.getElementById('photo-preview');
-    const previewSection = document.getElementById('preview-section');
+    const patientPreview = document.getElementById('patient-photo-preview');
+    const patientPreviewSection = document.getElementById('patient-preview-section');
+    const patientPreviewEmpty = document.getElementById('patient-preview-empty');
+    const patientPreviewActions = document.getElementById('patient-preview-actions');
+    const passportPreview = document.getElementById('passport-photo-preview');
+    const passportPreviewSection = document.getElementById('passport-preview-section');
+    const passportPreviewEmpty = document.getElementById('passport-preview-empty');
+    const passportRetakeWrap = document.getElementById('passport-retake-wrap');
     const placeholder = document.getElementById('webcam-placeholder');
     const fileInput = document.getElementById('photo-upload');
+    const passportInput = document.getElementById('passport-upload');
+    const patientUploadZone = document.getElementById('patient-upload-zone');
+    const passportUploadZone = document.getElementById('passport-upload-zone');
     const btnStart = document.getElementById('btn-start-camera');
     const btnCapture = document.getElementById('btn-capture');
     const btnStop = document.getElementById('btn-stop-camera');
-    const btnRetake = document.getElementById('btn-retake');
+    const btnRetakePatient = document.getElementById('btn-retake-patient');
+    const btnRetakePassport = document.getElementById('btn-retake-passport');
+    const btnProceedAi = document.getElementById('btn-proceed-ai');
     const btnSave = document.getElementById('btn-save-photo');
+    const aiPreviewRow = document.getElementById('ai-preview-row');
+    const aiPreview = document.getElementById('ai-photo-preview');
 
     let stream = null;
-    let photoBlob = null;
+    let patientPhotoBlob = null;
+    let passportPhotoBlob = null;
+    const processingOverlay = document.getElementById('processing-overlay');
+    const processingOverlayTitle = document.getElementById('processing-overlay-title');
+    const processingOverlayMessage = document.getElementById('processing-overlay-message');
 
-    function showPreviewFromBlob(blob) {
-        photoBlob = blob;
-        preview.src = URL.createObjectURL(blob);
-        previewSection.style.display = 'block';
-        btnSave.disabled = false;
-    }
-
-    function showPreviewFromFile(file) {
-        photoBlob = file;
-        preview.src = URL.createObjectURL(file);
-        previewSection.style.display = 'block';
-        btnSave.disabled = false;
-    }
-
-    function clearPreview() {
-        if (preview.src && preview.src.startsWith('blob:')) {
-            URL.revokeObjectURL(preview.src);
+    function showProcessingModal(title, message) {
+        if (processingOverlayTitle) processingOverlayTitle.textContent = title;
+        if (processingOverlayMessage) processingOverlayMessage.textContent = message;
+        if (processingOverlay) {
+            processingOverlay.hidden = false;
+            document.body.classList.add('overflow-hidden');
         }
-        preview.src = '';
-        photoBlob = null;
-        previewSection.style.display = 'none';
-        btnSave.disabled = true;
-        fileInput.value = '';
     }
+
+    function hideProcessingModal() {
+        if (processingOverlay) {
+            processingOverlay.hidden = true;
+        }
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function revokePreviewUrl(imgEl) {
+        if (imgEl && imgEl.src && imgEl.src.startsWith('blob:')) {
+            URL.revokeObjectURL(imgEl.src);
+        }
+    }
+
+    function updateSaveButton() {
+        btnSave.disabled = !(patientPhotoBlob || passportPhotoBlob);
+    }
+
+    function setupDropzone(zone, input, onFile) {
+        if (!zone || !input) return;
+        zone.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            zone.classList.add('is-dragover');
+        });
+        zone.addEventListener('dragleave', function () {
+            zone.classList.remove('is-dragover');
+        });
+        zone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            zone.classList.remove('is-dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) onFile(file);
+        });
+        input.addEventListener('change', function () {
+            const file = input.files[0];
+            if (file) onFile(file);
+        });
+    }
+
+    function showPatientPreview(blob) {
+        revokePreviewUrl(patientPreview);
+        patientPhotoBlob = blob;
+        patientPreview.src = URL.createObjectURL(blob);
+        patientPreviewEmpty.style.display = 'none';
+        patientPreviewSection.style.display = 'flex';
+        patientPreviewActions.style.display = 'flex';
+        updateSaveButton();
+    }
+
+    function clearAiPreview() {
+        revokePreviewUrl(aiPreview);
+        aiPreview.src = '';
+        aiPreviewRow.style.display = 'none';
+    }
+
+    function clearPatientPreview() {
+        revokePreviewUrl(patientPreview);
+        patientPreview.src = '';
+        patientPhotoBlob = null;
+        patientPreviewSection.style.display = 'none';
+        patientPreviewEmpty.style.display = 'flex';
+        patientPreviewActions.style.display = 'none';
+        fileInput.value = '';
+        clearAiPreview();
+        updateSaveButton();
+    }
+
+    function showPassportPreview(blob) {
+        revokePreviewUrl(passportPreview);
+        passportPhotoBlob = blob;
+        passportPreview.src = URL.createObjectURL(blob);
+        passportPreviewEmpty.style.display = 'none';
+        passportPreviewSection.style.display = 'flex';
+        passportRetakeWrap.style.display = 'block';
+        updateSaveButton();
+    }
+
+    function clearPassportPreview() {
+        revokePreviewUrl(passportPreview);
+        passportPreview.src = '';
+        passportPhotoBlob = null;
+        passportPreviewSection.style.display = 'none';
+        passportPreviewEmpty.style.display = 'flex';
+        passportRetakeWrap.style.display = 'none';
+        passportInput.value = '';
+        updateSaveButton();
+    }
+
+    function validateImageFile(file) {
+        if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
+            alert('Please select a JPEG, PNG, or WebP image.');
+            return false;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image must be 5 MB or smaller.');
+            return false;
+        }
+        return true;
+    }
+
+    setupDropzone(patientUploadZone, fileInput, function (file) {
+        if (!validateImageFile(file)) { fileInput.value = ''; return; }
+        showPatientPreview(file);
+    });
+    setupDropzone(passportUploadZone, passportInput, function (file) {
+        if (!validateImageFile(file)) { passportInput.value = ''; return; }
+        showPassportPreview(file);
+    });
 
     async function startCamera() {
         try {
@@ -148,84 +519,113 @@
             stream = null;
         }
         video.srcObject = null;
-        placeholder.style.display = 'block';
+        placeholder.style.display = 'flex';
         btnCapture.disabled = true;
         btnStop.disabled = true;
         btnStart.disabled = false;
     }
 
     btnStart.addEventListener('click', startCamera);
-
     btnStop.addEventListener('click', stopCamera);
-
     btnCapture.addEventListener('click', function () {
         if (!stream) return;
         const w = video.videoWidth;
         const h = video.videoHeight;
         if (!w || !h) {
-            alert('Camera is not ready yet. Please wait a moment and try again.');
+            alert('Camera is not ready yet.');
             return;
         }
         canvas.width = w;
         canvas.height = h;
         canvas.getContext('2d').drawImage(video, 0, 0, w, h);
         canvas.toBlob(function (blob) {
-            if (blob) {
-                showPreviewFromBlob(blob);
-            }
+            if (blob) showPatientPreview(blob);
         }, 'image/jpeg', 0.92);
     });
 
-    fileInput.addEventListener('change', function () {
-        const file = fileInput.files[0];
-        if (!file) return;
-        if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
-            alert('Please select a JPEG, PNG, or WebP image.');
-            fileInput.value = '';
+    btnRetakePatient.addEventListener('click', clearPatientPreview);
+    btnRetakePassport.addEventListener('click', clearPassportPreview);
+
+    btnProceedAi.addEventListener('click', function () {
+        if (!patientPhotoBlob) {
+            alert('Please capture or upload a patient photo first.');
             return;
         }
-        if (file.size > 5 * 1024 * 1024) {
-            alert('Image must be 5 MB or smaller.');
-            fileInput.value = '';
-            return;
-        }
-        showPreviewFromFile(file);
-    });
-
-    btnRetake.addEventListener('click', clearPreview);
-
-    btnSave.addEventListener('click', function () {
-        if (!photoBlob) {
-            alert('Please capture or upload a photo first.');
-            return;
-        }
-
         const formData = new FormData();
-        const filename = photoBlob.name || 'webcam-capture.jpg';
-        formData.append('photo', photoBlob, filename);
+        formData.append('photo', patientPhotoBlob, patientPhotoBlob.name || 'profile-for-ai.jpg');
+        btnProceedAi.disabled = true;
+        const originalAiHtml = btnProceedAi.innerHTML;
+        btnProceedAi.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        showProcessingModal(
+            'Generating AI Portrait',
+            'Please wait. AI portrait is being created. Do not close or refresh this page.'
+        );
 
-        btnSave.disabled = true;
-        btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
-
-        fetch('/billing/photo/' + billingId, {
-            method: 'POST',
-            body: formData
-        })
+        fetch('/billing/photo/' + billingId + '/ai-portrait', { method: 'POST', body: formData })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
         .then(function (result) {
-            if (!result.ok) {
-                throw new Error(result.data.message || 'Failed to save photo');
-            }
-            window.location.href = result.data.redirect;
+            if (!result.ok) throw new Error(result.data.message || 'AI portrait generation failed');
+            return fetch(result.data.imageUrl + '?t=' + Date.now()).then(function (r) { return r.blob(); });
         })
-        .catch(function (err) {
-            alert(err.message || 'Could not save photo');
-            btnSave.disabled = false;
-            btnSave.innerHTML = '<i class="fas fa-check me-1"></i> Save & View Receipt';
+        .then(function (blob) {
+            revokePreviewUrl(patientPreview);
+            revokePreviewUrl(aiPreview);
+            patientPhotoBlob = blob;
+            patientPreview.src = URL.createObjectURL(blob);
+            aiPreview.src = URL.createObjectURL(blob);
+            aiPreviewRow.style.display = 'flex';
+            updateSaveButton();
+        })
+        .catch(function (err) { alert(err.message || 'Could not generate AI portrait'); })
+        .finally(function () {
+            hideProcessingModal();
+            btnProceedAi.disabled = false;
+            btnProceedAi.innerHTML = originalAiHtml;
         });
     });
 
-    window.addEventListener('beforeunload', stopCamera);
+    btnSave.addEventListener('click', function () {
+        if (!patientPhotoBlob && !passportPhotoBlob) {
+            alert('Please add a patient photo and/or passport picture first.');
+            return;
+        }
+        const formData = new FormData();
+        if (patientPhotoBlob) {
+            formData.append('photo', patientPhotoBlob, patientPhotoBlob.name || 'webcam-capture.jpg');
+        }
+        if (passportPhotoBlob) {
+            formData.append('passportPhoto', passportPhotoBlob, passportPhotoBlob.name || 'passport-upload.jpg');
+        }
+        btnSave.disabled = true;
+        btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+        showProcessingModal(
+            'Saving Photos',
+            'Please wait while your photos are being saved. Do not close or refresh this page.'
+        );
+        fetch('/billing/photo/' + billingId, { method: 'POST', body: formData })
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (result) {
+            if (!result.ok) throw new Error(result.data.message || 'Failed to save photos');
+            hideProcessingModal();
+            window.location.href = result.data.redirect;
+        })
+        .catch(function (err) {
+            alert(err.message || 'Could not save photos');
+            hideProcessingModal();
+            btnSave.disabled = false;
+            btnSave.innerHTML = '<i class="fas fa-check me-1"></i> Save &amp; View Receipt';
+            updateSaveButton();
+        });
+    });
+
+    window.addEventListener('beforeunload', function (e) {
+        if (processingOverlay && !processingOverlay.hidden) {
+            e.preventDefault();
+            e.returnValue = '';
+            return '';
+        }
+        stopCamera();
+    });
 })();
 </script>
 

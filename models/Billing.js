@@ -77,6 +77,10 @@ const Billing = sequelize.define('Billing', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  passportPhoto: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   createdBy: {
     type: DataTypes.INTEGER,
     allowNull: true,

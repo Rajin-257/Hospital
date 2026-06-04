@@ -1,3 +1,9 @@
+const path = require('path');
+const ejs = require('ejs');
+const { htmlToPdfBuffer } = require('../utils/reportPdf');
+const { storedPathToDataUri } = require('../utils/imageDataUri');
+
+const PUBLIC_ROOT = path.join(__dirname, '../public');
 const Billing = require('../models/Billing');
 const MedicalReport = require('../models/MedicalReport');
 const Patient = require('../models/Patient');
@@ -453,3 +459,61 @@ exports.renderMedicalReportPrint = async (req, res) => {
 };
 
 exports.getDefaultReportData = getDefaultReportData;
+
+exports.renderMedicalReportHtmlForBundle = async (billing, settings, assetPaths = {}) => {
+  const report = billing.MedicalReport
+    || await MedicalReport.findOne({ where: { BillingId: billing.id } });
+
+  if (!report) {
+    return null;
+  }
+
+  const reportData = reportToFormData(report, billing.Patient);
+  const xrayImageUrl = assetPaths.xray != null
+    ? assetPaths.xray
+    : resolveXrayImage(report.xrayImage);
+  const fingerprintUrl = assetPaths.fingerprint != null
+    ? assetPaths.fingerprint
+    : DEFAULT_FINGERPRINT_IMAGE;
+  const bundleProfileSrc = assetPaths.profile != null
+    ? assetPaths.profile
+    : billing.patientPhoto;
+
+  return ejs.renderFile(
+    path.join(__dirname, '../views/billing_medical_report_print.ejs'),
+    {
+      title: 'Medical Report',
+      billing,
+      patient: billing.Patient,
+      report,
+      reportData,
+      xrayImageUrl,
+      fingerprintUrl,
+      bundleProfileSrc,
+      bundleExport: true,
+      settings: settings || {},
+      bloodBiochemistryTests: BLOOD_BIOCHEMISTRY_TESTS
+    }
+  );
+};
+
+exports.renderMedicalReportPdfBuffer = async (billing, settings, browser) => {
+  const report = billing.MedicalReport;
+  const assetPaths = {
+    profile: billing.patientPhoto
+      ? storedPathToDataUri(billing.patientPhoto, PUBLIC_ROOT)
+      : null,
+    xray: storedPathToDataUri(report?.xrayImage, PUBLIC_ROOT)
+      || storedPathToDataUri(DEFAULT_XRAY_IMAGE, PUBLIC_ROOT)
+      || resolveXrayImage(report?.xrayImage),
+    fingerprint: storedPathToDataUri(DEFAULT_FINGERPRINT_IMAGE, PUBLIC_ROOT)
+      || DEFAULT_FINGERPRINT_IMAGE
+  };
+  const html = await exports.renderMedicalReportHtmlForBundle(billing, settings, assetPaths);
+
+  if (!html) {
+    return null;
+  }
+
+  return htmlToPdfBuffer(html, browser);
+};

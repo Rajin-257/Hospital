@@ -23,9 +23,26 @@ function formatListDate(d) {
           <% } %>)
         </small>
       </h5>
-      <a href="/billing" class="btn btn-primary btn-sm">
-        <i class="fas fa-plus me-1"></i> New Invoice
-      </a>
+      <div class="d-flex gap-2">
+        <%
+        const downloadParams = new URLSearchParams();
+        downloadParams.set('startDate', filters.startDate);
+        downloadParams.set('endDate', filters.endDate);
+        downloadParams.set('status', filters.status);
+        downloadParams.set('searchType', filters.searchType);
+        if (filters.searchQuery) downloadParams.set('searchQuery', filters.searchQuery);
+        if (filters.createdBy) downloadParams.set('createdBy', filters.createdBy);
+        %>
+        <a href="/billing/invoices/today/download?<%= downloadParams.toString() %>" class="btn btn-outline-success btn-sm">
+          <i class="fas fa-file-csv me-1"></i> Export CSV
+        </a>
+        <button type="button" class="btn btn-success btn-sm" id="btn-download-selected" disabled>
+          <i class="fas fa-download me-1"></i> Download Selected
+        </button>
+        <a href="/billing" class="btn btn-primary btn-sm">
+          <i class="fas fa-plus me-1"></i> New Invoice
+        </a>
+      </div>
     </div>
     <div class="card-body border-bottom">
       <form method="GET" action="/billing/invoices/today" class="row g-3 align-items-end">
@@ -86,10 +103,16 @@ function formatListDate(d) {
       </form>
     </div>
     <div class="card-body pt-0">
+      <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+        <small class="text-muted" id="selection-summary">0 invoice(s) selected</small>
+      </div>
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0" id="invoice-list-table">
           <thead class="table-light">
             <tr>
+              <th style="width: 42px;">
+                <input type="checkbox" class="form-check-input" id="select-all-invoices" title="Select all" <%= (bills && bills.length > 0) ? '' : 'disabled' %>>
+              </th>
               <th style="width: 50px;">SL</th>
               <th>Report Date</th>
               <th>Invoice No.</th>
@@ -105,6 +128,9 @@ function formatListDate(d) {
             <% if (bills && bills.length > 0) { %>
               <% bills.forEach(function (bill, index) { %>
               <tr>
+                <td>
+                  <input type="checkbox" class="form-check-input bill-select" value="<%= bill.id %>" aria-label="Select invoice <%= bill.billNumber %>">
+                </td>
                 <td><%= index + 1 %></td>
                 <td><%= bill.MedicalReport ? formatListDate(bill.MedicalReport.reportDate) : '—' %></td>
                 <td><%= bill.billNumber %></td>
@@ -136,12 +162,17 @@ function formatListDate(d) {
                     <i class="fas fa-print"></i>
                   </a>
                   <% } %>
+                  <% if (bill.passportPhoto) { %>
+                  <a href="/billing/passport-photo/<%= bill.id %>/download" class="btn btn-sm btn-outline-dark" title="Download Passport Picture">
+                    <i class="fas fa-download"></i>
+                  </a>
+                  <% } %>
                 </td>
               </tr>
               <% }); %>
             <% } else { %>
               <tr>
-                <td colspan="9" class="text-center text-muted py-4">No invoices found for the selected filters.</td>
+                <td colspan="10" class="text-center text-muted py-4">No invoices found for the selected filters.</td>
               </tr>
             <% } %>
           </tbody>
@@ -155,5 +186,106 @@ function formatListDate(d) {
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  const selectAll = document.getElementById('select-all-invoices');
+  const downloadBtn = document.getElementById('btn-download-selected');
+  const summaryEl = document.getElementById('selection-summary');
+  const table = document.getElementById('invoice-list-table');
+
+  function getRowCheckboxes() {
+    return table ? Array.from(table.querySelectorAll('.bill-select')) : [];
+  }
+
+  function getSelectedIds() {
+    return getRowCheckboxes()
+      .filter(function (cb) { return cb.checked; })
+      .map(function (cb) { return cb.value; });
+  }
+
+  function updateSelectionUi() {
+    const boxes = getRowCheckboxes();
+    const selected = getSelectedIds();
+    const total = boxes.length;
+
+    if (summaryEl) {
+      summaryEl.textContent = selected.length + ' invoice(s) selected';
+    }
+    if (downloadBtn) {
+      downloadBtn.disabled = selected.length === 0;
+    }
+    if (selectAll) {
+      selectAll.indeterminate = selected.length > 0 && selected.length < total;
+      selectAll.checked = total > 0 && selected.length === total;
+    }
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function () {
+      const checked = selectAll.checked;
+      getRowCheckboxes().forEach(function (cb) {
+        cb.checked = checked;
+      });
+      updateSelectionUi();
+    });
+  }
+
+  if (table) {
+    table.addEventListener('change', function (event) {
+      if (event.target.classList.contains('bill-select')) {
+        updateSelectionUi();
+      }
+    });
+  }
+
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', function () {
+      const ids = getSelectedIds();
+      if (!ids.length) {
+        alert('Select at least one invoice.');
+        return;
+      }
+
+      downloadBtn.disabled = true;
+      const originalHtml = downloadBtn.innerHTML;
+      downloadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Preparing...';
+
+      fetch('/billing/invoices/today/download-bundle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ids })
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.text().then(function (text) {
+            throw new Error(text || 'Download failed');
+          });
+        }
+        return res.blob().then(function (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          const today = new Date().toISOString().slice(0, 10);
+          link.href = url;
+          link.download = 'invoices-' + today + '.zip';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        });
+      })
+      .catch(function (err) {
+        alert(err.message || 'Could not download selected invoices');
+      })
+      .finally(function () {
+        downloadBtn.innerHTML = originalHtml;
+        updateSelectionUi();
+      });
+    });
+  }
+
+  updateSelectionUi();
+})();
+</script>
 
 <%- include('partials/footer') %>
