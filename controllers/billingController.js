@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 const { ZipArchive } = require('archiver');
 const Billing = require('../models/Billing');
 const Setting = require('../models/Setting');
@@ -21,6 +22,52 @@ const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
 const { buildPatientAccessWhere } = require('./patientController');
 
+const BILLING_PHOTOS_DIR = path.join(__dirname, '../public/uploads/billing_photos');
+
+async function persistBillingPhotoAsPng(sourcePath, billingId, prefix) {
+  const filename = `${prefix}-${billingId}-${Date.now()}.png`;
+  const outputPath = path.join(BILLING_PHOTOS_DIR, filename);
+  await sharp(sourcePath).png().toFile(outputPath);
+  if (fs.existsSync(sourcePath) && path.resolve(sourcePath) !== path.resolve(outputPath)) {
+    try {
+      fs.unlinkSync(sourcePath);
+    } catch (unlinkErr) {
+      console.error('Could not remove temp billing photo:', unlinkErr);
+    }
+  }
+  return `/uploads/billing_photos/${filename}`;
+}
+
+async function persistBillingPassportFile(sourcePath, billingId, originalName) {
+  const ext = path.extname(originalName || sourcePath).toLowerCase();
+  if (ext === '.pdf') {
+    const filename = `passport-${billingId}-${Date.now()}.pdf`;
+    const outputPath = path.join(BILLING_PHOTOS_DIR, filename);
+    fs.copyFileSync(sourcePath, outputPath);
+    if (fs.existsSync(sourcePath) && path.resolve(sourcePath) !== path.resolve(outputPath)) {
+      try {
+        fs.unlinkSync(sourcePath);
+      } catch (unlinkErr) {
+        console.error('Could not remove temp passport file:', unlinkErr);
+      }
+    }
+    return `/uploads/billing_photos/${filename}`;
+  }
+  return persistBillingPhotoAsPng(sourcePath, billingId, 'passport');
+}
+
+function billingHasRequiredPhotos(bill) {
+  return Boolean(bill.takenPhoto && bill.patientPhoto && bill.passportPhoto);
+}
+
+function describeMissingPhotos(bill) {
+  const missing = [];
+  if (!bill.takenPhoto) missing.push('taken photo');
+  if (!bill.patientPhoto) missing.push('AI profile photo');
+  if (!bill.passportPhoto) missing.push('passport picture');
+  return missing;
+}
+
 function buildBillingAccessWhere(req) {
   if (req.user?.role === 'receptionist') {
     return { createdBy: req.user.id };
@@ -41,6 +88,29 @@ function formatInvoiceListDate(d) {
   const dt = new Date(d);
   if (Number.isNaN(dt.getTime())) return String(d);
   return dt.toLocaleDateString('en-GB');
+}
+
+function parseSearchTerms(query) {
+  return String(query || '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function likePattern(term) {
+  return { [Op.like]: `%${term}%` };
+}
+
+function buildFieldOrConditions(terms, fieldName) {
+  if (!terms.length) {
+    return null;
+  }
+  if (terms.length === 1) {
+    return { [fieldName]: likePattern(terms[0]) };
+  }
+  return {
+    [Op.or]: terms.map((term) => ({ [fieldName]: likePattern(term) }))
+  };
 }
 
 async function fetchFilteredInvoices(req) {
@@ -73,41 +143,62 @@ async function fetchFilteredInvoices(req) {
     }
   }
 
-  if (status === 'Fit' || status === 'Unfit' || status === 'Held UP') {
+  if (status === 'Fit' || status === 'Unfit' || status === 'Held UP' || status === 'RUNNING') {
     whereClause['$MedicalReport.status$'] = status;
   }
 
   const patientWhereClause = {};
   const term = String(searchQuery || '').trim();
+  const terms = parseSearchTerms(term);
 
-  if (term && searchType !== 'all') {
+  if (terms.length && searchType !== 'all') {
     switch (searchType) {
-      case 'billNumber':
-        whereClause.billNumber = { [Op.like]: `%${term}%` };
+      case 'billNumber': {
+        const billNumberFilter = buildFieldOrConditions(terms, 'billNumber');
+        if (billNumberFilter) {
+          Object.assign(whereClause, billNumberFilter);
+        }
         break;
-      case 'patientId':
-        patientWhereClause.patientId = { [Op.like]: `%${term}%` };
+      }
+      case 'patientId': {
+        const patientIdFilter = buildFieldOrConditions(terms, 'patientId');
+        if (patientIdFilter) {
+          Object.assign(patientWhereClause, patientIdFilter);
+        }
         break;
-      case 'patientName':
-        patientWhereClause.name = { [Op.like]: `%${term}%` };
+      }
+      case 'patientName': {
+        const patientNameFilter = buildFieldOrConditions(terms, 'name');
+        if (patientNameFilter) {
+          Object.assign(patientWhereClause, patientNameFilter);
+        }
         break;
-      case 'phone':
-        patientWhereClause.phone = { [Op.like]: `%${term}%` };
+      }
+      case 'phone': {
+        const phoneFilter = buildFieldOrConditions(terms, 'phone');
+        if (phoneFilter) {
+          Object.assign(patientWhereClause, phoneFilter);
+        }
         break;
-      case 'passport':
-        patientWhereClause.nidPassportNo = { [Op.like]: `%${term}%` };
+      }
+      case 'passport': {
+        const passportFilter = buildFieldOrConditions(terms, 'nidPassportNo');
+        if (passportFilter) {
+          Object.assign(patientWhereClause, passportFilter);
+        }
         break;
+      }
       default:
         break;
     }
-  } else if (term) {
-    whereClause[Op.or] = [
-      { billNumber: { [Op.like]: `%${term}%` } },
-      { '$Patient.name$': { [Op.like]: `%${term}%` } },
-      { '$Patient.patientId$': { [Op.like]: `%${term}%` } },
-      { '$Patient.phone$': { [Op.like]: `%${term}%` } },
-      { '$Patient.nidPassportNo$': { [Op.like]: `%${term}%` } }
-    ];
+  } else if (terms.length) {
+    whereClause[Op.or] = terms.flatMap((searchTerm) => [
+      { billNumber: likePattern(searchTerm) },
+      { '$Patient.name$': likePattern(searchTerm) },
+      { '$Patient.patientId$': likePattern(searchTerm) },
+      { '$Patient.phone$': likePattern(searchTerm) },
+      { '$Patient.nidPassportNo$': likePattern(searchTerm) }
+    ]);
   }
 
   let bills = await Billing.findAll({
@@ -295,7 +386,7 @@ exports.downloadPassportPhoto = async (req, res) => {
       return res.status(404).send('Passport picture file not found');
     }
 
-    const ext = path.extname(filePath) || '.jpg';
+    const ext = path.extname(filePath) || '.png';
     const passportNo = (billing.Patient?.nidPassportNo || 'passport').replace(/[^\w.-]+/g, '_');
     const billNumber = String(billing.billNumber || billing.id).replace(/[^\w.-]+/g, '_');
     const filename = `${passportNo}-${billNumber}${ext}`;
@@ -373,6 +464,21 @@ exports.downloadSelectedInvoiceBundle = async (req, res) => {
       return res.status(404).send('No accessible invoices found for the selected items');
     }
 
+    const incomplete = bills
+      .filter((bill) => !billingHasRequiredPhotos(bill))
+      .map((bill) => ({
+        id: bill.id,
+        billNumber: bill.billNumber,
+        missing: describeMissingPhotos(bill)
+      }));
+
+    if (incomplete.length) {
+      const details = incomplete
+        .map((item) => `Invoice ${item.billNumber}: missing ${item.missing.join(', ')}`)
+        .join('; ');
+      return res.status(400).send(`Each selected invoice needs a taken photo, AI profile photo, and passport picture. ${details}`);
+    }
+
     const settings = await Setting.findOne();
     const usedBases = new Set();
     let browser = null;
@@ -394,11 +500,15 @@ exports.downloadSelectedInvoiceBundle = async (req, res) => {
         const base = buildBillingFolderBase(bill.Patient, bill, usedBases);
         const folder = `${base}/`;
 
-        const profileExt = path.extname(bill.patientPhoto || '') || '.jpg';
-        const profileFile = `${base}_profile${profileExt}`;
+        const takenExt = path.extname(bill.takenPhoto || '') || '.png';
+        const takenFile = `${base}_taken${takenExt}`;
+        appendPublicFile(archive, bill.takenPhoto, `${folder}${takenFile}`);
+
+        const profileExt = path.extname(bill.patientPhoto || '') || '.png';
+        const profileFile = `${base}_ai_profile${profileExt}`;
         appendPublicFile(archive, bill.patientPhoto, `${folder}${profileFile}`);
 
-        const passportExt = path.extname(bill.passportPhoto || '') || '.jpg';
+        const passportExt = path.extname(bill.passportPhoto || '') || '.png';
         const passportFile = `${base}_passport${passportExt}`;
         appendPublicFile(archive, bill.passportPhoto, `${folder}${passportFile}`);
 
@@ -425,7 +535,8 @@ exports.downloadSelectedInvoiceBundle = async (req, res) => {
   } catch (error) {
     console.error(error);
     if (!res.headersSent) {
-      res.status(500).send('Failed to download selected invoices');
+      const message = error.message || 'Failed to download selected invoices';
+      res.status(500).send(message);
     }
   }
 };
@@ -754,7 +865,6 @@ exports.generateAiPortrait = async (req, res) => {
     }
 
     const imageUrl = `/uploads/billing_photos/${filename}`;
-    await billing.update({ patientPhoto: imageUrl });
 
     res.json({
       success: true,
@@ -783,20 +893,27 @@ exports.uploadBillingPhoto = async (req, res) => {
       return res.status(404).json({ message: 'Billing not found' });
     }
 
-    const updates = {};
+    const takenFile = req.files?.takenPhoto?.[0];
     const photoFile = req.files?.photo?.[0];
     const passportFile = req.files?.passportPhoto?.[0];
 
-    if (photoFile) {
-      updates.patientPhoto = `/uploads/billing_photos/${photoFile.filename}`;
-    }
-    if (passportFile) {
-      updates.passportPhoto = `/uploads/billing_photos/${passportFile.filename}`;
+    if (!takenFile || !photoFile || !passportFile) {
+      return res.status(400).json({
+        message: 'Taken photo, AI profile photo, and passport picture are all required.'
+      });
     }
 
-    if (Object.keys(updates).length > 0) {
-      await billing.update(updates);
-    }
+    const updates = {
+      takenPhoto: await persistBillingPhotoAsPng(takenFile.path, billing.id, 'taken'),
+      patientPhoto: await persistBillingPhotoAsPng(photoFile.path, billing.id, 'bill'),
+      passportPhoto: await persistBillingPassportFile(
+        passportFile.path,
+        billing.id,
+        passportFile.originalname
+      )
+    };
+
+    await billing.update(updates);
 
     res.json({
       success: true,

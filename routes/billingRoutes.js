@@ -24,17 +24,27 @@ const billingPhotoStorage = multer.diskStorage({
     cb(null, billingPhotoDir);
   },
   filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-    const prefix = file.fieldname === 'passportPhoto' ? 'passport' : 'bill';
+    const ext = path.extname(file.originalname).toLowerCase() || '.png';
+    let prefix = 'bill';
+    if (file.fieldname === 'passportPhoto') prefix = 'passport';
+    else if (file.fieldname === 'takenPhoto') prefix = 'taken';
     cb(null, `${prefix}-${req.params.id}-${Date.now()}${ext}`);
   }
 });
 
 const billingPhotoFilter = (req, file, cb) => {
-  const allowed = /jpeg|jpg|png|webp/;
-  const extOk = allowed.test(path.extname(file.originalname).toLowerCase());
-  const mimeOk = allowed.test(file.mimetype);
-  if (extOk && mimeOk) {
+  const ext = path.extname(file.originalname).toLowerCase();
+  const imageExtOk = /\.(jpe?g|png|webp)$/.test(ext);
+  const imageMimeOk = /^image\/(jpeg|jpg|png|webp)$/.test(file.mimetype);
+
+  if (file.fieldname === 'passportPhoto') {
+    if (ext === '.pdf' || (imageExtOk && imageMimeOk)) {
+      return cb(null, true);
+    }
+    return cb(new Error('Passport must be a JPEG, PNG, WebP image, or PDF'));
+  }
+
+  if (imageExtOk && imageMimeOk) {
     return cb(null, true);
   }
   cb(new Error('Only JPEG, PNG, and WebP images are allowed'));
@@ -80,6 +90,7 @@ router.post('/', checkFeatureAccess('Billing Management'), billingController.cre
 // Patient photo capture (after billing is created)
 router.get('/photo/:id', checkFeatureAccess('Billing Management'), billingController.renderBillingPhotoPage);
 router.post('/photo/:id', checkFeatureAccess('Billing Management'), uploadBillingPhoto.fields([
+  { name: 'takenPhoto', maxCount: 1 },
   { name: 'photo', maxCount: 1 },
   { name: 'passportPhoto', maxCount: 1 }
 ]), billingController.uploadBillingPhoto);

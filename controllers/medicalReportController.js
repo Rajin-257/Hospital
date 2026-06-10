@@ -2,6 +2,7 @@ const path = require('path');
 const ejs = require('ejs');
 const { htmlToPdfBuffer } = require('../utils/reportPdf');
 const { storedPathToDataUri } = require('../utils/imageDataUri');
+const { getPdfExportHeadHtml } = require('../utils/reportFonts');
 
 const PUBLIC_ROOT = path.join(__dirname, '../public');
 const Billing = require('../models/Billing');
@@ -491,6 +492,7 @@ exports.renderMedicalReportHtmlForBundle = async (billing, settings, assetPaths 
       fingerprintUrl,
       bundleProfileSrc,
       bundleExport: true,
+      pdfHeadExtras: getPdfExportHeadHtml(),
       settings: settings || {},
       bloodBiochemistryTests: BLOOD_BIOCHEMISTRY_TESTS
     }

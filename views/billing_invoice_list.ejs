@@ -61,6 +61,7 @@ function formatListDate(d) {
             <option value="Fit" <%= filters.status === 'Fit' ? 'selected' : '' %>>Fit</option>
             <option value="Unfit" <%= filters.status === 'Unfit' ? 'selected' : '' %>>Unfit</option>
             <option value="Held UP" <%= filters.status === 'Held UP' ? 'selected' : '' %>>Held UP</option>
+            <option value="RUNNING" <%= filters.status === 'RUNNING' ? 'selected' : '' %>>RUNNING</option>
             <option value="none" <%= filters.status === 'none' ? 'selected' : '' %>>No Report</option>
           </select>
         </div>
@@ -75,9 +76,9 @@ function formatListDate(d) {
             <option value="phone" <%= filters.searchType === 'phone' ? 'selected' : '' %>>Mobile No</option>
           </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-4">
           <label for="searchQuery" class="form-label">Search Term</label>
-          <input type="text" class="form-control" id="searchQuery" name="searchQuery" value="<%= filters.searchQuery %>" placeholder="Search...">
+          <input type="text" class="form-control" id="searchQuery" name="searchQuery" value="<%= filters.searchQuery %>" placeholder="e.g. a1111, a2222, a3333">
         </div>
         <% if (canFilterByCreator) { %>
         <div class="col-md-2">
@@ -129,7 +130,18 @@ function formatListDate(d) {
               <% bills.forEach(function (bill, index) { %>
               <tr>
                 <td>
-                  <input type="checkbox" class="form-check-input bill-select" value="<%= bill.id %>" aria-label="Select invoice <%= bill.billNumber %>">
+                  <%
+                  const hasAllPhotos = bill.takenPhoto && bill.patientPhoto && bill.passportPhoto;
+                  const missingPhotos = [];
+                  if (!bill.takenPhoto) missingPhotos.push('taken photo');
+                  if (!bill.patientPhoto) missingPhotos.push('AI profile photo');
+                  if (!bill.passportPhoto) missingPhotos.push('passport picture');
+                  %>
+                  <input type="checkbox" class="form-check-input bill-select" value="<%= bill.id %>"
+                    data-bill-number="<%= bill.billNumber %>"
+                    data-has-photos="<%= hasAllPhotos ? '1' : '0' %>"
+                    data-missing-photos="<%= missingPhotos.join(', ') %>"
+                    aria-label="Select invoice <%= bill.billNumber %>">
                 </td>
                 <td><%= index + 1 %></td>
                 <td><%= bill.MedicalReport ? formatListDate(bill.MedicalReport.reportDate) : '—' %></td>
@@ -138,7 +150,7 @@ function formatListDate(d) {
                 <td><%= bill.Patient ? bill.Patient.name : 'Unknown' %></td>
                 <td>
                   <% if (bill.MedicalReport && bill.MedicalReport.status) { %>
-                  <span class="badge bg-<%= bill.MedicalReport.status === 'Fit' ? 'success' : (bill.MedicalReport.status === 'Unfit' ? 'danger' : 'warning text-dark') %>">
+                  <span class="badge bg-<%= bill.MedicalReport.status === 'Fit' ? 'success' : (bill.MedicalReport.status === 'Unfit' ? 'danger' : (bill.MedicalReport.status === 'RUNNING' ? 'info' : 'warning text-dark')) %>">
                     <%= bill.MedicalReport.status %>
                   </span>
                   <% } else { %>
@@ -241,11 +253,25 @@ function formatListDate(d) {
 
   if (downloadBtn) {
     downloadBtn.addEventListener('click', function () {
-      const ids = getSelectedIds();
-      if (!ids.length) {
+      const selectedBoxes = getRowCheckboxes().filter(function (cb) { return cb.checked; });
+      if (!selectedBoxes.length) {
         alert('Select at least one invoice.');
         return;
       }
+
+      const incomplete = selectedBoxes.filter(function (cb) {
+        return cb.dataset.hasPhotos !== '1';
+      });
+      if (incomplete.length) {
+        const details = incomplete.map(function (cb) {
+          const missing = cb.dataset.missingPhotos || 'required photos';
+          return 'Invoice ' + cb.dataset.billNumber + ': missing ' + missing;
+        }).join('\n');
+        alert('Each selected invoice needs a taken photo, AI profile photo, and passport picture.\n\n' + details);
+        return;
+      }
+
+      const ids = selectedBoxes.map(function (cb) { return cb.value; });
 
       downloadBtn.disabled = true;
       const originalHtml = downloadBtn.innerHTML;

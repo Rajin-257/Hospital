@@ -1,6 +1,9 @@
 const path = require('path');
 const fs = require('fs');
 const { Blob } = require('buffer');
+const sharp = require('sharp');
+
+const AI_PORTRAIT_OUTPUT_SIZE = parseInt(process.env.AI_PORTRAIT_SIZE || '200', 10);
 
 const AI_PORTRAIT_PROMPT = [
   'Create a realistic half of upper body with Face portrait using the uploaded reference photo.',
@@ -45,7 +48,7 @@ async function generateAiPortrait(profileImagePath) {
   form.append('prompt', AI_PORTRAIT_PROMPT);
   form.append('size', '1024x1024');
   form.append('quality', 'low');
-  appendImageToForm(form, profileImagePath, `profile${path.extname(profileImagePath) || '.jpg'}`);
+  appendImageToForm(form, profileImagePath, `profile${path.extname(profileImagePath) || '.png'}`);
   appendImageToForm(form, BACKGROUND_IMAGE_PATH, 'bg-gpt.png');
 
   const response = await fetch('https://api.openai.com/v1/images/edits', {
@@ -68,24 +71,34 @@ async function generateAiPortrait(profileImagePath) {
     throw new Error('OpenAI did not return an image');
   }
 
+  let imageBuffer = null;
   if (item.b64_json) {
-    return Buffer.from(item.b64_json, 'base64');
-  }
-
-  if (item.url) {
+    imageBuffer = Buffer.from(item.b64_json, 'base64');
+  } else if (item.url) {
     const imageRes = await fetch(item.url);
     if (!imageRes.ok) {
       throw new Error('Failed to download generated image from OpenAI');
     }
     const arrayBuffer = await imageRes.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    imageBuffer = Buffer.from(arrayBuffer);
   }
 
-  throw new Error('OpenAI did not return image data');
+  if (!imageBuffer) {
+    throw new Error('OpenAI did not return image data');
+  }
+
+  return sharp(imageBuffer)
+    .resize(AI_PORTRAIT_OUTPUT_SIZE, AI_PORTRAIT_OUTPUT_SIZE, {
+      fit: 'cover',
+      position: 'centre'
+    })
+    .png()
+    .toBuffer();
 }
 
 module.exports = {
   AI_PORTRAIT_PROMPT,
+  AI_PORTRAIT_OUTPUT_SIZE,
   BACKGROUND_IMAGE_PATH,
   generateAiPortrait
 };

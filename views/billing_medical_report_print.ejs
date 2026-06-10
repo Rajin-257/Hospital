@@ -1,12 +1,13 @@
 <% if (locals.bundleExport) { %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn" class="pdf-export">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Medical Report</title>
+  <%- typeof pdfHeadExtras !== 'undefined' ? pdfHeadExtras : '' %>
 </head>
-<body>
+<body class="pdf-export">
 <% } else { %>
 <%- include('partials/header') %>
 <%- include('partials/navbar') %>
@@ -19,7 +20,7 @@
   }
 
   .print-report {
-    font-family: Arial, sans-serif;
+    font-family: 'Noto Sans Bengali', 'Nirmala UI', 'Kalpurush', Arial, sans-serif;
     max-width: 210mm;
     min-height: 277mm;
     margin: 0 auto;
@@ -205,7 +206,7 @@
     line-height: 1.45;
     text-align: center;
     padding: 6px 8px !important;
-    font-family: 'Nirmala UI', 'Kalpurush', Arial, sans-serif;
+    font-family: 'Noto Sans Bengali', 'Nirmala UI', 'Kalpurush', Arial, sans-serif;
     border: none !important;
   }
 
@@ -223,7 +224,7 @@
     font-size: 13px;
     line-height: 1.5;
     margin: 0 0 12px;
-    font-family: 'Nirmala UI', 'Kalpurush', Arial, sans-serif;
+    font-family: 'Noto Sans Bengali', 'Nirmala UI', 'Kalpurush', Arial, sans-serif;
   }
 
   .report-final-check {
@@ -346,8 +347,28 @@
       font-size: 13px !important;
     }
   }
+
+  body.pdf-export {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  body.pdf-export .container,
+  body.pdf-export .print-report {
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body.pdf-export .print-report {
+    font-size: 14px;
+    min-height: auto;
+  }
 </style>
 
+<% if (!locals.bundleExport) { %>
 <div class="container mb-4 no-print">
   <div class="d-flex justify-content-end gap-2 mt-3">
     <button class="btn btn-outline-secondary" onclick="window.print()">
@@ -361,6 +382,7 @@
     </a>
   </div>
 </div>
+<% } %>
 
 <%
 function fmtDate(d) {

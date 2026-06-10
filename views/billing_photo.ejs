@@ -243,14 +243,14 @@
                 </div>
                 <div class="col-md-4">
                     <div class="panel-box">
-                        <div class="preview-label">Profile preview</div>
-                        <div id="patient-preview-empty" class="preview-box is-empty">
+                        <div class="preview-label">Taken photo preview</div>
+                        <div id="taken-preview-empty" class="preview-box is-empty">
                             <span>No photo yet</span>
                         </div>
-                        <div id="patient-preview-section" class="preview-box" style="display: none;">
-                            <img id="patient-photo-preview" src="" alt="Profile">
+                        <div id="taken-preview-section" class="preview-box" style="display: none;">
+                            <img id="taken-photo-preview" src="" alt="Taken photo">
                         </div>
-                        <div class="d-flex flex-wrap gap-1 mt-2" id="patient-preview-actions" style="display: none;">
+                        <div class="d-flex flex-wrap gap-1 mt-2" id="taken-preview-actions" style="display: none;">
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-retake-patient">
                                 <i class="fas fa-redo me-1"></i> Retake
                             </button>
@@ -275,7 +275,7 @@
                                 </div>
                             </div>
                             <div class="col">
-                                <small class="text-muted mb-0">Saved as profile photo when you click Save.</small>
+                                <small class="text-muted mb-0">Both taken and AI photos are saved when you click Save.</small>
                             </div>
                         </div>
                     </div>
@@ -292,9 +292,9 @@
                         <div class="preview-label">Upload passport</div>
                         <label class="upload-zone w-100 mb-0" id="passport-upload-zone" for="passport-upload" style="height:160px;">
                             <i class="fas fa-id-card"></i>
-                            <span>Click or drop passport image</span>
-                            <small class="d-block mt-1">JPG, PNG, WebP · 5 MB max</small>
-                            <input type="file" id="passport-upload" accept="image/jpeg,image/jpg,image/png,image/webp">
+                            <span>Click or drop passport image or PDF</span>
+                            <small class="d-block mt-1">JPG, PNG, WebP, PDF · 5 MB max</small>
+                            <input type="file" id="passport-upload" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf">
                         </label>
                     </div>
                 </div>
@@ -306,6 +306,10 @@
                         </div>
                         <div id="passport-preview-section" class="preview-box" style="display: none; height:160px;">
                             <img id="passport-photo-preview" src="" alt="Passport" style="max-height:140px;">
+                            <div id="passport-pdf-preview" class="text-center" style="display:none;">
+                                <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
+                                <div class="small text-muted" id="passport-pdf-name"></div>
+                            </div>
                         </div>
                         <div class="mt-2" id="passport-retake-wrap" style="display: none;">
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-retake-passport">
@@ -318,7 +322,7 @@
         </div>
 
         <div class="card-footer-bar d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <small class="text-muted mb-0">Add at least one photo, or skip.</small>
+            <small class="text-muted mb-0">Taken photo, AI portrait, and passport picture are all required.</small>
             <div class="d-flex flex-wrap gap-2">
                 <a href="/billing/receipt/<%= billing.id %>" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-forward me-1"></i> Skip
@@ -349,11 +353,13 @@
     const billingId = '<%= billing.id %>';
     const video = document.getElementById('webcam-video');
     const canvas = document.getElementById('capture-canvas');
-    const patientPreview = document.getElementById('patient-photo-preview');
-    const patientPreviewSection = document.getElementById('patient-preview-section');
-    const patientPreviewEmpty = document.getElementById('patient-preview-empty');
-    const patientPreviewActions = document.getElementById('patient-preview-actions');
+    const takenPreview = document.getElementById('taken-photo-preview');
+    const takenPreviewSection = document.getElementById('taken-preview-section');
+    const takenPreviewEmpty = document.getElementById('taken-preview-empty');
+    const takenPreviewActions = document.getElementById('taken-preview-actions');
     const passportPreview = document.getElementById('passport-photo-preview');
+    const passportPdfPreview = document.getElementById('passport-pdf-preview');
+    const passportPdfName = document.getElementById('passport-pdf-name');
     const passportPreviewSection = document.getElementById('passport-preview-section');
     const passportPreviewEmpty = document.getElementById('passport-preview-empty');
     const passportRetakeWrap = document.getElementById('passport-retake-wrap');
@@ -373,8 +379,10 @@
     const aiPreview = document.getElementById('ai-photo-preview');
 
     let stream = null;
-    let patientPhotoBlob = null;
+    let takenPhotoBlob = null;
+    let aiPhotoBlob = null;
     let passportPhotoBlob = null;
+    let passportIsPdf = false;
     const processingOverlay = document.getElementById('processing-overlay');
     const processingOverlayTitle = document.getElementById('processing-overlay-title');
     const processingOverlayMessage = document.getElementById('processing-overlay-message');
@@ -402,7 +410,7 @@
     }
 
     function updateSaveButton() {
-        btnSave.disabled = !(patientPhotoBlob || passportPhotoBlob);
+        btnSave.disabled = !(takenPhotoBlob && aiPhotoBlob && passportPhotoBlob);
     }
 
     function setupDropzone(zone, input, onFile) {
@@ -426,48 +434,72 @@
         });
     }
 
-    function showPatientPreview(blob) {
-        revokePreviewUrl(patientPreview);
-        patientPhotoBlob = blob;
-        patientPreview.src = URL.createObjectURL(blob);
-        patientPreviewEmpty.style.display = 'none';
-        patientPreviewSection.style.display = 'flex';
-        patientPreviewActions.style.display = 'flex';
+    function showTakenPreview(blob) {
+        revokePreviewUrl(takenPreview);
+        takenPhotoBlob = blob;
+        takenPreview.src = URL.createObjectURL(blob);
+        takenPreviewEmpty.style.display = 'none';
+        takenPreviewSection.style.display = 'flex';
+        takenPreviewActions.style.display = 'flex';
+        clearAiPreview();
         updateSaveButton();
     }
 
     function clearAiPreview() {
         revokePreviewUrl(aiPreview);
         aiPreview.src = '';
+        aiPhotoBlob = null;
         aiPreviewRow.style.display = 'none';
+        updateSaveButton();
     }
 
-    function clearPatientPreview() {
-        revokePreviewUrl(patientPreview);
-        patientPreview.src = '';
-        patientPhotoBlob = null;
-        patientPreviewSection.style.display = 'none';
-        patientPreviewEmpty.style.display = 'flex';
-        patientPreviewActions.style.display = 'none';
+    function clearTakenPreview() {
+        revokePreviewUrl(takenPreview);
+        takenPreview.src = '';
+        takenPhotoBlob = null;
+        takenPreviewSection.style.display = 'none';
+        takenPreviewEmpty.style.display = 'flex';
+        takenPreviewActions.style.display = 'none';
         fileInput.value = '';
         clearAiPreview();
         updateSaveButton();
     }
 
-    function showPassportPreview(blob) {
+    function showAiPreview(blob) {
+        revokePreviewUrl(aiPreview);
+        aiPhotoBlob = blob;
+        aiPreview.src = URL.createObjectURL(blob);
+        aiPreviewRow.style.display = 'flex';
+        updateSaveButton();
+    }
+
+    function showPassportPreview(file) {
         revokePreviewUrl(passportPreview);
-        passportPhotoBlob = blob;
-        passportPreview.src = URL.createObjectURL(blob);
+        passportPhotoBlob = file;
+        passportIsPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
         passportPreviewEmpty.style.display = 'none';
         passportPreviewSection.style.display = 'flex';
         passportRetakeWrap.style.display = 'block';
+        if (passportIsPdf) {
+            passportPreview.style.display = 'none';
+            passportPdfPreview.style.display = 'block';
+            passportPdfName.textContent = file.name || 'passport.pdf';
+        } else {
+            passportPdfPreview.style.display = 'none';
+            passportPreview.style.display = 'block';
+            passportPreview.src = URL.createObjectURL(file);
+        }
         updateSaveButton();
     }
 
     function clearPassportPreview() {
         revokePreviewUrl(passportPreview);
         passportPreview.src = '';
+        passportPreview.style.display = 'block';
+        passportPdfPreview.style.display = 'none';
+        passportPdfName.textContent = '';
         passportPhotoBlob = null;
+        passportIsPdf = false;
         passportPreviewSection.style.display = 'none';
         passportPreviewEmpty.style.display = 'flex';
         passportRetakeWrap.style.display = 'none';
@@ -487,12 +519,24 @@
         return true;
     }
 
+    function validatePassportFile(file) {
+        const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+        if (isPdf) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert('PDF must be 5 MB or smaller.');
+                return false;
+            }
+            return true;
+        }
+        return validateImageFile(file);
+    }
+
     setupDropzone(patientUploadZone, fileInput, function (file) {
         if (!validateImageFile(file)) { fileInput.value = ''; return; }
-        showPatientPreview(file);
+        showTakenPreview(file);
     });
     setupDropzone(passportUploadZone, passportInput, function (file) {
-        if (!validateImageFile(file)) { passportInput.value = ''; return; }
+        if (!validatePassportFile(file)) { passportInput.value = ''; return; }
         showPassportPreview(file);
     });
 
@@ -539,20 +583,21 @@
         canvas.height = h;
         canvas.getContext('2d').drawImage(video, 0, 0, w, h);
         canvas.toBlob(function (blob) {
-            if (blob) showPatientPreview(blob);
-        }, 'image/jpeg', 0.92);
+            if (!blob) return;
+            showTakenPreview(new File([blob], 'webcam-capture.png', { type: 'image/png' }));
+        }, 'image/png');
     });
 
-    btnRetakePatient.addEventListener('click', clearPatientPreview);
+    btnRetakePatient.addEventListener('click', clearTakenPreview);
     btnRetakePassport.addEventListener('click', clearPassportPreview);
 
     btnProceedAi.addEventListener('click', function () {
-        if (!patientPhotoBlob) {
+        if (!takenPhotoBlob) {
             alert('Please capture or upload a patient photo first.');
             return;
         }
         const formData = new FormData();
-        formData.append('photo', patientPhotoBlob, patientPhotoBlob.name || 'profile-for-ai.jpg');
+        formData.append('photo', takenPhotoBlob, takenPhotoBlob.name || 'profile-for-ai.png');
         btnProceedAi.disabled = true;
         const originalAiHtml = btnProceedAi.innerHTML;
         btnProceedAi.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
@@ -568,13 +613,7 @@
             return fetch(result.data.imageUrl + '?t=' + Date.now()).then(function (r) { return r.blob(); });
         })
         .then(function (blob) {
-            revokePreviewUrl(patientPreview);
-            revokePreviewUrl(aiPreview);
-            patientPhotoBlob = blob;
-            patientPreview.src = URL.createObjectURL(blob);
-            aiPreview.src = URL.createObjectURL(blob);
-            aiPreviewRow.style.display = 'flex';
-            updateSaveButton();
+            showAiPreview(blob);
         })
         .catch(function (err) { alert(err.message || 'Could not generate AI portrait'); })
         .finally(function () {
@@ -585,17 +624,18 @@
     });
 
     btnSave.addEventListener('click', function () {
-        if (!patientPhotoBlob && !passportPhotoBlob) {
-            alert('Please add a patient photo and/or passport picture first.');
+        if (!takenPhotoBlob || !aiPhotoBlob || !passportPhotoBlob) {
+            alert('Taken photo, AI portrait, and passport picture are all required.');
             return;
         }
         const formData = new FormData();
-        if (patientPhotoBlob) {
-            formData.append('photo', patientPhotoBlob, patientPhotoBlob.name || 'webcam-capture.jpg');
-        }
-        if (passportPhotoBlob) {
-            formData.append('passportPhoto', passportPhotoBlob, passportPhotoBlob.name || 'passport-upload.jpg');
-        }
+        formData.append('takenPhoto', takenPhotoBlob, takenPhotoBlob.name || 'taken-photo.png');
+        formData.append('photo', aiPhotoBlob, aiPhotoBlob.name || 'ai-profile.png');
+        formData.append(
+            'passportPhoto',
+            passportPhotoBlob,
+            passportPhotoBlob.name || (passportIsPdf ? 'passport.pdf' : 'passport-upload.png')
+        );
         btnSave.disabled = true;
         btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
         showProcessingModal(

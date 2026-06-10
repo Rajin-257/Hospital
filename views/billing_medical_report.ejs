@@ -127,6 +127,7 @@
           <div class="form-group mb-3">
             <label for="report_status">Status</label>
             <select id="report_status" name="report_status" class="form-select">
+              <option value="RUNNING" <%= reportData.status === 'RUNNING' ? 'selected' : '' %>>RUNNING</option>
               <option value="Held UP" <%= reportData.status === 'Held UP' ? 'selected' : '' %>>Held UP</option>
               <option value="Fit" <%= reportData.status === 'Fit' ? 'selected' : '' %>>Fit</option>
               <option value="Unfit" <%= reportData.status === 'Unfit' ? 'selected' : '' %>>Unfit</option>
