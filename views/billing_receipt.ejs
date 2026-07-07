@@ -1,19 +1,76 @@
-<%- include('partials/header') %>
+﻿<%- include('partials/header') %>
 <%- include('partials/navbar') %>
 <%- include('partials/date-formatter') %>
 
 <style>
+    :root {
+        --a4-width: 210mm;
+        --a4-height: 297mm;
+        --a4-margin: 10mm;
+        --a4-content-width: calc(var(--a4-width) - (var(--a4-margin) * 2));
+        --a4-content-height: calc(var(--a4-height) - (var(--a4-margin) * 2));
+    }
+
+    .print-page-shell {
+        width: var(--a4-width);
+        max-width: var(--a4-width);
+        min-height: var(--a4-height);
+        margin: 0 auto 20px;
+        padding: var(--a4-margin);
+        box-sizing: border-box;
+        background: #fff;
+        box-shadow: 0 0 0 1px #dee2e6;
+    }
+
     /* Remove Roboto Mono import and replace with system Arial */
     @media print {
     /* Basic print settings */
+    html,
     body {
-        margin: 0;
-        padding: 0;
+        width: 210mm !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    nav,
+    .navbar,
+    footer {
+        display: none !important;
     }
     
+    .print-page-shell {
+        width: var(--a4-content-width) !important;
+        max-width: var(--a4-content-width) !important;
+        min-height: auto !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        overflow: visible;
+        transform-origin: top center;
+    }
+
+    .print-copy-divider {
+        display: block !important;
+        border-top: 1px dashed #000;
+        margin: 8mm 0;
+        height: 0;
+        padding: 0;
+    }
+
+    .print-invoice-stack .print-invoice.print-invoice-copy {
+        margin-top: 0;
+        padding-top: 0;
+    }
+
     .print-invoice {
-        padding: 5px;
-        max-width: 100%;
+        padding: 0;
+        max-width: var(--a4-content-width);
+        width: var(--a4-content-width);
         box-sizing: border-box;
         font-size: 12px;
         font-family: Arial, sans-serif;
@@ -130,25 +187,42 @@
     }
     
     .barcode-container {
-        width: 220px !important;
+        width: 140px !important;
         margin: 0 !important;
         padding: 0 !important;
-        line-height: 0 !important;
+        line-height: 1.1 !important;
+    }
+
+    .barcode-container img {
+        width: 140px !important;
+        max-width: 140px !important;
+    }
+
+    .barcode-caption {
+        font-size: 8px !important;
     }
     
     /* Page size settings */
     @page {
-        size: 5.5in 7.5in;
-        margin: 0;
+        size: 210mm 297mm portrait;
+        margin: 10mm;
     }
     
-    /* Force content to fit */
+    /* Force content to fit A4 printable area */
     .print-invoice {
         transform-origin: top left;
-        transform: scale(var(--scale-factor, 0.95));
-        width: 5.5in;
-        height: 7.5in;
+        transform: scale(var(--scale-factor, 1));
+        width: var(--a4-content-width) !important;
+        max-width: var(--a4-content-width) !important;
+        height: auto;
+        min-height: 0;
         overflow: hidden;
+    }
+
+    .invoice-copy-label {
+        font-size: 11px !important;
+        margin-bottom: 2px !important;
+        padding: 1px 6px !important;
     }
     
     /* Diagnostic header */
@@ -200,12 +274,14 @@
     .print-invoice {
         background-color: white;
         color: #333;
-        padding: 10px;
-        max-width: 800px;
+        padding: 0;
+        width: var(--a4-content-width);
+        max-width: var(--a4-content-width);
         margin: 0 auto;
         font-family: Arial, sans-serif;
         font-size: 14px;
         letter-spacing: -0.5px;
+        box-sizing: border-box;
     }
     
     .invoice-header {
@@ -593,10 +669,31 @@
     }
     
     .barcode-container {
-        width: 280px;
+        width: 140px;
         margin: 0;
         padding: 0;
-        line-height: 0;
+        line-height: 1.1;
+        text-align: center;
+    }
+
+    .barcode-container img {
+        display: block;
+        width: 140px;
+        max-width: 140px;
+        height: auto;
+        margin: 0 auto;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+    }
+
+    .barcode-caption {
+        font-size: 9px;
+        font-weight: 600;
+        margin-top: 1px;
+        letter-spacing: 0;
+        line-height: 1.15;
+        font-family: Arial, sans-serif;
+        word-break: break-word;
     }
     
     .invoice-memo-text {
@@ -678,6 +775,33 @@
         letter-spacing: -0.5px;
     }
 
+    .invoice-copy-label {
+        text-align: center;
+        font-weight: bold;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin: 0 0 6px 0;
+        padding: 3px 8px;
+        border: 1px solid #333;
+        color: #333;
+        font-family: Arial, sans-serif;
+    }
+
+    @media screen {
+        .print-invoice-stack .print-invoice.print-invoice-copy {
+            display: none !important;
+        }
+
+        .invoice-copy-label {
+            display: none;
+        }
+
+        .print-copy-divider {
+            display: none !important;
+        }
+    }
+
     /* Handle decimal display differently for print */
     @media print {
         .print-no-decimal {
@@ -704,7 +828,7 @@
             <i class="fas fa-file-medical me-1"></i> Medical Report
         </a>
         <button class="btn btn-outline-secondary me-2" onclick="window.print()">
-            <i class="fas fa-print me-1"></i> Print Invoice
+            <i class="fas fa-print me-1"></i> Print (Office + Patient Copy)
         </button>
         <a href="/billing" class="btn btn-primary">
             <i class="fas fa-arrow-left me-1"></i> Back
@@ -745,319 +869,30 @@ function formatAmount(amount) {
     // When printing, show without decimal places
     return `<span class="print-no-decimal">Tk ${Math.round(parseFloat(amount))}</span><span class="no-print">Tk ${parseFloat(amount).toFixed(2)}</span>`;
 }
+
 %>
 
-<div class="print-invoice">
-    <div class="diagnostic-header">
-        <div class="diagnostic-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'HOSPITAL MANAGEMENT SYSTEM' %></div>
-        <div class="diagnostic-address">Address: <%= locals.settings && settings.address ? settings.address : 'No Address' %></div>
-        <div class="diagnostic-mobile">Mobile: <%= locals.settings && settings.phone ? settings.phone : 'No Phone' %></div>
-    </div>
-    
-    <div class="invoice-info-row">
-        <div class="barcode-container">
-            <svg width="100%" viewBox="0 0 280 50">
-                <!-- Linear barcode mimicking standard UPC/EAN style -->
-                <rect x="10" y="5" width="2" height="30" fill="black"/>
-                <rect x="13" y="5" width="1" height="30" fill="black"/>
-                <rect x="16" y="5" width="3" height="30" fill="black"/>
-                <rect x="21" y="5" width="2" height="30" fill="black"/>
-                <rect x="25" y="5" width="4" height="30" fill="black"/>
-                <rect x="30" y="5" width="2" height="30" fill="black"/>
-                <rect x="34" y="5" width="1" height="30" fill="black"/>
-                <rect x="37" y="5" width="3" height="30" fill="black"/>
-                <rect x="42" y="5" width="2" height="30" fill="black"/>
-                <rect x="46" y="5" width="1" height="30" fill="black"/>
-                <rect x="49" y="5" width="3" height="30" fill="black"/>
-                <rect x="55" y="5" width="2" height="30" fill="black"/>
-                <rect x="59" y="5" width="1" height="30" fill="black"/>
-                <rect x="62" y="5" width="3" height="30" fill="black"/>
-                <rect x="67" y="5" width="2" height="30" fill="black"/>
-                <rect x="71" y="5" width="1" height="30" fill="black"/>
-                <rect x="74" y="5" width="3" height="30" fill="black"/>
-                <rect x="79" y="5" width="2" height="30" fill="black"/>
-                <rect x="83" y="5" width="1" height="30" fill="black"/>
-                <rect x="86" y="5" width="3" height="30" fill="black"/>
-                <rect x="91" y="5" width="2" height="30" fill="black"/>
-                <rect x="94" y="5" width="2" height="30" fill="black"/>
-                <rect x="97" y="5" width="1" height="30" fill="black"/>
-                <rect x="100" y="5" width="3" height="30" fill="black"/>
-                <rect x="105" y="5" width="2" height="30" fill="black"/>
-                <rect x="109" y="5" width="4" height="30" fill="black"/>
-                <rect x="115" y="5" width="2" height="30" fill="black"/>
-                <rect x="119" y="5" width="1" height="30" fill="black"/>
-                <rect x="122" y="5" width="3" height="30" fill="black"/>
-                <rect x="127" y="5" width="2" height="30" fill="black"/>
-                <rect x="131" y="5" width="1" height="30" fill="black"/>
-                <rect x="134" y="5" width="3" height="30" fill="black"/>
-                <rect x="139" y="5" width="2" height="30" fill="black"/>
-                <rect x="143" y="5" width="1" height="30" fill="black"/>
-                <rect x="146" y="5" width="3" height="30" fill="black"/>
-                <rect x="151" y="5" width="2" height="30" fill="black"/>
-                <rect x="155" y="5" width="1" height="30" fill="black"/>
-                <rect x="158" y="5" width="3" height="30" fill="black"/>
-                <rect x="163" y="5" width="2" height="30" fill="black"/>
-                <rect x="167" y="5" width="1" height="30" fill="black"/>
-                <rect x="170" y="5" width="3" height="30" fill="black"/>
-                <rect x="175" y="5" width="2" height="30" fill="black"/>
-            </svg>
-        </div>
-        <div class="invoice-memo-text">Invoice/Memo</div>
-    </div>
-
-    <table class="invoice-info-table">
-        <tr>
-            <td class="invoice-info-left">
-                <div class="info-label">Patient Info</div>
-                <div class="info-value">Name: <%= billing.Patient.name %></div>
-                <div class="info-value">Patient ID: <%= billing.Patient.patientId %></div>
-                <div class="info-value">Date of Birth: <%= formatDob(billing.Patient.dateOfBirth) %></div>
-                <div class="info-value">Gender: <%= billing.Patient.gender %></div>
-                <div class="info-value">Mobile: <%= billing.Patient.phone %></div>
-            </td>
-            <td class="invoice-info-middle">
-                <div class="info-label">Invoice Details</div>
-                <div class="info-value">Invoice #: <%= billing.billNumber %></div>
-                <div class="info-value">Billing Date: <%= formatDate(billing.billDate) %></div>
-                <% if (billing.billdelivaridate) { %>
-                <div class="info-value">Delivery Date: <%= formatDate(billing.billdelivaridate) %></div>
-                <% } %>
-                <% if (billing.referringDoctor) { %>
-                <div class="info-value">Ref: <%= billing.referringDoctor.replace(/[()]/g, '') %></div>
-                <% } %>
-                <% 
-                if (Array.isArray(items)) {
-                    const testItems = items.filter(item => item.type === 'test' && item.doctorId && item.doctorName);
-                    if (testItems.length > 0) {
-                        const uniqueDoctors = [...new Set(testItems.map(item => 
-                            item.doctorName ? item.doctorName.replace(/[()]/g, '') : ''
-                        ))];
-                        if (uniqueDoctors.length > 0) {
-                %>
-                <div class="info-value">Ref: <%= uniqueDoctors.join(', ') %></div>
-                <% 
-                        }
-                    }
-                }
-                %>
-                <% if (billing.marketingManagerId) { %>
-                <div class="info-value">Marketing_by:
-                    <% if (locals.marketingManager) { %>
-                        <%= marketingManager.username %>
-                    <% } else { %>
-                        -
-                    <% } %>
-                </div>
-                <% } %>
-                <div class="info-value">Passport No: <%= billing.Patient.nidPassportNo || 'N/A' %></div>
-            </td>
-            <td class="invoice-info-photo">
-                <% if (billing.patientPhoto) { %>
-                <img src="<%= billing.patientPhoto %>" alt="Patient photo" class="patient-photo-img">
-                <% } %>
-            </td>
-        </tr>
-    </table>
-    
-    <% if (appointments.length > 0) { %>
-    <div class="section-title text-center">Consultations</div>
-    <table class="invoice-table">
-        <thead>
-            <tr>
-                <th class="text-center" style="width: 5%;">S.No</th>
-                <th class="text-center">Doctor</th>
-                <th class="text-center">Service</th>
-                <th class="text-end">Basic Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% appointments.forEach((item, index) => { %>
-                <tr>
-                    <td class="text-center"><%= index + 1 %></td>
-                    <td><%= item.name.replace('Consultation with Dr. ', 'Dr. ') %></td>
-                    <td>Medical Consultation</td>
-                    <td class="text-right"><%- formatAmount(item.price) %></td>
-                </tr>
-            <% }) %>
-        </tbody>
-    </table>
-    <% } %>
-    
-    <% if (cabins.length > 0) { %>
-    <div class="section-title text-center">Accommodation</div>
-    <table class="invoice-table">
-        <thead>
-            <tr>
-                <th class="text-center" style="width: 5%;">S.No</th>
-                <th class="text-center">Room Details</th>
-                <th class="text-center">Service Type</th>
-                <th class="text-end">Basic Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% cabins.forEach((item, index) => { %>
-                <tr>
-                    <td class="text-center"><%= index + 1 %></td>
-                    <td><%= item.name %></td>
-                    <td>Room Charges</td>
-                    <td class="text-right"><%- formatAmount(item.price) %></td>
-                </tr>
-            <% }) %>
-        </tbody>
-    </table>
-    <% } %>
-    
-    <% if (tests.length > 0) { %>
-    <div class="section-title text-center">Laboratory Tests</div>
-    <table class="invoice-table">
-        <thead>
-            <tr>
-                <th class="text-center" style="width: 5%;">S.No</th>
-                <th class="text-center">Test Name</th>
-                <% if (!billing.billdelivaridate) { %>
-                <th class="text-center">Delivery Date</th>
-                <% } %>
-                <th class="text-end">Basic Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% tests.forEach((item, index) => { %>
-                <tr>
-                    <td class="text-center"><%= index + 1 %></td>
-                    <td><%= item.name %></td>
-                    <% if (!billing.billdelivaridate) { %>
-                        <td>
-                            <% if (item.deliveryDate && item.deliveryDate.trim() !== '') { 
-                                try {
-                                    const deliveryDate = new Date(item.deliveryDate);
-                                    if (!isNaN(deliveryDate.getTime())) { %>
-                                        <%= formatDate(deliveryDate) %>
-                                    <% } else { %>
-                                        N/A
-                                    <% }
-                                } catch(e) { %>
-                                    N/A
-                                <% }
-                               } else { %>
-                                N/A
-                            <% } %>
-                        </td>
-                    <% } %>
-                    <td class="text-right"><%- formatAmount(item.price) %></td>
-                </tr>
-            <% }) %>
-        </tbody>
-    </table>
-    
-    <% 
-    // Check if any tests have delivery options other than 'Not Collected'
-    const specialDeliveryTests = tests.filter(item => 
-        item.deliveryOption && item.deliveryOption !== 'Not Collected'
-    );
-    
-    if (specialDeliveryTests.length > 0) { 
-    %>
-    <div style="margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #4a6fdc; border-radius: 4px;">
-        <h6 style="color: #4a6fdc; margin-bottom: 10px;"><i class="fas fa-info-circle me-2"></i>Special Delivery Information</h6>
-        <ul style="margin-bottom: 0; padding-left: 20px;">
-            <% specialDeliveryTests.forEach(test => { %>
-                <li style="margin-bottom: 5px;">
-                    <%= test.name %>: <%= test.deliveryOption %>
-                    <% if (test.deliveryOption === 'Home Delivery' && test.deliveryDate && test.deliveryDate.trim() !== '') {
-                        try {
-                            const deliveryDate = new Date(test.deliveryDate);
-                            if (!isNaN(deliveryDate.getTime())) { %>
-                                - Expected delivery on <%= formatDate(deliveryDate) %>
-                            <% }
-                        } catch(e) { /* Ignore date errors */ }
-                    } %>
-                </li>
-            <% }) %>
-        </ul>
-        <% if (specialDeliveryTests.some(test => test.deliveryOption === 'Email')) { %>
-            <p style="margin-top: 10px; margin-bottom: 0;"><small>* Email results will be sent to <%= billing.Patient.email || 'the email on file' %></small></p>
-        <% } %>
-        <% if (specialDeliveryTests.some(test => test.deliveryOption === 'Home Delivery')) { %>
-            <p style="margin-top: 5px; margin-bottom: 0;"><small>* Home delivery will be made to <%= billing.Patient.address || 'the address on file' %></small></p>
-        <% } %>
-    </div>
-    <% } %>
-    <% } %>
-    
-    <div class="invoice-total-section">
-        <div class="invoice-status-seal">
-            <div class="seal-container">
-                <div class="seal-background <%= billing.status === 'paid' ? 'paid-seal' : 'unpaid-seal' %>">
-                    <div class="seal-status <%= billing.status === 'paid' ? 'paid-text' : 'unpaid-text' %>">
-                        <% if (billing.status === 'paid') { %>
-                            PAID
-                        <% } else { %>
-                            DUE
-                        <% } %>
-                    </div>
-                    <div class="seal-amount">
-                        <% if (billing.status === 'paid') { %>
-                            <span class="print-no-decimal">Tk <%= Math.round(parseFloat(billing.paidAmount)) %></span>
-                            <span class="no-print">Tk <%= parseFloat(billing.paidAmount).toFixed(2) %></span>
-                        <% } else { %>
-                            <span class="print-no-decimal">Tk <%= Math.round(parseFloat(billing.dueAmount)) %></span>
-                            <span class="no-print">Tk <%= parseFloat(billing.dueAmount).toFixed(2) %></span>
-                        <% } %>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="invoice-total">
-            <div class="invoice-total-row">
-                <div class="invoice-total-label">Subtotal:</div>
-                <div class="invoice-total-value"><%- formatAmount(billing.totalAmount) %></div>
-            </div>
-            <div class="invoice-total-row">
-                <div class="invoice-total-label">Discount:</div>
-                <div class="invoice-total-value"><%- formatAmount(billing.discountAmount) %></div>
-            </div>
-            <div class="invoice-total-row invoice-grand-total">
-                <div class="invoice-total-label">Total:</div>
-                <div class="invoice-total-value"><%- formatAmount(billing.netPayable) %></div>
-            </div>
-            <div class="invoice-total-row">
-                <div class="invoice-total-label">Amount Paid:</div>
-                <div class="invoice-total-value"><%- formatAmount(billing.paidAmount) %></div>
-            </div>
-            <% if (parseFloat(billing.dueAmount) > 0) { %>
-            <div class="invoice-total-row invoice-grand-total">
-                <div class="invoice-total-label">Balance Due:</div>
-                <div class="invoice-total-value"><%- formatAmount(billing.dueAmount) %></div>
-            </div>
-            <% } %>
-            
-            
-        </div>
-    </div>
-    
-    <!-- Signature Section -->
-    <div class="signature-section">
-        <div class="signature-box">
-            <div class="signature-subtitle"><%- user.username %></div>
-            <div class="signature-line"></div>
-            <div class="signature-title">Prepared By</div>
-        </div>
-        <div class="signature-box">
-            <div class="signature-subtitle">&nbsp</div>
-            <div class="signature-line"></div>
-            <div class="signature-title">Checked By</div>
-        </div>
-        <div class="signature-box">
-            <div class="signature-subtitle">&nbsp</div>
-            <div class="signature-line"></div>
-            <div class="signature-title">Accounts</div>
-        </div>
-    </div>
-    
-    <div class="invoice-footer">
-        Thank you for choosing our services | Printed on: <%= formatDate(new Date()) %> <%= new Date().toLocaleTimeString() %>
-    </div>
+<% const receiptCopies = ['Office Copy', 'Patient Copy']; %>
+<div class="print-invoice-stack">
+<div class="print-page-shell">
+<% receiptCopies.forEach(function(copyLabel, copyIndex) { %>
+<% if (copyIndex === 1) { %>
+<div class="print-copy-divider"></div>
+<% } %>
+<div class="print-invoice<%= copyIndex > 0 ? ' print-invoice-copy' : '' %>">
+<%- include('partials/billing_receipt_body', {
+  copyLabel: copyLabel,
+  formatDob: formatDob,
+  formatDate: formatDate,
+  formatAmount: formatAmount,
+  items: items,
+  appointments: appointments,
+  cabins: cabins,
+  tests: tests
+}) %>
+</div>
+<% }); %>
+</div>
 </div>
 
 <% if (billing.status !== 'paid') { %>
@@ -1143,34 +978,51 @@ function formatAmount(amount) {
 </div>
 
 <script>
-    // Auto-scaling function to ensure content fits on a single 6x8 inch page
+    // Auto-scaling: fit both copies + divider on one A4 page
+    const A4_CONTENT_HEIGHT_PX = (277 / 25.4) * 96;
+    const A4_CONTENT_WIDTH_PX = (190 / 25.4) * 96;
+
     function scaleToFit() {
-        if (window.matchMedia('print').matches) {
-            const content = document.querySelector('.print-invoice');
-            if (!content) return;
+        if (!window.matchMedia('print').matches) return;
 
-            // Remove any previous scaling for measurement
-            document.documentElement.style.setProperty('--scale-factor', 1);
+        const shell = document.querySelector('.print-invoice-stack .print-page-shell');
+        if (!shell) return;
 
-            // Get actual content height vs target container height
-            const contentHeight = content.scrollHeight;
-            const targetHeight = 7.5 * 96; // 7.5 inches in pixels
+        shell.style.transform = '';
+        shell.style.transformOrigin = 'top center';
+        shell.querySelectorAll('.print-invoice').forEach(function(content) {
+            content.style.setProperty('--scale-factor', 1);
+        });
 
-            // Calculate scale factor to fit content into target height
-            let scaleFactor = Math.min(0.98, targetHeight / contentHeight);
+        const totalHeight = shell.scrollHeight;
+        const totalWidth = shell.scrollWidth;
+        let scaleFactor = 1;
 
-            // Set minimum scale to ensure readability
-            scaleFactor = Math.max(scaleFactor, 0.8);
-
-            console.log('Content height:', contentHeight, 'Target height:', targetHeight, 'Scale:', scaleFactor);
-
-            // Apply the scale factor as a CSS variable
-            document.documentElement.style.setProperty('--scale-factor', scaleFactor);
+        if (totalHeight > A4_CONTENT_HEIGHT_PX) {
+            scaleFactor = Math.min(scaleFactor, A4_CONTENT_HEIGHT_PX / totalHeight);
         }
+        if (totalWidth > A4_CONTENT_WIDTH_PX) {
+            scaleFactor = Math.min(scaleFactor, A4_CONTENT_WIDTH_PX / totalWidth);
+        }
+
+        if (scaleFactor < 1) {
+            scaleFactor = Math.max(scaleFactor, 0.65);
+            shell.style.transform = 'scale(' + scaleFactor + ')';
+        }
+    }
+
+    function resetScale() {
+        const shell = document.querySelector('.print-invoice-stack .print-page-shell');
+        if (!shell) return;
+        shell.style.transform = '';
+        shell.querySelectorAll('.print-invoice').forEach(function(content) {
+            content.style.setProperty('--scale-factor', 1);
+        });
     }
     
     // Run before printing and on load to prepare
     window.addEventListener('beforeprint', scaleToFit);
+    window.addEventListener('afterprint', resetScale);
     window.addEventListener('load', function() {
         // Dynamically add ultra-compact styles if needed
         const style = document.createElement('style');

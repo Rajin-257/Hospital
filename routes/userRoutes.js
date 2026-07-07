@@ -32,7 +32,7 @@ router.get('/profile', userController.getProfile);
 router.put('/profile/update', userController.updateProfile);
 router.post('/profile/change-password', userController.changePassword);
 
-// Laboratorist AI settings (one bg + prompt per user)
+// Laboratorist / receptionist AI settings (one bg + prompt per user)
 router.get('/profile/lab-settings', userController.getLabSettings);
 router.post('/profile/lab-settings', uploadBg.single('hospitalBg'), userController.saveLabSettings);
 

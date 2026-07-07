@@ -26,6 +26,7 @@ const User = require('../models/User');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
 const { buildPatientAccessWhere } = require('./patientController');
+const { buildInvoiceBarcodeForBilling } = require('../utils/invoiceBarcode');
 
 const BILLING_PHOTOS_DIR = path.join(__dirname, '../public/uploads/billing_photos');
 
@@ -1310,7 +1311,8 @@ exports.renderBillingPhotoPage = async (req, res) => {
 
     res.render('billing_photo', {
       title: 'Patient Photo',
-      billing
+      billing,
+      canGenerateAi: ['laboratorist', 'receptionist', 'admin', 'softadmin'].includes(req.user?.role)
     });
   } catch (error) {
     console.error(error);
@@ -1331,17 +1333,43 @@ exports.generateAiPortrait = async (req, res) => {
       return res.status(404).json({ message: 'Billing not found' });
     }
 
-    const photoFile = req.file;
-    if (!photoFile) {
-      return res.status(400).json({ message: 'Upload a patient profile photo first' });
+    const currentUser = await User.findByPk(req.user.id, {
+      attributes: ['id', 'hospitalBg', 'aiPrompt']
+    });
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    const portraitBuffers = await generateAiPortrait(photoFile.path);
-    const { imageUrl, imageUrlJpg } = saveAiPortraitFiles(billing.id, portraitBuffers);
+    const photoFile = req.file;
+    let profileImagePath;
+    let tempFileToClean = null;
 
-    if (photoFile.path && fs.existsSync(photoFile.path) && !photoFile.filename.startsWith('ai-')) {
+    if (photoFile) {
+      profileImagePath = photoFile.path;
+      tempFileToClean = photoFile.path;
+    } else if (billing.takenPhoto) {
+      profileImagePath = path.join(__dirname, '../public', billing.takenPhoto);
+      if (!fs.existsSync(profileImagePath)) {
+        return res.status(400).json({ message: 'Taken photo file not found on server' });
+      }
+    } else {
+      return res.status(400).json({ message: 'Upload a taken photo first' });
+    }
+
+    const bgImagePath = currentUser.hospitalBg
+      ? path.join(__dirname, '../public', currentUser.hospitalBg)
+      : null;
+
+    const portraitBuffers = await generateAiPortrait(profileImagePath, {
+      bgImagePath: bgImagePath || undefined,
+      prompt: currentUser.aiPrompt || undefined
+    });
+    const { imageUrl, imageUrlJpg } = saveAiPortraitFiles(billing.id, portraitBuffers);
+    await billing.update({ patientPhoto: imageUrl });
+
+    if (tempFileToClean && fs.existsSync(tempFileToClean) && !path.basename(tempFileToClean).startsWith('ai-')) {
       try {
-        fs.unlinkSync(photoFile.path);
+        fs.unlinkSync(tempFileToClean);
       } catch (unlinkErr) {
         console.error('Could not remove temp upload:', unlinkErr);
       }
@@ -1447,11 +1475,18 @@ exports.getBilling = async (req, res) => {
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
       return res.json(billing);
     }
+
+    const invoiceBarcode = await buildInvoiceBarcodeForBilling(billing).catch((err) => {
+      console.error('Invoice barcode error:', err);
+      return { value: '', dataUri: null };
+    });
     
     res.render('billing_receipt', {
       title: 'Billing Receipt',
       billing,
-      marketingManager
+      marketingManager,
+      invoiceBarcodeValue: invoiceBarcode.value,
+      invoiceBarcodeDataUri: invoiceBarcode.dataUri
     });
   } catch (error) {
     console.error(error);

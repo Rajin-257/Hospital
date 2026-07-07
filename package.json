@@ -17,6 +17,7 @@
         "@fontsource/noto-sans-bengali": "^5.2.11",
         "archiver": "^8.0.0",
         "bcryptjs": "^2.4.3",
+        "bwip-js": "^4.11.2",
         "connect-session-sequelize": "^7.1.7",
         "cookie-parser": "^1.4.6",
         "dotenv": "^16.5.0",

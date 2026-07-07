@@ -95,17 +95,17 @@
         </div>
     </div>
 
-    <% if (user.role === 'laboratorist') { %>
-    <!-- Laboratorist AI Settings Card -->
+    <% if (['laboratorist', 'receptionist'].includes(user.role)) { %>
+    <!-- AI Portrait Settings -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-primary">
                 <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
                     <h5 class="mb-0"><i class="fas fa-magic me-2"></i>AI Portrait Settings</h5>
-                    <span class="badge bg-white text-primary">Laboratorist Only</span>
+                    <span class="badge bg-white text-primary"><%= user.role === 'receptionist' ? 'Receptionist' : 'Laboratorist' %></span>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted small mb-3">Upload your hospital background image and set a custom AI prompt. These settings are private to your account and will be used when generating AI portraits from the invoice list.</p>
+                    <p class="text-muted small mb-3">Upload your hospital background image and set a custom AI prompt. These settings are private to your account and will be used when generating AI portraits.</p>
                     <div class="row g-3">
                         <div class="col-md-5">
                             <label class="form-label fw-semibold">Hospital Background Image</label>

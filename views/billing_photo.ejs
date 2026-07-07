@@ -231,6 +231,27 @@
                     </div>
                 </div>
 
+                <% if (typeof canGenerateAi !== 'undefined' && canGenerateAi) { %>
+                <!-- AI Portrait (after taken picture) -->
+                <div class="col-md-4">
+                    <div class="panel-box">
+                        <div class="panel-heading"><i class="fas fa-magic"></i>AI Portrait</div>
+                        <p class="text-muted small mb-2">Uses your profile AI background and prompt. Add a taken photo first.</p>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <button type="button" class="btn btn-success btn-sm" id="btn-generate-ai" disabled>
+                                <i class="fas fa-magic me-1"></i> Generate AI Portrait
+                            </button>
+                        </div>
+                        <span id="ai-generate-status" class="small d-block mb-2"></span>
+                        <div id="ai-result-empty" class="text-muted small text-center py-2 border rounded bg-light">
+                            AI portrait appears here
+                        </div>
+                        <div id="ai-result-section" class="preview-box" style="display: none;">
+                            <img id="ai-result-img" src="" alt="AI portrait">
+                        </div>
+                    </div>
+                </div>
+                <% } else { %>
                 <!-- Passport Picture -->
                 <div class="col-md-4">
                     <div class="panel-box">
@@ -258,9 +279,40 @@
                         </div>
                     </div>
                 </div>
+                <% } %>
             </div>
 
             <div class="row g-3 mt-1">
+                <% if (typeof canGenerateAi !== 'undefined' && canGenerateAi) { %>
+                <!-- Passport Picture -->
+                <div class="col-md-4">
+                    <div class="panel-box">
+                        <div class="panel-heading"><i class="fas fa-id-card"></i>Passport Picture</div>
+                        <div id="passport-preview-empty" class="preview-box is-empty">
+                            <span>No passport image</span>
+                        </div>
+                        <div id="passport-preview-section" class="preview-box" style="display: none;">
+                            <img id="passport-photo-preview" src="" alt="Passport" style="max-height:200px;">
+                            <div id="passport-pdf-preview" class="text-center" style="display:none;">
+                                <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
+                                <div class="small text-muted" id="passport-pdf-name"></div>
+                            </div>
+                        </div>
+                        <label class="upload-zone w-100 mb-0 position-relative mt-2" id="passport-upload-zone" for="passport-upload">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Upload passport image or PDF</span>
+                            <small class="d-block mt-1">JPG, PNG, WebP, PDF · 5 MB max</small>
+                            <input type="file" id="passport-upload" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf">
+                        </label>
+                        <div class="mt-2" id="passport-retake-wrap" style="display: none;">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-retake-passport">
+                                <i class="fas fa-redo me-1"></i> Choose again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <% } %>
+
                 <!-- NID Picture (optional) -->
                 <div class="col-md-4">
                     <div class="panel-box">
@@ -356,6 +408,15 @@
     const processingOverlay = document.getElementById('processing-overlay');
     const processingOverlayTitle = document.getElementById('processing-overlay-title');
     const processingOverlayMessage = document.getElementById('processing-overlay-message');
+    const canGenerateAi = <%= (typeof canGenerateAi !== 'undefined' && canGenerateAi) ? 'true' : 'false' %>;
+    let savedTakenPhoto = <%- JSON.stringify(billing.takenPhoto || '') %>;
+    const btnGenerateAi = document.getElementById('btn-generate-ai');
+    const aiGenerateStatus = document.getElementById('ai-generate-status');
+    const aiResultEmpty = document.getElementById('ai-result-empty');
+    const aiResultSection = document.getElementById('ai-result-section');
+    const aiResultImg = document.getElementById('ai-result-img');
+
+    let hasSavedTakenPhoto = !!savedTakenPhoto;
 
     let stream = null;
     let takenPhotoBlob = null;
@@ -388,6 +449,13 @@
 
     function updateSaveButton() {
         btnSave.disabled = !(takenPhotoBlob && passportPhotoBlob);
+        updateAiPanel();
+    }
+
+    function updateAiPanel() {
+        if (!canGenerateAi || !btnGenerateAi) return;
+        var hasTakenPhoto = !!(takenPhotoBlob || savedTakenPhoto);
+        btnGenerateAi.disabled = !hasTakenPhoto;
     }
 
     function setupDropzone(zone, input, onFile) {
@@ -590,6 +658,63 @@
     btnRetakePatient.addEventListener('click', clearTakenPreview);
     btnRetakePassport.addEventListener('click', clearPassportPreview);
     btnRetakeNid.addEventListener('click', clearNidPreview);
+
+    if (canGenerateAi && btnGenerateAi) {
+        btnGenerateAi.addEventListener('click', function () {
+            if (!takenPhotoBlob && !hasSavedTakenPhoto) {
+                alert('Please capture or upload a taken photo first.');
+                return;
+            }
+
+            btnGenerateAi.disabled = true;
+            var orig = btnGenerateAi.innerHTML;
+            btnGenerateAi.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Generating...';
+            if (aiGenerateStatus) {
+                aiGenerateStatus.textContent = '';
+                aiGenerateStatus.className = 'small';
+            }
+            showProcessingModal('Generating AI Portrait', 'Please wait. Do not close or refresh this page.');
+
+            var request;
+            if (hasSavedTakenPhoto && !takenPhotoBlob) {
+                request = fetch('/billing/photo/' + billingId + '/generate-ai', { method: 'POST' })
+                    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); });
+            } else {
+                var formData = new FormData();
+                formData.append('photo', takenPhotoBlob, takenPhotoBlob.name || 'taken-photo.png');
+                request = fetch('/billing/photo/' + billingId + '/ai-portrait', { method: 'POST', body: formData })
+                    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); });
+            }
+
+            request
+            .then(function (result) {
+                if (!result.ok) throw new Error(result.data.message || 'Generation failed');
+                if (aiGenerateStatus) {
+                    aiGenerateStatus.textContent = 'AI portrait saved.';
+                    aiGenerateStatus.className = 'small text-success fw-semibold';
+                }
+                if (result.data.imageUrl) {
+                    if (aiResultImg) aiResultImg.src = result.data.imageUrl + '?t=' + Date.now();
+                    if (aiResultSection) aiResultSection.style.display = '';
+                    if (aiResultEmpty) aiResultEmpty.style.display = 'none';
+                }
+            })
+            .catch(function (err) {
+                if (aiGenerateStatus) {
+                    aiGenerateStatus.textContent = err.message || 'Failed to generate AI portrait';
+                    aiGenerateStatus.className = 'small text-danger';
+                }
+            })
+            .finally(function () {
+                hideProcessingModal();
+                btnGenerateAi.disabled = false;
+                btnGenerateAi.innerHTML = orig;
+                updateAiPanel();
+            });
+        });
+
+        updateAiPanel();
+    }
 
     btnSave.addEventListener('click', function () {
         if (!takenPhotoBlob || !passportPhotoBlob) {

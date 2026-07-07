@@ -1,0 +1,276 @@
+﻿<div class="invoice-copy-label"><%= copyLabel %></div>
+    <div class="diagnostic-header">
+        <div class="diagnostic-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'HOSPITAL MANAGEMENT SYSTEM' %></div>
+        <div class="diagnostic-address">Address: <%= locals.settings && settings.address ? settings.address : 'No Address' %></div>
+        <div class="diagnostic-mobile">Mobile: <%= locals.settings && settings.phone ? settings.phone : 'No Phone' %></div>
+    </div>
+    
+    <div class="invoice-info-row">
+        <div class="barcode-container">
+            <% if (typeof invoiceBarcodeDataUri !== 'undefined' && invoiceBarcodeDataUri) { %>
+            <img
+                src="<%= invoiceBarcodeDataUri %>"
+                alt="Invoice barcode"
+                width="140"
+                height="38"
+            >
+            <% } %>
+            <div class="barcode-caption">
+                Invoice: <%= billing.billNumber %> | Patient ID: <%= billing.Patient.patientId || '—' %>
+            </div>
+        </div>
+        <div class="invoice-memo-text">Invoice/Memo</div>
+    </div>
+
+    <table class="invoice-info-table">
+        <tr>
+            <td class="invoice-info-left">
+                <div class="info-label">Patient Info</div>
+                <div class="info-value">Name: <%= billing.Patient.name %></div>
+                <div class="info-value">Patient ID: <%= billing.Patient.patientId %></div>
+                <div class="info-value">Date of Birth: <%= formatDob(billing.Patient.dateOfBirth) %></div>
+                <div class="info-value">Gender: <%= billing.Patient.gender %></div>
+                <div class="info-value">Mobile: <%= billing.Patient.phone %></div>
+            </td>
+            <td class="invoice-info-middle">
+                <div class="info-label">Invoice Details</div>
+                <div class="info-value">Invoice #: <%= billing.billNumber %></div>
+                <div class="info-value">Billing Date: <%= formatDate(billing.billDate) %></div>
+                <% if (billing.billdelivaridate) { %>
+                <div class="info-value">Delivery Date: <%= formatDate(billing.billdelivaridate) %></div>
+                <% } %>
+                <% if (billing.referringDoctor) { %>
+                <div class="info-value">Ref: <%= billing.referringDoctor.replace(/[()]/g, '') %></div>
+                <% } %>
+                <% 
+                if (Array.isArray(items)) {
+                    const testItems = items.filter(item => item.type === 'test' && item.doctorId && item.doctorName);
+                    if (testItems.length > 0) {
+                        const uniqueDoctors = [...new Set(testItems.map(item => 
+                            item.doctorName ? item.doctorName.replace(/[()]/g, '') : ''
+                        ))];
+                        if (uniqueDoctors.length > 0) {
+                %>
+                <div class="info-value">Ref: <%= uniqueDoctors.join(', ') %></div>
+                <% 
+                        }
+                    }
+                }
+                %>
+                <% if (billing.marketingManagerId) { %>
+                <div class="info-value">Marketing_by:
+                    <% if (locals.marketingManager) { %>
+                        <%= marketingManager.username %>
+                    <% } else { %>
+                        -
+                    <% } %>
+                </div>
+                <% } %>
+                <div class="info-value">Passport No: <%= billing.Patient.nidPassportNo || 'N/A' %></div>
+            </td>
+            <td class="invoice-info-photo">
+                <% if (billing.patientPhoto) { %>
+                <img src="<%= billing.patientPhoto %>" alt="Patient photo" class="patient-photo-img">
+                <% } %>
+            </td>
+        </tr>
+    </table>
+    
+    <% if (appointments.length > 0) { %>
+    <div class="section-title text-center">Consultations</div>
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th class="text-center" style="width: 5%;">S.No</th>
+                <th class="text-center">Doctor</th>
+                <th class="text-center">Service</th>
+                <th class="text-end">Basic Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% appointments.forEach((item, index) => { %>
+                <tr>
+                    <td class="text-center"><%= index + 1 %></td>
+                    <td><%= item.name.replace('Consultation with Dr. ', 'Dr. ') %></td>
+                    <td>Medical Consultation</td>
+                    <td class="text-right"><%- formatAmount(item.price) %></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+    <% } %>
+    
+    <% if (cabins.length > 0) { %>
+    <div class="section-title text-center">Accommodation</div>
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th class="text-center" style="width: 5%;">S.No</th>
+                <th class="text-center">Room Details</th>
+                <th class="text-center">Service Type</th>
+                <th class="text-end">Basic Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% cabins.forEach((item, index) => { %>
+                <tr>
+                    <td class="text-center"><%= index + 1 %></td>
+                    <td><%= item.name %></td>
+                    <td>Room Charges</td>
+                    <td class="text-right"><%- formatAmount(item.price) %></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+    <% } %>
+    
+    <% if (tests.length > 0) { %>
+    <div class="section-title text-center">Laboratory Tests</div>
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th class="text-center" style="width: 5%;">S.No</th>
+                <th class="text-center">Test Name</th>
+                <% if (!billing.billdelivaridate) { %>
+                <th class="text-center">Delivery Date</th>
+                <% } %>
+                <th class="text-end">Basic Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% tests.forEach((item, index) => { %>
+                <tr>
+                    <td class="text-center"><%= index + 1 %></td>
+                    <td><%= item.name %></td>
+                    <% if (!billing.billdelivaridate) { %>
+                        <td>
+                            <% if (item.deliveryDate && item.deliveryDate.trim() !== '') { 
+                                try {
+                                    const deliveryDate = new Date(item.deliveryDate);
+                                    if (!isNaN(deliveryDate.getTime())) { %>
+                                        <%= formatDate(deliveryDate) %>
+                                    <% } else { %>
+                                        N/A
+                                    <% }
+                                } catch(e) { %>
+                                    N/A
+                                <% }
+                               } else { %>
+                                N/A
+                            <% } %>
+                        </td>
+                    <% } %>
+                    <td class="text-right"><%- formatAmount(item.price) %></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+    
+    <% 
+    // Check if any tests have delivery options other than 'Not Collected'
+    const specialDeliveryTests = tests.filter(item => 
+        item.deliveryOption && item.deliveryOption !== 'Not Collected'
+    );
+    
+    if (specialDeliveryTests.length > 0) { 
+    %>
+    <div style="margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #4a6fdc; border-radius: 4px;">
+        <h6 style="color: #4a6fdc; margin-bottom: 10px;"><i class="fas fa-info-circle me-2"></i>Special Delivery Information</h6>
+        <ul style="margin-bottom: 0; padding-left: 20px;">
+            <% specialDeliveryTests.forEach(test => { %>
+                <li style="margin-bottom: 5px;">
+                    <%= test.name %>: <%= test.deliveryOption %>
+                    <% if (test.deliveryOption === 'Home Delivery' && test.deliveryDate && test.deliveryDate.trim() !== '') {
+                        try {
+                            const deliveryDate = new Date(test.deliveryDate);
+                            if (!isNaN(deliveryDate.getTime())) { %>
+                                - Expected delivery on <%= formatDate(deliveryDate) %>
+                            <% }
+                        } catch(e) { /* Ignore date errors */ }
+                    } %>
+                </li>
+            <% }) %>
+        </ul>
+        <% if (specialDeliveryTests.some(test => test.deliveryOption === 'Email')) { %>
+            <p style="margin-top: 10px; margin-bottom: 0;"><small>* Email results will be sent to <%= billing.Patient.email || 'the email on file' %></small></p>
+        <% } %>
+        <% if (specialDeliveryTests.some(test => test.deliveryOption === 'Home Delivery')) { %>
+            <p style="margin-top: 5px; margin-bottom: 0;"><small>* Home delivery will be made to <%= billing.Patient.address || 'the address on file' %></small></p>
+        <% } %>
+    </div>
+    <% } %>
+    <% } %>
+    
+    <div class="invoice-total-section">
+        <div class="invoice-status-seal">
+            <div class="seal-container">
+                <div class="seal-background <%= billing.status === 'paid' ? 'paid-seal' : 'unpaid-seal' %>">
+                    <div class="seal-status <%= billing.status === 'paid' ? 'paid-text' : 'unpaid-text' %>">
+                        <% if (billing.status === 'paid') { %>
+                            PAID
+                        <% } else { %>
+                            DUE
+                        <% } %>
+                    </div>
+                    <div class="seal-amount">
+                        <% if (billing.status === 'paid') { %>
+                            <span class="print-no-decimal">Tk <%= Math.round(parseFloat(billing.paidAmount)) %></span>
+                            <span class="no-print">Tk <%= parseFloat(billing.paidAmount).toFixed(2) %></span>
+                        <% } else { %>
+                            <span class="print-no-decimal">Tk <%= Math.round(parseFloat(billing.dueAmount)) %></span>
+                            <span class="no-print">Tk <%= parseFloat(billing.dueAmount).toFixed(2) %></span>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="invoice-total">
+            <div class="invoice-total-row">
+                <div class="invoice-total-label">Subtotal:</div>
+                <div class="invoice-total-value"><%- formatAmount(billing.totalAmount) %></div>
+            </div>
+            <div class="invoice-total-row">
+                <div class="invoice-total-label">Discount:</div>
+                <div class="invoice-total-value"><%- formatAmount(billing.discountAmount) %></div>
+            </div>
+            <div class="invoice-total-row invoice-grand-total">
+                <div class="invoice-total-label">Total:</div>
+                <div class="invoice-total-value"><%- formatAmount(billing.netPayable) %></div>
+            </div>
+            <div class="invoice-total-row">
+                <div class="invoice-total-label">Amount Paid:</div>
+                <div class="invoice-total-value"><%- formatAmount(billing.paidAmount) %></div>
+            </div>
+            <% if (parseFloat(billing.dueAmount) > 0) { %>
+            <div class="invoice-total-row invoice-grand-total">
+                <div class="invoice-total-label">Balance Due:</div>
+                <div class="invoice-total-value"><%- formatAmount(billing.dueAmount) %></div>
+            </div>
+            <% } %>
+            
+            
+        </div>
+    </div>
+    
+    <!-- Signature Section -->
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-subtitle"><%- user.username %></div>
+            <div class="signature-line"></div>
+            <div class="signature-title">Prepared By</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-subtitle">&nbsp</div>
+            <div class="signature-line"></div>
+            <div class="signature-title">Checked By</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-subtitle">&nbsp</div>
+            <div class="signature-line"></div>
+            <div class="signature-title">Accounts</div>
+        </div>
+    </div>
+    
+    <div class="invoice-footer">
+        Thank you for choosing our services | Printed on: <%= formatDate(new Date()) %> <%= new Date().toLocaleTimeString() %>

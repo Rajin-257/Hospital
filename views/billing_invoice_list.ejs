@@ -39,7 +39,7 @@ function formatListDate(d) {
         <button type="button" class="btn btn-success btn-sm" id="btn-download-selected" disabled title="Download taken photo, passport, NID, AI portrait (PNG &amp; JPG), and medical report PDF">
           <i class="fas fa-download me-1"></i> Download Selected
         </button>
-        <% if (['laboratorist', 'admin', 'softadmin'].includes(currentUserRole)) { %>
+        <% if (['laboratorist', 'receptionist', 'admin', 'softadmin'].includes(currentUserRole)) { %>
         <button type="button" class="btn btn-warning btn-sm" id="btn-generate-ai-selected" disabled title="Generate AI portraits in the background for selected invoices">
           <i class="fas fa-magic me-1"></i> Generate AI Selected
         </button>
@@ -310,7 +310,7 @@ function formatListDate(d) {
               <i class="fas fa-address-card me-1"></i> NID
             </button>
           </li>
-          <% if (currentUserRole === 'laboratorist' || currentUserRole === 'softadmin' || currentUserRole === 'admin') { %>
+          <% if (['laboratorist', 'receptionist', 'admin', 'softadmin'].includes(currentUserRole)) { %>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="tab-ai-btn" data-bs-toggle="tab" data-bs-target="#tab-ai-pane" type="button" role="tab">
               <i class="fas fa-magic me-1"></i> AI Portrait
@@ -412,7 +412,7 @@ function formatListDate(d) {
             </button>
           </div>
 
-          <% if (currentUserRole === 'laboratorist' || currentUserRole === 'softadmin' || currentUserRole === 'admin') { %>
+          <% if (['laboratorist', 'receptionist', 'admin', 'softadmin'].includes(currentUserRole)) { %>
           <!-- AI Portrait -->
           <div class="tab-pane fade" id="tab-ai-pane" role="tabpanel">
             <div id="docs-ai-no-photo" class="alert alert-warning py-2 px-3 small mb-3 d-none">

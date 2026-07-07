@@ -281,11 +281,11 @@ exports.getLabSettings = async (req, res) => {
   }
 };
 
-// Save laboratorist AI settings (only one bg + prompt per user)
+// Save AI portrait settings (laboratorist + receptionist — one bg + prompt per user)
 exports.saveLabSettings = async (req, res) => {
   try {
-    if (req.user.role !== 'laboratorist') {
-      return res.status(403).json({ message: 'Only laboratorists can save AI settings' });
+    if (!['laboratorist', 'receptionist'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'You do not have permission to save AI settings' });
     }
     const user = await User.findByPk(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });

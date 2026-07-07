@@ -107,6 +107,7 @@ router.post('/photo/:id', checkFeatureAccess('Billing Management'), uploadBillin
   { name: 'nidPhoto', maxCount: 1 }
 ]), billingController.uploadBillingPhoto);
 router.post('/photo/:id/ai-portrait', checkFeatureAccess('Billing Management'), uploadBillingPhoto.single('photo'), billingController.generateAiPortrait);
+router.post('/photo/:id/generate-ai', checkFeatureAccess('Billing Management'), billingController.generateAiForInvoice);
 
 // Get billing receipt - accessible to anyone who can access billing
 router.get('/receipt/:id', checkFeatureAccess('Billing Management'), billingController.getBilling);
