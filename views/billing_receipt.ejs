@@ -732,30 +732,12 @@ const appointments = items.filter(item => item.type === 'appointment');
 const cabins = items.filter(item => item.type === 'cabin');
 const tests = items.filter(item => item.type === 'test');
 
-// Calculate age from date of birth
-function calculateAge(dateOfBirth) {
-    const dob = new Date(dateOfBirth);
-    const today = new Date();
-    
-    let years = today.getFullYear() - dob.getFullYear();
-    let months = today.getMonth() - dob.getMonth();
-    let days = today.getDate() - dob.getDate();
-    
-    // Adjust for negative days
-    if (days < 0) {
-        months--;
-        // Days in previous month
-        const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-        days += lastMonth.getDate();
-    }
-    
-    // Adjust for negative months
-    if (months < 0) {
-        years--;
-        months += 12;
-    }
-    
-    return `${years} Y, ${months} M, ${days} D`;
+// Format date of birth as dd/mm/yyyy
+function formatDob(dateOfBirth) {
+    if (!dateOfBirth) return 'N/A';
+    const parts = String(dateOfBirth).split('T')[0].split('-');
+    if (parts.length !== 3) return 'N/A';
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
 // Function to format amounts - removes decimal for print, keeps for screen
@@ -829,7 +811,7 @@ function formatAmount(amount) {
                 <div class="info-label">Patient Info</div>
                 <div class="info-value">Name: <%= billing.Patient.name %></div>
                 <div class="info-value">Patient ID: <%= billing.Patient.patientId %></div>
-                <div class="info-value">Age: <%= calculateAge(billing.Patient.dateOfBirth) %></div>
+                <div class="info-value">Date of Birth: <%= formatDob(billing.Patient.dateOfBirth) %></div>
                 <div class="info-value">Gender: <%= billing.Patient.gender %></div>
                 <div class="info-value">Mobile: <%= billing.Patient.phone %></div>
             </td>

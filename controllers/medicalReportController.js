@@ -98,7 +98,9 @@ function getDefaultReportData(patient) {
       ear_left: 'NAD',
       heart: 'NAD',
       bp: '120/70',
+      pulse: '72',
       lungs: 'NAD',
+      rr_min: '16',
       gastrointestinal_abdomen: 'NAD',
       hernia: 'ABSENT',
       varicoseveins: 'ABSENT',
@@ -108,7 +110,9 @@ function getDefaultReportData(patient) {
       extremities: 'NAD',
       psychiatry: 'NORMAL',
       operation_history: 'NAD',
-      venereal_diseases: 'NO'
+      venereal_diseases: 'NO',
+      marital_status: '',
+      profession: ''
     },
     xray: {
       xray: '',
@@ -154,7 +158,9 @@ function normalizeStoredExamination(exam) {
     ear_left: exam.ear_left ?? exam.earL,
     heart: exam.heart,
     bp: exam.bp,
+    pulse: exam.pulse,
     lungs: exam.lungs,
+    rr_min: exam.rr_min ?? exam.rrMin ?? exam.rr_per_min,
     gastrointestinal_abdomen: exam.gastrointestinal_abdomen ?? exam.abdomen,
     hernia: exam.hernia,
     varicoseveins: exam.varicoseveins ?? exam.varicoseVeins,
@@ -164,7 +170,9 @@ function normalizeStoredExamination(exam) {
     extremities: exam.extremities,
     psychiatry: exam.psychiatry,
     operation_history: exam.operation_history ?? exam.operationHistory,
-    venereal_diseases: exam.venereal_diseases ?? exam.venerealSymptoms
+    venereal_diseases: exam.venereal_diseases ?? exam.venerealSymptoms,
+    marital_status: exam.marital_status ?? exam.maritalStatus,
+    profession: exam.profession
   };
 }
 
@@ -236,7 +244,9 @@ function buildExaminationData(body) {
       ear_left: body.ear_left || '',
       heart: body.heart || '',
       bp: body.bp || '',
+      pulse: body.pulse || '',
       lungs: body.lungs || '',
+      rr_min: body.rr_min || '',
       gastrointestinal_abdomen: body.gastrointestinal_abdomen || '',
       hernia: body.hernia || '',
       varicoseveins: body.varicoseveins || '',
@@ -246,7 +256,9 @@ function buildExaminationData(body) {
       extremities: body.extremities || '',
       psychiatry: body.psychiatry || '',
       operation_history: body.operation_history || '',
-      venereal_diseases: body.venereal_diseases || ''
+      venereal_diseases: body.venereal_diseases || '',
+      marital_status: body.marital_status || '',
+      profession: body.profession || ''
     },
     xray: {
       xray: body.xray || '',

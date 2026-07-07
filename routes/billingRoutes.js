@@ -27,6 +27,7 @@ const billingPhotoStorage = multer.diskStorage({
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
     let prefix = 'bill';
     if (file.fieldname === 'passportPhoto') prefix = 'passport';
+    else if (file.fieldname === 'nidPhoto') prefix = 'nid';
     else if (file.fieldname === 'takenPhoto') prefix = 'taken';
     cb(null, `${prefix}-${req.params.id}-${Date.now()}${ext}`);
   }
@@ -37,11 +38,11 @@ const billingPhotoFilter = (req, file, cb) => {
   const imageExtOk = /\.(jpe?g|png|webp)$/.test(ext);
   const imageMimeOk = /^image\/(jpeg|jpg|png|webp)$/.test(file.mimetype);
 
-  if (file.fieldname === 'passportPhoto') {
+  if (file.fieldname === 'passportPhoto' || file.fieldname === 'nidPhoto') {
     if (ext === '.pdf' || (imageExtOk && imageMimeOk)) {
       return cb(null, true);
     }
-    return cb(new Error('Passport must be a JPEG, PNG, WebP image, or PDF'));
+    return cb(new Error('File must be a JPEG, PNG, WebP image, or PDF'));
   }
 
   if (imageExtOk && imageMimeOk) {
@@ -82,7 +83,17 @@ router.get('/', checkFeatureAccess('Billing Management'), billingController.rend
 router.get('/invoices/today', checkFeatureAccess('Billing Management'), billingController.renderTodayInvoiceList);
 router.get('/invoices/today/download', checkFeatureAccess('Billing Management'), billingController.downloadTodayInvoiceList);
 router.post('/invoices/today/download-bundle', checkFeatureAccess('Billing Management'), billingController.downloadSelectedInvoiceBundle);
+router.post('/invoices/assign-lab', checkFeatureAccess('Billing Management'), billingController.assignInvoicesToLab);
+router.post('/invoices/generate-ai-bulk', checkFeatureAccess('Billing Management'), billingController.generateAiBulkForInvoices);
+router.get('/invoices/generate-ai-bulk/:batchId', checkFeatureAccess('Billing Management'), billingController.getAiBulkStatus);
+router.post('/invoices/:id/generate-ai',      checkFeatureAccess('Billing Management'), billingController.generateAiForInvoice);
+router.post('/invoices/:id/assign-lab',       checkFeatureAccess('Billing Management'), billingController.assignInvoiceToLab);
+router.post('/invoices/:id/reupload-taken',    checkFeatureAccess('Billing Management'), uploadBillingPhoto.single('takenPhoto'),    billingController.reuploadTakenPhoto);
+router.post('/invoices/:id/reupload-passport', checkFeatureAccess('Billing Management'), uploadBillingPhoto.single('passportPhoto'), billingController.reuploadPassportPhoto);
+router.post('/invoices/:id/reupload-nid', checkFeatureAccess('Billing Management'), uploadBillingPhoto.single('nidPhoto'), billingController.reuploadNidPhoto);
 router.get('/passport-photo/:id/download', checkFeatureAccess('Billing Management'), billingController.downloadPassportPhoto);
+router.get('/nid-photo/:id/download', checkFeatureAccess('Billing Management'), billingController.downloadNidPhoto);
+router.get('/invoices/:id/download-images', checkFeatureAccess('Billing Management'), billingController.downloadInvoiceImages);
 
 // Create billing - no permission check needed as this is a core function
 router.post('/', checkFeatureAccess('Billing Management'), billingController.createBilling);
@@ -92,7 +103,8 @@ router.get('/photo/:id', checkFeatureAccess('Billing Management'), billingContro
 router.post('/photo/:id', checkFeatureAccess('Billing Management'), uploadBillingPhoto.fields([
   { name: 'takenPhoto', maxCount: 1 },
   { name: 'photo', maxCount: 1 },
-  { name: 'passportPhoto', maxCount: 1 }
+  { name: 'passportPhoto', maxCount: 1 },
+  { name: 'nidPhoto', maxCount: 1 }
 ]), billingController.uploadBillingPhoto);
 router.post('/photo/:id/ai-portrait', checkFeatureAccess('Billing Management'), uploadBillingPhoto.single('photo'), billingController.generateAiPortrait);
 

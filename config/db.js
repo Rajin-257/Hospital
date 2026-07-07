@@ -19,14 +19,22 @@ const connectDB = async () => {
     
     // Ensure all models are registered before sync
     require('../models/MedicalReport');
+    require('../models/AiPortraitJob');
+    const User = require('../models/User');
     const Patient = require('../models/Patient');
     const Billing = require('../models/Billing');
     
     // Sync database
-    await sequelize.sync({ alter: false });
-    await Patient.sync({ alter: true });
-    await Billing.sync({ alter: true });
+    await sequelize.sync({});
+    await User.sync({});
+    await Patient.sync({});
+    await Billing.sync({});
+    const AiPortraitJob = require('../models/AiPortraitJob');
+    await AiPortraitJob.sync({});
     console.log('Database synchronized');
+
+    const { resumeAiPortraitQueue } = require('../utils/aiPortraitQueue');
+    resumeAiPortraitQueue();
     
     setTimeout(async () => {
       try {

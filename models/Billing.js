@@ -85,7 +85,19 @@ const Billing = sequelize.define('Billing', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  nidPhoto: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   createdBy: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
+  assignedLabId: {
     type: DataTypes.INTEGER,
     allowNull: true,
     references: {
@@ -97,6 +109,7 @@ const Billing = sequelize.define('Billing', {
 
 // Relationships
 Billing.belongsTo(Patient);
-Billing.belongsTo(User, { as: 'creator', foreignKey: 'createdBy' });
+Billing.belongsTo(User, { as: 'creator',      foreignKey: 'createdBy' });
+Billing.belongsTo(User, { as: 'assignedLab',  foreignKey: 'assignedLabId' });
 
 module.exports = Billing;

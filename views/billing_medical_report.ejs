@@ -150,6 +150,20 @@
           </div>
         </div>
         <div class="col-md-2">
+          <label for="marital_status">Marital Status</label>
+          <select class="form-select" id="marital_status" name="marital_status">
+            <option value="">--Select--</option>
+            <option value="Single" <%= reportData.examination.marital_status === 'Single' ? 'selected' : '' %>>Single</option>
+            <option value="Married" <%= reportData.examination.marital_status === 'Married' ? 'selected' : '' %>>Married</option>
+            <option value="Divorced" <%= reportData.examination.marital_status === 'Divorced' ? 'selected' : '' %>>Divorced</option>
+            <option value="Widowed" <%= reportData.examination.marital_status === 'Widowed' ? 'selected' : '' %>>Widowed</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="profession">Profession</label>
+          <input type="text" class="form-control" id="profession" name="profession" value="<%= reportData.examination.profession %>">
+        </div>
+        <div class="col-md-2">
           <div class="form-group mb-3" style="padding-top: 25px;">
             <label for="show_sign">Show Sign</label>
             <div>
@@ -221,10 +235,18 @@
                 <td width="50%">B.P.</td>
                 <td><input type="text" class="form-control" name="bp" value="<%= reportData.examination.bp %>"></td>
               </tr>
+              <tr>
+                <td width="50%">Pulse</td>
+                <td><input type="text" class="form-control" name="pulse" value="<%= reportData.examination.pulse %>"></td>
+              </tr>
               <tr><td colspan="2" class="section-head">Respiratory Exam</td></tr>
               <tr>
                 <td width="50%">Lungs</td>
                 <td><input type="text" class="form-control" name="lungs" value="<%= reportData.examination.lungs %>"></td>
+              </tr>
+              <tr>
+                <td width="50%">RR/min</td>
+                <td><input type="text" class="form-control" name="rr_min" value="<%= reportData.examination.rr_min %>"></td>
               </tr>
               <tr>
                 <td width="50%">Gastrointestinal Abdomen</td>

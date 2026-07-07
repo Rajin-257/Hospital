@@ -67,13 +67,13 @@ exports.login = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secretkey', {
-      expiresIn: '30m' // Changed to 30 minutes
+      expiresIn: '24h'
     });
 
     // Set token in cookie
     res.cookie('token', token, {
       httpOnly: true,
-      maxAge: 30 * 60 * 1000 // 30 minutes in milliseconds
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
     });
 
     // Store user data in session
@@ -85,7 +85,7 @@ exports.login = async (req, res) => {
     };
     
     // Set session expiry
-    req.session.cookie.maxAge = 30 * 60 * 1000; // 30 minutes in milliseconds
+    req.session.cookie.maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
     // Render dashboard or redirect
     res.redirect('/');

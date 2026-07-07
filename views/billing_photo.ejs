@@ -11,28 +11,6 @@
     border: 1px solid var(--photo-border);
 }
 
-.photo-page .section-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #212529;
-    margin: 0 0 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--photo-border);
-}
-
-.photo-page .section-title .step-badge {
-    display: inline-block;
-    width: 22px;
-    height: 22px;
-    line-height: 22px;
-    text-align: center;
-    font-size: 0.75rem;
-    background: #4361ee;
-    color: #fff;
-    border-radius: 4px;
-    margin-right: 0.4rem;
-}
-
 .photo-page .meta-line {
     font-size: 0.8rem;
     color: #6c757d;
@@ -50,9 +28,23 @@
     height: 100%;
 }
 
+.photo-page .panel-heading {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--photo-border);
+}
+
+.photo-page .panel-heading i {
+    color: #4361ee;
+    margin-right: 0.35rem;
+}
+
 .photo-page .webcam-wrap {
     position: relative;
-    height: 200px;
+    height: 220px;
     background: #212529;
     border-radius: 4px;
     overflow: hidden;
@@ -78,7 +70,7 @@
 }
 
 .photo-page .upload-zone {
-    height: 200px;
+    height: 120px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -106,7 +98,7 @@
 }
 
 .photo-page .upload-zone i {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     color: #4361ee;
     margin-bottom: 0.35rem;
 }
@@ -117,14 +109,14 @@
     background: var(--photo-bg);
     padding: 0.5rem;
     text-align: center;
-    min-height: 120px;
+    height: 220px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .photo-page .preview-box img {
-    max-height: 180px;
+    max-height: 200px;
     max-width: 100%;
     border-radius: 4px;
 }
@@ -132,18 +124,6 @@
 .photo-page .preview-box.is-empty {
     color: #adb5bd;
     font-size: 0.8rem;
-}
-
-.photo-page .preview-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.35rem;
-}
-
-.photo-page .ai-preview-box {
-    border-color: #198754;
-    background: #f8fff9;
 }
 
 .photo-page .card-footer-bar {
@@ -201,118 +181,108 @@
         </div>
 
         <div class="card-body p-3">
-            <!-- Step 1: Profile -->
-            <p class="section-title">
-                <span class="step-badge">1</span>Profile photo
-                <span class="fw-normal text-muted ms-1" style="font-size:0.8rem;">— webcam, upload, or AI</span>
-            </p>
-            <div class="row g-2 mb-2">
+            <div class="row g-3">
+                <!-- Camera -->
                 <div class="col-md-4">
                     <div class="panel-box">
-                        <div class="preview-label">Webcam</div>
+                        <div class="panel-heading"><i class="fas fa-video"></i>Camera</div>
                         <div class="webcam-wrap">
                             <video id="webcam-video" autoplay playsinline muted></video>
                             <div id="webcam-placeholder" class="webcam-placeholder">
                                 <i class="fas fa-video mb-1"></i>
-                                <span>Start camera</span>
+                                <span>Start camera to capture</span>
                             </div>
                         </div>
                         <div class="d-flex flex-wrap gap-1 mt-2">
                             <button type="button" class="btn btn-outline-primary btn-sm" id="btn-start-camera">
-                                <i class="fas fa-video"></i>
+                                <i class="fas fa-video me-1"></i> Start
                             </button>
                             <button type="button" class="btn btn-primary btn-sm" id="btn-capture" disabled title="Capture">
-                                <i class="fas fa-camera"></i>
+                                <i class="fas fa-camera me-1"></i> Capture
                             </button>
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-stop-camera" disabled title="Stop">
-                                <i class="fas fa-stop"></i>
+                                <i class="fas fa-stop me-1"></i> Stop
                             </button>
                         </div>
                     </div>
                 </div>
+
+                <!-- Taken Picture -->
                 <div class="col-md-4">
                     <div class="panel-box">
-                        <div class="preview-label">Upload</div>
-                        <label class="upload-zone w-100 mb-0 position-relative" id="patient-upload-zone" for="photo-upload">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <span>Click or drop image</span>
-                            <small class="d-block mt-1">JPG, PNG, WebP · 5 MB max</small>
-                            <input type="file" id="photo-upload" accept="image/jpeg,image/jpg,image/png,image/webp">
-                        </label>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="panel-box">
-                        <div class="preview-label">Taken photo preview</div>
+                        <div class="panel-heading"><i class="fas fa-user"></i>Taken Picture</div>
                         <div id="taken-preview-empty" class="preview-box is-empty">
                             <span>No photo yet</span>
                         </div>
                         <div id="taken-preview-section" class="preview-box" style="display: none;">
                             <img id="taken-photo-preview" src="" alt="Taken photo">
                         </div>
-                        <div class="d-flex flex-wrap gap-1 mt-2" id="taken-preview-actions" style="display: none;">
+                        <label class="upload-zone w-100 mb-0 position-relative mt-2" id="patient-upload-zone" for="photo-upload">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Or upload image</span>
+                            <small class="d-block mt-1">JPG, PNG, WebP · 5 MB max</small>
+                            <input type="file" id="photo-upload" accept="image/jpeg,image/jpg,image/png,image/webp">
+                        </label>
+                        <div class="mt-2" id="taken-preview-actions" style="display: none;">
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-retake-patient">
                                 <i class="fas fa-redo me-1"></i> Retake
                             </button>
-                            <button type="button" class="btn btn-info btn-sm" id="btn-proceed-ai">
-                                <i class="fas fa-magic me-1"></i> Proceed to AI
-                            </button>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="row g-2 mb-3" id="ai-preview-row" style="display: none;">
-                <div class="col-12">
-                    <div class="panel-box ai-preview-box py-2">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-auto">
-                                <span class="badge bg-success">AI Portrait</span>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="preview-box py-1" style="min-height:100px;">
-                                    <img id="ai-photo-preview" src="" alt="AI portrait" style="max-height:100px;">
-                                </div>
-                            </div>
-                            <div class="col">
-                                <small class="text-muted mb-0">Both taken and AI photos are saved when you click Save.</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 2: Passport -->
-            <p class="section-title mb-2">
-                <span class="step-badge">2</span>Passport picture
-            </p>
-            <div class="row g-2">
-                <div class="col-md-6">
+                <!-- Passport Picture -->
+                <div class="col-md-4">
                     <div class="panel-box">
-                        <div class="preview-label">Upload passport</div>
-                        <label class="upload-zone w-100 mb-0" id="passport-upload-zone" for="passport-upload" style="height:160px;">
-                            <i class="fas fa-id-card"></i>
-                            <span>Click or drop passport image or PDF</span>
-                            <small class="d-block mt-1">JPG, PNG, WebP, PDF · 5 MB max</small>
-                            <input type="file" id="passport-upload" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf">
-                        </label>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="panel-box">
-                        <div class="preview-label">Passport preview</div>
-                        <div id="passport-preview-empty" class="preview-box is-empty" style="height:160px;">
+                        <div class="panel-heading"><i class="fas fa-id-card"></i>Passport Picture</div>
+                        <div id="passport-preview-empty" class="preview-box is-empty">
                             <span>No passport image</span>
                         </div>
-                        <div id="passport-preview-section" class="preview-box" style="display: none; height:160px;">
-                            <img id="passport-photo-preview" src="" alt="Passport" style="max-height:140px;">
+                        <div id="passport-preview-section" class="preview-box" style="display: none;">
+                            <img id="passport-photo-preview" src="" alt="Passport" style="max-height:200px;">
                             <div id="passport-pdf-preview" class="text-center" style="display:none;">
                                 <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
                                 <div class="small text-muted" id="passport-pdf-name"></div>
                             </div>
                         </div>
+                        <label class="upload-zone w-100 mb-0 position-relative mt-2" id="passport-upload-zone" for="passport-upload">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Upload passport image or PDF</span>
+                            <small class="d-block mt-1">JPG, PNG, WebP, PDF · 5 MB max</small>
+                            <input type="file" id="passport-upload" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf">
+                        </label>
                         <div class="mt-2" id="passport-retake-wrap" style="display: none;">
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-retake-passport">
+                                <i class="fas fa-redo me-1"></i> Choose again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+                <!-- NID Picture (optional) -->
+                <div class="col-md-4">
+                    <div class="panel-box">
+                        <div class="panel-heading"><i class="fas fa-address-card"></i>NID Picture <span class="text-muted fw-normal">(optional)</span></div>
+                        <div id="nid-preview-empty" class="preview-box is-empty">
+                            <span>No NID image</span>
+                        </div>
+                        <div id="nid-preview-section" class="preview-box" style="display: none;">
+                            <img id="nid-photo-preview" src="" alt="NID" style="max-height:200px;">
+                            <div id="nid-pdf-preview" class="text-center" style="display:none;">
+                                <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
+                                <div class="small text-muted" id="nid-pdf-name"></div>
+                            </div>
+                        </div>
+                        <label class="upload-zone w-100 mb-0 position-relative mt-2" id="nid-upload-zone" for="nid-upload">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Upload NID image or PDF</span>
+                            <small class="d-block mt-1">JPG, PNG, WebP, PDF · 5 MB max</small>
+                            <input type="file" id="nid-upload" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf">
+                        </label>
+                        <div class="mt-2" id="nid-retake-wrap" style="display: none;">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-retake-nid">
                                 <i class="fas fa-redo me-1"></i> Choose again
                             </button>
                         </div>
@@ -322,7 +292,7 @@
         </div>
 
         <div class="card-footer-bar d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <small class="text-muted mb-0">Taken photo, AI portrait, and passport picture are all required.</small>
+            <small class="text-muted mb-0">Taken photo and passport picture are required. NID picture is optional.</small>
             <div class="d-flex flex-wrap gap-2">
                 <a href="/billing/receipt/<%= billing.id %>" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-forward me-1"></i> Skip
@@ -363,29 +333,36 @@
     const passportPreviewSection = document.getElementById('passport-preview-section');
     const passportPreviewEmpty = document.getElementById('passport-preview-empty');
     const passportRetakeWrap = document.getElementById('passport-retake-wrap');
+    const nidPreview = document.getElementById('nid-photo-preview');
+    const nidPdfPreview = document.getElementById('nid-pdf-preview');
+    const nidPdfName = document.getElementById('nid-pdf-name');
+    const nidPreviewSection = document.getElementById('nid-preview-section');
+    const nidPreviewEmpty = document.getElementById('nid-preview-empty');
+    const nidRetakeWrap = document.getElementById('nid-retake-wrap');
     const placeholder = document.getElementById('webcam-placeholder');
     const fileInput = document.getElementById('photo-upload');
     const passportInput = document.getElementById('passport-upload');
+    const nidInput = document.getElementById('nid-upload');
     const patientUploadZone = document.getElementById('patient-upload-zone');
     const passportUploadZone = document.getElementById('passport-upload-zone');
+    const nidUploadZone = document.getElementById('nid-upload-zone');
     const btnStart = document.getElementById('btn-start-camera');
     const btnCapture = document.getElementById('btn-capture');
     const btnStop = document.getElementById('btn-stop-camera');
     const btnRetakePatient = document.getElementById('btn-retake-patient');
     const btnRetakePassport = document.getElementById('btn-retake-passport');
-    const btnProceedAi = document.getElementById('btn-proceed-ai');
+    const btnRetakeNid = document.getElementById('btn-retake-nid');
     const btnSave = document.getElementById('btn-save-photo');
-    const aiPreviewRow = document.getElementById('ai-preview-row');
-    const aiPreview = document.getElementById('ai-photo-preview');
-
-    let stream = null;
-    let takenPhotoBlob = null;
-    let aiPhotoBlob = null;
-    let passportPhotoBlob = null;
-    let passportIsPdf = false;
     const processingOverlay = document.getElementById('processing-overlay');
     const processingOverlayTitle = document.getElementById('processing-overlay-title');
     const processingOverlayMessage = document.getElementById('processing-overlay-message');
+
+    let stream = null;
+    let takenPhotoBlob = null;
+    let passportPhotoBlob = null;
+    let passportIsPdf = false;
+    let nidPhotoBlob = null;
+    let nidIsPdf = false;
 
     function showProcessingModal(title, message) {
         if (processingOverlayTitle) processingOverlayTitle.textContent = title;
@@ -410,7 +387,7 @@
     }
 
     function updateSaveButton() {
-        btnSave.disabled = !(takenPhotoBlob && aiPhotoBlob && passportPhotoBlob);
+        btnSave.disabled = !(takenPhotoBlob && passportPhotoBlob);
     }
 
     function setupDropzone(zone, input, onFile) {
@@ -440,16 +417,7 @@
         takenPreview.src = URL.createObjectURL(blob);
         takenPreviewEmpty.style.display = 'none';
         takenPreviewSection.style.display = 'flex';
-        takenPreviewActions.style.display = 'flex';
-        clearAiPreview();
-        updateSaveButton();
-    }
-
-    function clearAiPreview() {
-        revokePreviewUrl(aiPreview);
-        aiPreview.src = '';
-        aiPhotoBlob = null;
-        aiPreviewRow.style.display = 'none';
+        takenPreviewActions.style.display = 'block';
         updateSaveButton();
     }
 
@@ -461,15 +429,6 @@
         takenPreviewEmpty.style.display = 'flex';
         takenPreviewActions.style.display = 'none';
         fileInput.value = '';
-        clearAiPreview();
-        updateSaveButton();
-    }
-
-    function showAiPreview(blob) {
-        revokePreviewUrl(aiPreview);
-        aiPhotoBlob = blob;
-        aiPreview.src = URL.createObjectURL(blob);
-        aiPreviewRow.style.display = 'flex';
         updateSaveButton();
     }
 
@@ -507,6 +466,38 @@
         updateSaveButton();
     }
 
+    function showNidPreview(file) {
+        revokePreviewUrl(nidPreview);
+        nidPhotoBlob = file;
+        nidIsPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+        nidPreviewEmpty.style.display = 'none';
+        nidPreviewSection.style.display = 'flex';
+        nidRetakeWrap.style.display = 'block';
+        if (nidIsPdf) {
+            nidPreview.style.display = 'none';
+            nidPdfPreview.style.display = 'block';
+            nidPdfName.textContent = file.name || 'nid.pdf';
+        } else {
+            nidPdfPreview.style.display = 'none';
+            nidPreview.style.display = 'block';
+            nidPreview.src = URL.createObjectURL(file);
+        }
+    }
+
+    function clearNidPreview() {
+        revokePreviewUrl(nidPreview);
+        nidPreview.src = '';
+        nidPreview.style.display = 'block';
+        nidPdfPreview.style.display = 'none';
+        nidPdfName.textContent = '';
+        nidPhotoBlob = null;
+        nidIsPdf = false;
+        nidPreviewSection.style.display = 'none';
+        nidPreviewEmpty.style.display = 'flex';
+        nidRetakeWrap.style.display = 'none';
+        nidInput.value = '';
+    }
+
     function validateImageFile(file) {
         if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
             alert('Please select a JPEG, PNG, or WebP image.');
@@ -531,6 +522,10 @@
         return validateImageFile(file);
     }
 
+    function validateNidFile(file) {
+        return validatePassportFile(file);
+    }
+
     setupDropzone(patientUploadZone, fileInput, function (file) {
         if (!validateImageFile(file)) { fileInput.value = ''; return; }
         showTakenPreview(file);
@@ -538,6 +533,10 @@
     setupDropzone(passportUploadZone, passportInput, function (file) {
         if (!validatePassportFile(file)) { passportInput.value = ''; return; }
         showPassportPreview(file);
+    });
+    setupDropzone(nidUploadZone, nidInput, function (file) {
+        if (!validateNidFile(file)) { nidInput.value = ''; return; }
+        showNidPreview(file);
     });
 
     async function startCamera() {
@@ -590,52 +589,27 @@
 
     btnRetakePatient.addEventListener('click', clearTakenPreview);
     btnRetakePassport.addEventListener('click', clearPassportPreview);
-
-    btnProceedAi.addEventListener('click', function () {
-        if (!takenPhotoBlob) {
-            alert('Please capture or upload a patient photo first.');
-            return;
-        }
-        const formData = new FormData();
-        formData.append('photo', takenPhotoBlob, takenPhotoBlob.name || 'profile-for-ai.png');
-        btnProceedAi.disabled = true;
-        const originalAiHtml = btnProceedAi.innerHTML;
-        btnProceedAi.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-        showProcessingModal(
-            'Generating AI Portrait',
-            'Please wait. AI portrait is being created. Do not close or refresh this page.'
-        );
-
-        fetch('/billing/photo/' + billingId + '/ai-portrait', { method: 'POST', body: formData })
-        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-        .then(function (result) {
-            if (!result.ok) throw new Error(result.data.message || 'AI portrait generation failed');
-            return fetch(result.data.imageUrl + '?t=' + Date.now()).then(function (r) { return r.blob(); });
-        })
-        .then(function (blob) {
-            showAiPreview(blob);
-        })
-        .catch(function (err) { alert(err.message || 'Could not generate AI portrait'); })
-        .finally(function () {
-            hideProcessingModal();
-            btnProceedAi.disabled = false;
-            btnProceedAi.innerHTML = originalAiHtml;
-        });
-    });
+    btnRetakeNid.addEventListener('click', clearNidPreview);
 
     btnSave.addEventListener('click', function () {
-        if (!takenPhotoBlob || !aiPhotoBlob || !passportPhotoBlob) {
-            alert('Taken photo, AI portrait, and passport picture are all required.');
+        if (!takenPhotoBlob || !passportPhotoBlob) {
+            alert('Taken photo and passport picture are both required.');
             return;
         }
         const formData = new FormData();
         formData.append('takenPhoto', takenPhotoBlob, takenPhotoBlob.name || 'taken-photo.png');
-        formData.append('photo', aiPhotoBlob, aiPhotoBlob.name || 'ai-profile.png');
         formData.append(
             'passportPhoto',
             passportPhotoBlob,
             passportPhotoBlob.name || (passportIsPdf ? 'passport.pdf' : 'passport-upload.png')
         );
+        if (nidPhotoBlob) {
+            formData.append(
+                'nidPhoto',
+                nidPhotoBlob,
+                nidPhotoBlob.name || (nidIsPdf ? 'nid.pdf' : 'nid-upload.png')
+            );
+        }
         btnSave.disabled = true;
         btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
         showProcessingModal(

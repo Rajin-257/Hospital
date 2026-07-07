@@ -14,19 +14,46 @@
 <% } %>
 
 <style>
+  :root {
+    --a4-width: 210mm;
+    --a4-height: 297mm;
+    --a4-margin: 10mm;
+    --a4-content-width: calc(var(--a4-width) - (var(--a4-margin) * 2));
+    --a4-content-height: calc(var(--a4-height) - (var(--a4-margin) * 2));
+  }
+
   @page {
-    size: A4 portrait;
+    size: 210mm 297mm portrait;
     margin: 10mm;
+  }
+
+  html.medical-report-print,
+  html.medical-report-print body {
+    background: #e9ecef;
   }
 
   .print-report {
     font-family: 'Noto Sans Bengali', 'Nirmala UI', 'Kalpurush', Arial, sans-serif;
-    max-width: 210mm;
-    min-height: 277mm;
+    width: var(--a4-content-width);
+    max-width: var(--a4-content-width);
+    min-height: var(--a4-content-height);
     margin: 0 auto;
+    padding: 0;
     color: #000;
     background: #fff;
     font-size: 14px;
+    box-sizing: border-box;
+    box-shadow: 0 0 0 1px #dee2e6;
+  }
+
+  .print-page-shell {
+    width: var(--a4-width);
+    max-width: var(--a4-width);
+    min-height: var(--a4-height);
+    margin: 0 auto;
+    padding: var(--a4-margin);
+    box-sizing: border-box;
+    background: #fff;
   }
 
   .report-title {
@@ -201,17 +228,37 @@
     font-size: 15px;
   }
 
-  .xray-disclaimer {
+  .report-column-extra {
+    margin-top: 8px;
+  }
+
+  .report-disclaimer-block {
+    border: 1px solid #000;
     font-size: 12px;
     line-height: 1.45;
     text-align: center;
-    padding: 6px 8px !important;
+    padding: 8px 10px;
+    margin: 0 0 10px;
     font-family: 'Noto Sans Bengali', 'Nirmala UI', 'Kalpurush', Arial, sans-serif;
-    border: none !important;
   }
 
-  .report-table tr:has(+ tr .xray-disclaimer) td {
-    /* border-bottom: none !important; */
+  .room-allocation-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .room-allocation-table td {
+    border: 1px solid #000;
+    padding: 2px 8px;
+    font-size: 14px;
+    line-height: 1.2;
+    vertical-align: middle;
+  }
+
+  .room-allocation-table td:last-child {
+    text-align: center;
+    font-weight: 700;
   }
 
   .report-footer {
@@ -236,10 +283,20 @@
   }
 
   @media print {
+    @page {
+      size: 210mm 297mm portrait;
+      margin: 10mm;
+    }
+
+    html,
     body {
+      width: 210mm !important;
+      height: auto !important;
       margin: 0 !important;
       padding: 0 !important;
       background: #fff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
 
     nav,
@@ -249,17 +306,30 @@
       display: none !important;
     }
 
+    .print-page-shell {
+      width: 190mm !important;
+      max-width: 190mm !important;
+      min-height: auto !important;
+      margin: 0 auto !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      background: #fff !important;
+    }
+
     .container,
     .print-report {
-      max-width: none !important;
-      width: 100% !important;
+      width: 190mm !important;
+      max-width: 190mm !important;
+      min-height: auto !important;
       padding: 0 !important;
-      margin: 0 !important;
+      margin: 0 auto !important;
+      box-shadow: none !important;
+      box-sizing: border-box !important;
+      page-break-after: auto;
     }
 
     .print-report {
       font-size: 14px;
-      min-height: auto;
     }
 
     .report-title {
@@ -330,8 +400,15 @@
       font-size: 14px !important;
     }
 
-    .xray-disclaimer {
+    .report-disclaimer-block {
       font-size: 11px !important;
+      padding: 6px 8px !important;
+      margin-bottom: 8px !important;
+    }
+
+    .room-allocation-table td {
+      font-size: 11px !important;
+      padding: 3px 6px !important;
     }
 
     .report-footer {
@@ -352,14 +429,17 @@
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
+    width: 210mm !important;
   }
 
+  body.pdf-export .print-page-shell,
   body.pdf-export .container,
   body.pdf-export .print-report {
-    max-width: none !important;
-    width: 100% !important;
+    width: 190mm !important;
+    max-width: 190mm !important;
     padding: 0 !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
   }
 
   body.pdf-export .print-report {
@@ -368,9 +448,46 @@
   }
 </style>
 
+<script>
+  document.documentElement.classList.add('medical-report-print');
+
+  (function () {
+    var A4_CONTENT_HEIGHT_PX = (277 / 25.4) * 96;
+
+    function fitReportToA4() {
+      if (!window.matchMedia('print').matches) return;
+
+      var report = document.querySelector('.print-report');
+      if (!report) return;
+
+      report.style.transform = '';
+      report.style.transformOrigin = 'top center';
+
+      var contentHeight = report.scrollHeight;
+      if (contentHeight > A4_CONTENT_HEIGHT_PX) {
+        var scale = A4_CONTENT_HEIGHT_PX / contentHeight;
+        scale = Math.max(scale, 0.82);
+        report.style.transform = 'scale(' + scale + ')';
+      }
+    }
+
+    function resetReportScale() {
+      var report = document.querySelector('.print-report');
+      if (report) report.style.transform = '';
+    }
+
+    window.addEventListener('beforeprint', fitReportToA4);
+    window.addEventListener('afterprint', resetReportScale);
+  })();
+</script>
+
 <% if (!locals.bundleExport) { %>
 <div class="container mb-4 no-print">
-  <div class="d-flex justify-content-end gap-2 mt-3">
+  <div class="alert alert-light border py-2 px-3 mb-2 small">
+    <i class="fas fa-print me-1"></i>
+    For correct layout, choose <strong>A4 (210 × 297 mm)</strong> paper in the print dialog.
+  </div>
+  <div class="d-flex justify-content-end gap-2 mt-2">
     <button class="btn btn-outline-secondary" onclick="window.print()">
       <i class="fas fa-print me-1"></i> Print Report
     </button>
@@ -396,8 +513,10 @@ const ex = reportData.examination;
 const xr = reportData.xray;
 const lab = reportData.laboratory;
 const patient = billing.Patient;
+const isFemalePatient = patient && String(patient.gender || '').toLowerCase() === 'female';
 %>
 
+<div class="print-page-shell">
 <div class="container print-report pb-4">
   <div class="report-title"><%= locals.settings && settings.medical_name ? settings.medical_name : 'Medical Report' %></div>
   <div class="report-subtitle">Medical Examination Report</div>
@@ -414,6 +533,7 @@ const patient = billing.Patient;
       <td class="meta-text-left">
         <p class="meta-line"><strong>Patient Name:</strong> <%= patient ? patient.name : '—' %></p>
         <p class="meta-line"><strong>Passport No:</strong> <%= patient && patient.nidPassportNo ? patient.nidPassportNo : '—' %></p>
+        <p class="meta-line"><strong>Marital Status:</strong> <%= val(ex.marital_status) %> &nbsp; <strong>Profession:</strong> <%= val(ex.profession) %></p>
         <p class="meta-line"><strong>Report Date:</strong> <%= fmtDate(reportData.reportDate) %></p>
         <p class="meta-line"><strong>Issue Date:</strong> <%= fmtDate(reportData.issueDate) %></p>
         <p class="meta-line"><strong>invoice No:</strong> <%= billing.billNumber || billing.id %><% if (patient && patient.patientId) { %> [<%= patient.patientId %>]<% } %></p>
@@ -458,8 +578,10 @@ const patient = billing.Patient;
         <tr class="group-row"><td colspan="2">Systemic Exam: Cardio-Vascular</td></tr>
         <tr><td>Heart</td><td><%= val(ex.heart) %></td></tr>
         <tr><td>B.P.</td><td><%= val(ex.bp) %></td></tr>
+        <tr><td>Pulse</td><td><%= val(ex.pulse) %></td></tr>
         <tr class="group-row"><td colspan="2">Respiratory Exam</td></tr>
         <tr><td>Lungs</td><td><%= val(ex.lungs) %></td></tr>
+        <tr><td>RR/min</td><td><%= val(ex.rr_min) %></td></tr>
         <tr><td>Gastrointestinal Abdomen</td><td><%= val(ex.gastrointestinal_abdomen) %></td></tr>
         <tr class="group-row"><td colspan="2">Others</td></tr>
         <tr><td>Hernia</td><td><%= val(ex.hernia) %></td></tr>
@@ -479,13 +601,42 @@ const patient = billing.Patient;
           <td>X-Ray Image</td>
           <td><img src="<%= xrayImageUrl %>" alt="X-Ray" class="xray-img"></td>
         </tr>
-        <tr>
-          <td colspan="2" class="xray-disclaimer">
-            বিদ্যুৎ গোলযোগের কারণে রিপোর্ট ডেলিভারীতে বিলম্ব হতে পারে।
-            এর জন্য কর্তৃপক্ষ দায়ী নয়।
-          </td>
-        </tr>
       </table>
+
+      <div class="report-column-extra">
+        <div class="report-disclaimer-block">
+          বিদ্যুৎ গোলযোগের কারণে রিপোর্ট ডেলিভারীতে বিলম্ব হতে পারে।
+          এর জন্য কর্তৃপক্ষ দায়ী নয়।
+        </div>
+
+        <table class="room-allocation-table report-table-2col">
+          <colgroup>
+            <col class="col-name">
+            <col class="col-value">
+          </colgroup>
+          <tr class="group-row">
+            <td colspan="2"><b>Room Allocation</b></td>
+          </tr>
+          <tr>
+            <td>Sample Collection</td>
+            <td>101</td>
+          </tr>
+          <tr>
+            <td>Physcial</td>
+            <td>103</td>
+          </tr>
+          <tr>
+            <td>Radiologis</td>
+            <td>104</td>
+          </tr>
+          <% if (isFemalePatient) { %>
+          <tr>
+            <td>Urine</td>
+            <td>101</td>
+          </tr>
+          <% } %>
+        </table>
+      </div>
     </div>
 
     <div>
@@ -556,6 +707,7 @@ const patient = billing.Patient;
   <div class="report-footer">
     <p class="report-final-check">FINAL CHECKED BY:...........................</p>
   </div>
+</div>
 </div>
 
 <% if (locals.bundleExport) { %>

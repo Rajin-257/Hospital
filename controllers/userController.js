@@ -1,3 +1,5 @@
+const path = require('path');
+const fs = require('fs');
 const User = require('../models/User');
 const { Op } = require('sequelize');
 
@@ -259,6 +261,56 @@ exports.updateProfile = async (req, res) => {
       success: true,
       message: 'Profile updated successfully'
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Get laboratorist AI settings
+exports.getLabSettings = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id, {
+      attributes: ['id', 'hospitalBg', 'aiPrompt']
+    });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ hospitalBg: user.hospitalBg || null, aiPrompt: user.aiPrompt || '' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Save laboratorist AI settings (only one bg + prompt per user)
+exports.saveLabSettings = async (req, res) => {
+  try {
+    if (req.user.role !== 'laboratorist') {
+      return res.status(403).json({ message: 'Only laboratorists can save AI settings' });
+    }
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const updateData = {};
+
+    if (req.file) {
+      // Remove old bg file if one already exists
+      if (user.hospitalBg) {
+        const oldFilePath = path.join(__dirname, '../public', user.hospitalBg);
+        if (fs.existsSync(oldFilePath)) {
+          try { fs.unlinkSync(oldFilePath); } catch (_) {}
+        }
+      }
+      updateData.hospitalBg = `/uploads/ai_portrait_bg/${req.file.filename}`;
+    }
+
+    if (req.body.aiPrompt !== undefined) {
+      updateData.aiPrompt = String(req.body.aiPrompt || '').trim() || null;
+    }
+
+    await user.update(updateData);
+
+    const fresh = await User.findByPk(req.user.id, { attributes: ['hospitalBg', 'aiPrompt'] });
+    res.json({ success: true, message: 'Settings saved successfully', hospitalBg: fresh.hospitalBg, aiPrompt: fresh.aiPrompt });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });

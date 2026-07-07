@@ -52,7 +52,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const sessionStore = new SequelizeStore({
   db: sequelize,
   tableName: 'sessions',
-  expiration: 30 * 60 * 1000, // 30 minutes in milliseconds
+  expiration: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
   checkExpirationInterval: 15 * 60 * 1000 // Check every 15 minutes
 });
 
@@ -64,7 +64,7 @@ app.use(session({
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 30 * 60 * 1000 // 30 minutes in milliseconds
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
   }
 }));
 
@@ -80,7 +80,7 @@ app.use((req, res, next) => {
   
   // If there's a session and the user is logged in, extend the session
   if (req.session && req.session.user) {
-    req.session.cookie.maxAge = 30 * 60 * 1000; // Reset to 30 minutes
+    req.session.cookie.maxAge = 24 * 60 * 60 * 1000; // Reset to 24 hours
   }
   
   next();

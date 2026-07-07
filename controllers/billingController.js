@@ -7,6 +7,11 @@ const Setting = require('../models/Setting');
 const medicalReportController = require('./medicalReportController');
 const { launchPdfBrowser } = require('../utils/reportPdf');
 const { generateAiPortrait } = require('../utils/openaiPortrait');
+const {
+  enqueueBulkAiPortraits,
+  getBatchStatus,
+  generateAiPortraitForBilling
+} = require('../utils/aiPortraitQueue');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const Test = require('../models/Test');
@@ -24,53 +29,77 @@ const { buildPatientAccessWhere } = require('./patientController');
 
 const BILLING_PHOTOS_DIR = path.join(__dirname, '../public/uploads/billing_photos');
 
+function companionJpgPath(storedPath) {
+  if (!storedPath) return null;
+  if (path.extname(storedPath).toLowerCase() !== '.png') return null;
+  return storedPath.replace(/\.png$/i, '.jpg');
+}
+
+function saveAiPortraitFiles(billingId, portraitBuffers) {
+  const timestamp = Date.now();
+  const pngFilename = `ai-${billingId}-${timestamp}.png`;
+  const jpgFilename = `ai-${billingId}-${timestamp}.jpg`;
+  fs.writeFileSync(path.join(BILLING_PHOTOS_DIR, pngFilename), portraitBuffers.png);
+  fs.writeFileSync(path.join(BILLING_PHOTOS_DIR, jpgFilename), portraitBuffers.jpg);
+  return {
+    imageUrl: `/uploads/billing_photos/${pngFilename}`,
+    imageUrlJpg: `/uploads/billing_photos/${jpgFilename}`
+  };
+}
+
 async function persistBillingPhotoAsPng(sourcePath, billingId, prefix) {
-  const filename = `${prefix}-${billingId}-${Date.now()}.png`;
-  const outputPath = path.join(BILLING_PHOTOS_DIR, filename);
-  await sharp(sourcePath).png().toFile(outputPath);
-  if (fs.existsSync(sourcePath) && path.resolve(sourcePath) !== path.resolve(outputPath)) {
+  const timestamp = Date.now();
+  const pngFilename = `${prefix}-${billingId}-${timestamp}.png`;
+  const jpgFilename = `${prefix}-${billingId}-${timestamp}.jpg`;
+  const pngPath = path.join(BILLING_PHOTOS_DIR, pngFilename);
+  const jpgPath = path.join(BILLING_PHOTOS_DIR, jpgFilename);
+  const pipeline = sharp(sourcePath);
+  await Promise.all([
+    pipeline.clone().png().toFile(pngPath),
+    pipeline.clone().jpeg({ quality: 92 }).toFile(jpgPath)
+  ]);
+  if (fs.existsSync(sourcePath) && path.resolve(sourcePath) !== path.resolve(pngPath)) {
     try {
       fs.unlinkSync(sourcePath);
     } catch (unlinkErr) {
       console.error('Could not remove temp billing photo:', unlinkErr);
     }
   }
-  return `/uploads/billing_photos/${filename}`;
+  return `/uploads/billing_photos/${pngFilename}`;
 }
 
-async function persistBillingPassportFile(sourcePath, billingId, originalName) {
+async function persistBillingDocumentFile(sourcePath, billingId, prefix, originalName) {
   const ext = path.extname(originalName || sourcePath).toLowerCase();
   if (ext === '.pdf') {
-    const filename = `passport-${billingId}-${Date.now()}.pdf`;
+    const filename = `${prefix}-${billingId}-${Date.now()}.pdf`;
     const outputPath = path.join(BILLING_PHOTOS_DIR, filename);
     fs.copyFileSync(sourcePath, outputPath);
     if (fs.existsSync(sourcePath) && path.resolve(sourcePath) !== path.resolve(outputPath)) {
       try {
         fs.unlinkSync(sourcePath);
       } catch (unlinkErr) {
-        console.error('Could not remove temp passport file:', unlinkErr);
+        console.error(`Could not remove temp ${prefix} file:`, unlinkErr);
       }
     }
     return `/uploads/billing_photos/${filename}`;
   }
-  return persistBillingPhotoAsPng(sourcePath, billingId, 'passport');
+  return persistBillingPhotoAsPng(sourcePath, billingId, prefix);
 }
 
-function billingHasRequiredPhotos(bill) {
-  return Boolean(bill.takenPhoto && bill.patientPhoto && bill.passportPhoto);
+async function persistBillingPassportFile(sourcePath, billingId, originalName) {
+  return persistBillingDocumentFile(sourcePath, billingId, 'passport', originalName);
 }
 
-function describeMissingPhotos(bill) {
-  const missing = [];
-  if (!bill.takenPhoto) missing.push('taken photo');
-  if (!bill.patientPhoto) missing.push('AI profile photo');
-  if (!bill.passportPhoto) missing.push('passport picture');
-  return missing;
+async function persistBillingNidFile(sourcePath, billingId, originalName) {
+  return persistBillingDocumentFile(sourcePath, billingId, 'nid', originalName);
 }
 
 function buildBillingAccessWhere(req) {
   if (req.user?.role === 'receptionist') {
     return { createdBy: req.user.id };
+  }
+  if (req.user?.role === 'laboratorist') {
+    return { assignedLabId: req.user.id };
   }
   return {};
 }
@@ -214,6 +243,12 @@ async function fetchFilteredInvoices(req) {
         as: 'creator',
         attributes: ['id', 'username'],
         required: false
+      },
+      {
+        model: User,
+        as: 'assignedLab',
+        attributes: ['id', 'username'],
+        required: false
       }
     ],
     subQuery: false,
@@ -309,13 +344,25 @@ exports.renderTodayInvoiceList = async (req, res) => {
   try {
     const { bills, creators, canFilterByCreator, filters, totalRecords } = await fetchFilteredInvoices(req);
 
+    const canAssign = ['softadmin', 'admin'].includes(req.user.role);
+    const laboratorists = canAssign
+      ? await User.findAll({
+          where: { role: 'laboratorist', isActive: true },
+          attributes: ['id', 'username'],
+          order: [['username', 'ASC']]
+        })
+      : [];
+
     res.render('billing_invoice_list', {
       title: 'Invoice List',
       bills,
       creators,
       canFilterByCreator,
       filters,
-      totalRecords
+      totalRecords,
+      currentUserRole: req.user.role,
+      canAssign,
+      laboratorists
     });
   } catch (error) {
     console.error(error);
@@ -323,6 +370,274 @@ exports.renderTodayInvoiceList = async (req, res) => {
       title: 'Error',
       message: 'Failed to load invoices'
     });
+  }
+};
+
+// Assign / unassign an invoice to a laboratorist (softadmin + admin only)
+exports.assignInvoiceToLab = async (req, res) => {
+  try {
+    if (!['softadmin', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Only admin users can assign invoices' });
+    }
+
+    const billing = await Billing.findByPk(req.params.id);
+    if (!billing) return res.status(404).json({ message: 'Invoice not found' });
+
+    const { labUserId } = req.body;
+
+    if (!labUserId || labUserId === 'none') {
+      await billing.update({ assignedLabId: null });
+      return res.json({ success: true, message: 'Assignment removed', assignedLabId: null, assignedLabName: null });
+    }
+
+    const labUser = await User.findOne({
+      where: { id: labUserId, role: 'laboratorist', isActive: true },
+      attributes: ['id', 'username']
+    });
+    if (!labUser) return res.status(404).json({ message: 'Laboratorist not found or inactive' });
+
+    await billing.update({ assignedLabId: labUser.id });
+    res.json({ success: true, message: 'Invoice assigned successfully', assignedLabId: labUser.id, assignedLabName: labUser.username });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+exports.assignInvoicesToLab = async (req, res) => {
+  try {
+    if (!['softadmin', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Only admin users can assign invoices' });
+    }
+
+    const rawIds = req.body.ids;
+    const ids = [...new Set(
+      (Array.isArray(rawIds) ? rawIds : String(rawIds || '').split(','))
+        .map((id) => parseInt(id, 10))
+        .filter((id) => !Number.isNaN(id))
+    )];
+
+    if (!ids.length) {
+      return res.status(400).json({ message: 'Select at least one invoice' });
+    }
+
+    const { labUserId } = req.body;
+    let assignedLabId = null;
+    let assignedLabName = null;
+
+    if (!labUserId || labUserId === 'none') {
+      assignedLabId = null;
+      assignedLabName = null;
+    } else {
+      const labUser = await User.findOne({
+        where: { id: labUserId, role: 'laboratorist', isActive: true },
+        attributes: ['id', 'username']
+      });
+      if (!labUser) return res.status(404).json({ message: 'Laboratorist not found or inactive' });
+      assignedLabId = labUser.id;
+      assignedLabName = labUser.username;
+    }
+
+    const [updatedCount] = await Billing.update(
+      { assignedLabId },
+      { where: { id: { [Op.in]: ids } } }
+    );
+
+    if (!updatedCount) {
+      return res.status(404).json({ message: 'No invoices found for the selected items' });
+    }
+
+    const message = assignedLabId
+      ? `${updatedCount} invoice(s) assigned to ${assignedLabName}`
+      : `Assignment removed from ${updatedCount} invoice(s)`;
+
+    res.json({
+      success: true,
+      message,
+      assignedLabId,
+      assignedLabName,
+      updatedCount,
+      ids
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Re-upload taken photo from the invoice list
+exports.reuploadTakenPhoto = async (req, res) => {
+  try {
+    const billing = await Billing.findOne({
+      where: { id: req.params.id, ...buildBillingAccessWhere(req) }
+    });
+    if (!billing) return res.status(404).json({ message: 'Billing not found' });
+
+    const uploadedFile = req.file;
+    if (!uploadedFile) return res.status(400).json({ message: 'No photo uploaded' });
+
+    // Remove old takenPhoto file if it exists
+    if (billing.takenPhoto) {
+      const oldPath = path.join(__dirname, '../public', billing.takenPhoto);
+      if (fs.existsSync(oldPath)) {
+        try { fs.unlinkSync(oldPath); } catch (_) {}
+      }
+    }
+
+    const newPath = await persistBillingPhotoAsPng(uploadedFile.path, billing.id, 'taken');
+
+    // Also update patientPhoto if it was previously the same as takenPhoto,
+    // or if patientPhoto is not separately set
+    const updates = { takenPhoto: newPath };
+    if (!billing.patientPhoto || billing.patientPhoto === billing.takenPhoto) {
+      updates.patientPhoto = newPath;
+    }
+
+    await billing.update(updates);
+
+    res.json({ success: true, takenPhoto: newPath, message: 'Taken photo updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Re-upload passport photo (PNG or PDF) from the invoice list
+exports.reuploadPassportPhoto = async (req, res) => {
+  try {
+    const billing = await Billing.findOne({
+      where: { id: req.params.id, ...buildBillingAccessWhere(req) }
+    });
+    if (!billing) return res.status(404).json({ message: 'Billing not found' });
+
+    const uploadedFile = req.file;
+    if (!uploadedFile) return res.status(400).json({ message: 'No file uploaded' });
+
+    // Remove old passportPhoto file if it exists
+    if (billing.passportPhoto) {
+      const oldPath = path.join(__dirname, '../public', billing.passportPhoto);
+      if (fs.existsSync(oldPath)) {
+        try { fs.unlinkSync(oldPath); } catch (_) {}
+      }
+    }
+
+    const newPath = await persistBillingPassportFile(uploadedFile.path, billing.id, uploadedFile.originalname);
+    await billing.update({ passportPhoto: newPath });
+
+    res.json({ success: true, passportPhoto: newPath, message: 'Passport updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Re-upload NID photo (PNG or PDF) from the invoice list
+exports.reuploadNidPhoto = async (req, res) => {
+  try {
+    const billing = await Billing.findOne({
+      where: { id: req.params.id, ...buildBillingAccessWhere(req) }
+    });
+    if (!billing) return res.status(404).json({ message: 'Billing not found' });
+
+    const uploadedFile = req.file;
+    if (!uploadedFile) return res.status(400).json({ message: 'No file uploaded' });
+
+    if (billing.nidPhoto) {
+      const oldPath = path.join(__dirname, '../public', billing.nidPhoto);
+      if (fs.existsSync(oldPath)) {
+        try { fs.unlinkSync(oldPath); } catch (_) {}
+      }
+    }
+
+    const newPath = await persistBillingNidFile(uploadedFile.path, billing.id, uploadedFile.originalname);
+    await billing.update({ nidPhoto: newPath });
+
+    res.json({ success: true, nidPhoto: newPath, message: 'NID picture updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Generate AI portrait for a billing from the invoice list (uses the laboratorist's own bg + prompt)
+exports.generateAiForInvoice = async (req, res) => {
+  try {
+    const billing = await Billing.findOne({
+      where: { id: req.params.id, ...buildBillingAccessWhere(req) }
+    });
+    if (!billing) return res.status(404).json({ message: 'Billing not found' });
+    if (!billing.takenPhoto) return res.status(400).json({ message: 'No taken photo available for this billing' });
+
+    const currentUser = await User.findByPk(req.user.id, {
+      attributes: ['id', 'hospitalBg', 'aiPrompt']
+    });
+    if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+    const { imageUrl, imageUrlJpg } = await generateAiPortraitForBilling(billing, currentUser);
+
+    res.json({ success: true, imageUrl, imageUrlJpg, message: 'AI portrait generated and saved' });
+  } catch (error) {
+    console.error('AI portrait (invoice list) error:', error);
+    res.status(500).json({ message: error.message || 'Failed to generate AI portrait' });
+  }
+};
+
+exports.generateAiBulkForInvoices = async (req, res) => {
+  try {
+    const rawIds = req.body.ids ?? req.query.ids;
+    const ids = (Array.isArray(rawIds) ? rawIds : String(rawIds || '').split(','))
+      .map((id) => parseInt(id, 10))
+      .filter((id) => !Number.isNaN(id));
+
+    if (!ids.length) {
+      return res.status(400).json({ message: 'Select at least one invoice' });
+    }
+
+    const accessibleBills = await Billing.findAll({
+      where: {
+        id: { [Op.in]: ids },
+        ...buildBillingAccessWhere(req)
+      },
+      attributes: ['id']
+    });
+    const accessibleIds = accessibleBills.map((bill) => bill.id);
+
+    if (!accessibleIds.length) {
+      return res.status(404).json({ message: 'No accessible invoices found for the selected items' });
+    }
+
+    const result = await enqueueBulkAiPortraits(accessibleIds, req.user.id);
+
+    res.status(202).json({
+      success: true,
+      batchId: result.batchId,
+      queued: result.queued,
+      skipped: result.skipped,
+      alreadyHasAi: result.alreadyHasAi || 0,
+      total: result.total,
+      message: result.queued > 0
+        ? `AI portrait generation started for ${result.queued} invoice(s) in the background. You can close this page — processing will continue on the server.`
+        : result.alreadyHasAi > 0
+          ? `No new AI portraits queued. ${result.alreadyHasAi} selected invoice(s) already have an AI portrait.`
+          : 'No invoices were queued. Selected invoices need a taken photo before AI generation.'
+    });
+  } catch (error) {
+    console.error('Bulk AI portrait queue error:', error);
+    res.status(500).json({ message: error.message || 'Failed to start AI portrait generation' });
+  }
+};
+
+exports.getAiBulkStatus = async (req, res) => {
+  try {
+    const status = await getBatchStatus(req.params.batchId, req.user.id);
+    if (!status) {
+      return res.status(404).json({ message: 'Batch not found' });
+    }
+
+    res.json({ success: true, ...status });
+  } catch (error) {
+    console.error('Bulk AI portrait status error:', error);
+    res.status(500).json({ message: error.message || 'Failed to load batch status' });
   }
 };
 
@@ -398,6 +713,138 @@ exports.downloadPassportPhoto = async (req, res) => {
   }
 };
 
+exports.downloadNidPhoto = async (req, res) => {
+  try {
+    const billing = await Billing.findOne({
+      where: {
+        id: req.params.id,
+        ...buildBillingAccessWhere(req)
+      },
+      include: [{ model: Patient }]
+    });
+
+    if (!billing || !billing.nidPhoto) {
+      return res.status(404).send('NID picture not found');
+    }
+
+    const relativePath = billing.nidPhoto.replace(/^\//, '');
+    const filePath = path.join(__dirname, '../public', relativePath);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).send('NID picture file not found');
+    }
+
+    const ext = path.extname(filePath) || '.png';
+    const nidNo = (billing.Patient?.nidPassportNo || 'nid').replace(/[^\w.-]+/g, '_');
+    const billNumber = String(billing.billNumber || billing.id).replace(/[^\w.-]+/g, '_');
+    const filename = `${nidNo}-nid-${billNumber}${ext}`;
+
+    res.download(filePath, filename);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Failed to download NID picture');
+  }
+};
+
+exports.downloadInvoiceImages = async (req, res) => {
+  try {
+    const billing = await Billing.findOne({
+      where: {
+        id: req.params.id,
+        ...buildBillingAccessWhere(req)
+      },
+      include: [
+        { model: Patient },
+        { model: MedicalReport, required: false }
+      ]
+    });
+
+    if (!billing) {
+      return res.status(404).send('Invoice not found');
+    }
+
+    const base = `${sanitizeFileSegment(billing.Patient?.nidPassportNo, 'invoice')}_${sanitizeFileSegment(billing.Patient?.name, 'patient')}`;
+    const billNumber = sanitizeFileSegment(billing.billNumber, String(billing.id));
+    const entries = [];
+
+    async function queueVariants(storedPath, label) {
+      const variants = await buildImageVariantEntries(storedPath, `${base}_${label}`);
+      entries.push(...variants);
+    }
+
+    await queueVariants(billing.takenPhoto, 'taken');
+    await queueVariants(billing.passportPhoto, 'passport');
+    await queueVariants(billing.nidPhoto, 'nid');
+    if (billing.patientPhoto && billing.patientPhoto !== billing.takenPhoto) {
+      await queueVariants(billing.patientPhoto, 'profile');
+    }
+
+    let reportPdfEntry = null;
+    if (billing.MedicalReport) {
+      const settings = await Setting.findOne();
+      const browser = await launchPdfBrowser();
+      try {
+        const reportPdf = await medicalReportController.renderMedicalReportPdfBuffer(
+          billing,
+          settings,
+          browser
+        );
+        if (reportPdf && reportPdf.length) {
+          reportPdfEntry = {
+            archiveName: `${base}_report.pdf`,
+            buffer: Buffer.isBuffer(reportPdf) ? reportPdf : Buffer.from(reportPdf)
+          };
+        }
+      } finally {
+        await browser.close();
+      }
+    }
+
+    if (!entries.length && !reportPdfEntry) {
+      return res.status(404).send('No documents available for this invoice');
+    }
+
+    if (!entries.length && reportPdfEntry) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${reportPdfEntry.archiveName}"`);
+      return res.send(reportPdfEntry.buffer);
+    }
+
+    if (entries.length === 1 && !reportPdfEntry) {
+      const entry = entries[0];
+      if (entry.filePath) {
+        return res.download(entry.filePath, entry.archiveName);
+      }
+      const buffer = await entry.bufferPromise;
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.setHeader('Content-Disposition', `attachment; filename="${entry.archiveName}"`);
+      return res.send(buffer);
+    }
+
+    const archive = new ZipArchive({ zlib: { level: 9 } });
+    archive.on('error', (err) => {
+      throw err;
+    });
+
+    const zipName = `${base}_${billNumber}_documents.zip`;
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
+    archive.pipe(res);
+
+    await appendImageVariantEntries(archive, entries);
+    if (reportPdfEntry) {
+      archive.append(reportPdfEntry.buffer, { name: reportPdfEntry.archiveName });
+    }
+
+    await archive.finalize();
+  } catch (error) {
+    console.error(error);
+    if (!res.headersSent) {
+      res.status(500).send('Failed to download invoice documents');
+    }
+  }
+};
+
 function sanitizeFileSegment(value, fallback) {
   const cleaned = String(value || '')
     .trim()
@@ -435,6 +882,69 @@ function appendPublicFile(archive, storedPath, archivePath) {
   return true;
 }
 
+async function buildImageVariantEntries(storedPath, archiveNameBase) {
+  const entries = [];
+  const filePath = resolvePublicFilePath(storedPath);
+  if (!filePath) return entries;
+
+  const ext = path.extname(storedPath).toLowerCase() || '.png';
+  if (ext === '.pdf') {
+    return [{ filePath, archiveName: `${archiveNameBase}.pdf` }];
+  }
+
+  entries.push({ filePath, archiveName: `${archiveNameBase}${ext}` });
+
+  if (ext === '.png') {
+    const jpgCompanion = companionJpgPath(storedPath);
+    const jpgPath = jpgCompanion && resolvePublicFilePath(jpgCompanion);
+    if (jpgPath) {
+      entries.push({ filePath: jpgPath, archiveName: `${archiveNameBase}.jpg` });
+    } else {
+      entries.push({
+        archiveName: `${archiveNameBase}.jpg`,
+        bufferPromise: sharp(filePath).jpeg({ quality: 92 }).toBuffer()
+      });
+    }
+  } else if (ext === '.jpg' || ext === '.jpeg') {
+    const pngCompanion = storedPath.replace(/\.jpe?g$/i, '.png');
+    const pngPath = resolvePublicFilePath(pngCompanion);
+    if (pngPath) {
+      entries.push({ filePath: pngPath, archiveName: `${archiveNameBase}.png` });
+    } else {
+      entries.push({
+        archiveName: `${archiveNameBase}.png`,
+        bufferPromise: sharp(filePath).png().toBuffer()
+      });
+    }
+  }
+
+  return entries;
+}
+
+async function appendImageVariantEntries(archive, entries) {
+  for (const entry of entries) {
+    if (entry.filePath) {
+      archive.file(entry.filePath, { name: entry.archiveName });
+    } else if (entry.bufferPromise) {
+      archive.append(await entry.bufferPromise, { name: entry.archiveName });
+    }
+  }
+}
+
+async function appendBillingImageFilesToArchive(archive, bill, folder, base) {
+  const imageFields = [
+    [bill.takenPhoto, 'taken'],
+    ...(bill.patientPhoto && bill.patientPhoto !== bill.takenPhoto ? [[bill.patientPhoto, 'profile']] : []),
+    [bill.passportPhoto, 'passport'],
+    [bill.nidPhoto, 'nid']
+  ];
+
+  for (const [storedPath, label] of imageFields) {
+    const entries = await buildImageVariantEntries(storedPath, `${folder}${base}_${label}`);
+    await appendImageVariantEntries(archive, entries);
+  }
+}
+
 exports.downloadSelectedInvoiceBundle = async (req, res) => {
   try {
     const rawIds = req.body.ids ?? req.query.ids;
@@ -464,21 +974,6 @@ exports.downloadSelectedInvoiceBundle = async (req, res) => {
       return res.status(404).send('No accessible invoices found for the selected items');
     }
 
-    const incomplete = bills
-      .filter((bill) => !billingHasRequiredPhotos(bill))
-      .map((bill) => ({
-        id: bill.id,
-        billNumber: bill.billNumber,
-        missing: describeMissingPhotos(bill)
-      }));
-
-    if (incomplete.length) {
-      const details = incomplete
-        .map((item) => `Invoice ${item.billNumber}: missing ${item.missing.join(', ')}`)
-        .join('; ');
-      return res.status(400).send(`Each selected invoice needs a taken photo, AI profile photo, and passport picture. ${details}`);
-    }
-
     const settings = await Setting.findOne();
     const usedBases = new Set();
     let browser = null;
@@ -500,17 +995,7 @@ exports.downloadSelectedInvoiceBundle = async (req, res) => {
         const base = buildBillingFolderBase(bill.Patient, bill, usedBases);
         const folder = `${base}/`;
 
-        const takenExt = path.extname(bill.takenPhoto || '') || '.png';
-        const takenFile = `${base}_taken${takenExt}`;
-        appendPublicFile(archive, bill.takenPhoto, `${folder}${takenFile}`);
-
-        const profileExt = path.extname(bill.patientPhoto || '') || '.png';
-        const profileFile = `${base}_ai_profile${profileExt}`;
-        appendPublicFile(archive, bill.patientPhoto, `${folder}${profileFile}`);
-
-        const passportExt = path.extname(bill.passportPhoto || '') || '.png';
-        const passportFile = `${base}_passport${passportExt}`;
-        appendPublicFile(archive, bill.passportPhoto, `${folder}${passportFile}`);
+        await appendBillingImageFilesToArchive(archive, bill, folder, base);
 
         if (bill.MedicalReport) {
           const reportPdf = await medicalReportController.renderMedicalReportPdfBuffer(
@@ -851,10 +1336,8 @@ exports.generateAiPortrait = async (req, res) => {
       return res.status(400).json({ message: 'Upload a patient profile photo first' });
     }
 
-    const imageBuffer = await generateAiPortrait(photoFile.path);
-    const filename = `ai-${billing.id}-${Date.now()}.png`;
-    const outputPath = path.join(__dirname, '../public/uploads/billing_photos', filename);
-    fs.writeFileSync(outputPath, imageBuffer);
+    const portraitBuffers = await generateAiPortrait(photoFile.path);
+    const { imageUrl, imageUrlJpg } = saveAiPortraitFiles(billing.id, portraitBuffers);
 
     if (photoFile.path && fs.existsSync(photoFile.path) && !photoFile.filename.startsWith('ai-')) {
       try {
@@ -864,11 +1347,10 @@ exports.generateAiPortrait = async (req, res) => {
       }
     }
 
-    const imageUrl = `/uploads/billing_photos/${filename}`;
-
     res.json({
       success: true,
       imageUrl,
+      imageUrlJpg,
       message: 'AI portrait generated successfully'
     });
   } catch (error) {
@@ -896,22 +1378,34 @@ exports.uploadBillingPhoto = async (req, res) => {
     const takenFile = req.files?.takenPhoto?.[0];
     const photoFile = req.files?.photo?.[0];
     const passportFile = req.files?.passportPhoto?.[0];
+    const nidFile = req.files?.nidPhoto?.[0];
 
-    if (!takenFile || !photoFile || !passportFile) {
+    if (!takenFile || !passportFile) {
       return res.status(400).json({
-        message: 'Taken photo, AI profile photo, and passport picture are all required.'
+        message: 'Taken photo and passport picture are both required.'
       });
     }
 
+    const takenPhotoPath = await persistBillingPhotoAsPng(takenFile.path, billing.id, 'taken');
     const updates = {
-      takenPhoto: await persistBillingPhotoAsPng(takenFile.path, billing.id, 'taken'),
-      patientPhoto: await persistBillingPhotoAsPng(photoFile.path, billing.id, 'bill'),
+      takenPhoto: takenPhotoPath,
+      patientPhoto: photoFile
+        ? await persistBillingPhotoAsPng(photoFile.path, billing.id, 'bill')
+        : takenPhotoPath,
       passportPhoto: await persistBillingPassportFile(
         passportFile.path,
         billing.id,
         passportFile.originalname
       )
     };
+
+    if (nidFile) {
+      updates.nidPhoto = await persistBillingNidFile(
+        nidFile.path,
+        billing.id,
+        nidFile.originalname
+      );
+    }
 
     await billing.update(updates);
 

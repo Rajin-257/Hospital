@@ -36,12 +36,28 @@ function formatListDate(d) {
         <a href="/billing/invoices/today/download?<%= downloadParams.toString() %>" class="btn btn-outline-success btn-sm">
           <i class="fas fa-file-csv me-1"></i> Export CSV
         </a>
-        <button type="button" class="btn btn-success btn-sm" id="btn-download-selected" disabled>
+        <button type="button" class="btn btn-success btn-sm" id="btn-download-selected" disabled title="Download taken photo, passport, NID, AI portrait (PNG &amp; JPG), and medical report PDF">
           <i class="fas fa-download me-1"></i> Download Selected
         </button>
+        <% if (['laboratorist', 'admin', 'softadmin'].includes(currentUserRole)) { %>
+        <button type="button" class="btn btn-warning btn-sm" id="btn-generate-ai-selected" disabled title="Generate AI portraits in the background for selected invoices">
+          <i class="fas fa-magic me-1"></i> Generate AI Selected
+        </button>
+        <% } %>
+        <% if (canAssign) { %>
+        <button type="button" class="btn btn-outline-primary btn-sm" id="btn-assign-selected" disabled>
+          <i class="fas fa-flask me-1"></i> Assign Selected
+        </button>
+        <% } %>
         <a href="/billing" class="btn btn-primary btn-sm">
           <i class="fas fa-plus me-1"></i> New Invoice
         </a>
+      </div>
+    </div>
+    <div id="ai-bulk-status-alert" class="alert alert-info py-2 px-3 mb-0 border-0 rounded-0 d-none" role="status">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <span id="ai-bulk-status-text" class="small"></span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="ai-bulk-status-dismiss">Dismiss</button>
       </div>
     </div>
     <div class="card-body border-bottom">
@@ -116,11 +132,13 @@ function formatListDate(d) {
               </th>
               <th style="width: 50px;">SL</th>
               <th>Report Date</th>
+              <th>Patient ID</th>
               <th>Invoice No.</th>
               <th>Passport No.</th>
               <th>Patient Name</th>
               <th>Status</th>
               <th>Created By</th>
+              <% if (canAssign) { %><th>Assigned Lab</th><% } %>
               <th>Created Date</th>
               <th>Action</th>
             </tr>
@@ -128,23 +146,17 @@ function formatListDate(d) {
           <tbody>
             <% if (bills && bills.length > 0) { %>
               <% bills.forEach(function (bill, index) { %>
+              <% const hasAiPortrait = !!(bill.patientPhoto && /\/billing_photos\/ai-\d+-/i.test(bill.patientPhoto)); %>
               <tr>
                 <td>
-                  <%
-                  const hasAllPhotos = bill.takenPhoto && bill.patientPhoto && bill.passportPhoto;
-                  const missingPhotos = [];
-                  if (!bill.takenPhoto) missingPhotos.push('taken photo');
-                  if (!bill.patientPhoto) missingPhotos.push('AI profile photo');
-                  if (!bill.passportPhoto) missingPhotos.push('passport picture');
-                  %>
                   <input type="checkbox" class="form-check-input bill-select" value="<%= bill.id %>"
-                    data-bill-number="<%= bill.billNumber %>"
-                    data-has-photos="<%= hasAllPhotos ? '1' : '0' %>"
-                    data-missing-photos="<%= missingPhotos.join(', ') %>"
+                    data-taken-photo="<%= bill.takenPhoto || '' %>"
+                    data-has-ai="<%= hasAiPortrait ? '1' : '' %>"
                     aria-label="Select invoice <%= bill.billNumber %>">
                 </td>
                 <td><%= index + 1 %></td>
                 <td><%= bill.MedicalReport ? formatListDate(bill.MedicalReport.reportDate) : '—' %></td>
+                <td><%= bill.Patient && bill.Patient.patientId ? bill.Patient.patientId : '—' %></td>
                 <td><%= bill.billNumber %></td>
                 <td><%= bill.Patient && bill.Patient.nidPassportNo ? bill.Patient.nidPassportNo : '—' %></td>
                 <td><%= bill.Patient ? bill.Patient.name : 'Unknown' %></td>
@@ -158,6 +170,15 @@ function formatListDate(d) {
                   <% } %>
                 </td>
                 <td><%= bill.creator ? bill.creator.username : '—' %></td>
+                <% if (canAssign) { %>
+                <td class="assign-lab-cell" id="assign-cell-<%= bill.id %>">
+                  <% if (bill.assignedLab) { %>
+                    <span class="badge bg-primary" id="assign-badge-<%= bill.id %>"><i class="fas fa-flask me-1"></i><%= bill.assignedLab.username %></span>
+                  <% } else { %>
+                    <span class="text-muted small" id="assign-badge-<%= bill.id %>">—</span>
+                  <% } %>
+                </td>
+                <% } %>
                 <td><%= formatListDate(bill.createdAt) %></td>
                 <td>
                   <a href="/billing/receipt/<%= bill.id %>" class="btn btn-sm btn-outline-primary" title="View Invoice">
@@ -179,12 +200,41 @@ function formatListDate(d) {
                     <i class="fas fa-download"></i>
                   </a>
                   <% } %>
+                  <% if (bill.nidPhoto) { %>
+                  <a href="/billing/nid-photo/<%= bill.id %>/download" class="btn btn-sm btn-outline-dark" title="Download NID Picture">
+                    <i class="fas fa-id-badge"></i>
+                  </a>
+                  <% } %>
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-reupload-docs"
+                    title="Photo, Passport, NID &amp; AI"
+                    data-bill-id="<%= bill.id %>"
+                    data-bill-number="<%= bill.billNumber %>"
+                    data-patient-name="<%= bill.Patient ? bill.Patient.name : '' %>"
+                    data-taken-photo="<%= bill.takenPhoto || '' %>"
+                    data-patient-photo="<%= bill.patientPhoto || '' %>"
+                    data-passport-photo="<%= bill.passportPhoto || '' %>"
+                    data-nid-photo="<%= bill.nidPhoto || '' %>"
+                    data-has-report="<%= bill.MedicalReport ? '1' : '' %>">
+                    <i class="fas fa-file-upload"></i>
+                  </button>
+                  <% if (canAssign) { %>
+                  <button type="button" class="btn btn-sm btn-outline-secondary btn-assign-lab"
+                    title="Assign to Laboratorist"
+                    data-bill-id="<%= bill.id %>"
+                    data-bill-number="<%= bill.billNumber %>"
+                    data-passport="<%= bill.Patient && bill.Patient.nidPassportNo ? bill.Patient.nidPassportNo : '' %>"
+                    data-patient-name="<%= bill.Patient ? bill.Patient.name : '' %>"
+                    data-current-lab-id="<%= bill.assignedLabId || '' %>"
+                    data-current-lab-name="<%= bill.assignedLab ? bill.assignedLab.username : '' %>">
+                    <i class="fas fa-flask"></i>
+                  </button>
+                  <% } %>
                 </td>
               </tr>
               <% }); %>
             <% } else { %>
               <tr>
-                <td colspan="10" class="text-center text-muted py-4">No invoices found for the selected filters.</td>
+                <td colspan="<%= canAssign ? 12 : 11 %>" class="text-center text-muted py-4">No invoices found for the selected filters.</td>
               </tr>
             <% } %>
           </tbody>
@@ -199,21 +249,294 @@ function formatListDate(d) {
   </div>
 </div>
 
+<!-- Assign Lab Modal -->
+<% if (canAssign) { %>
+<div class="modal fade" id="assignLabModal" tabindex="-1" aria-labelledby="assignLabModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0"><i class="fas fa-flask me-2 text-secondary"></i><span id="assignLabModalLabel">Assign to Laboratorist</span></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="mb-3">
+          <div class="small text-muted mb-1" id="assign-bill-info-label">Invoice</div>
+          <div class="fw-semibold" id="assign-bill-info"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Select Laboratorist</label>
+          <select class="form-select" id="assign-lab-select">
+            <option value="none">— Unassign —</option>
+            <% laboratorists.forEach(function(lab) { %>
+            <option value="<%= lab.id %>"><%= lab.username %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div id="assign-lab-status" class="small mb-2"></div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-confirm-assign">
+          <i class="fas fa-check me-1"></i> Assign
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- Re-upload Documents Modal (Photo, Passport, NID) -->
+<div class="modal fade" id="reuploadDocsModal" tabindex="-1" aria-labelledby="reuploadDocsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0"><i class="fas fa-file-upload me-2 text-primary"></i><span id="reuploadDocsModalLabel">Patient Documents</span></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <ul class="nav nav-tabs px-3 pt-2" id="reuploadDocsTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-photo-btn" data-bs-toggle="tab" data-bs-target="#tab-photo-pane" type="button" role="tab">
+              <i class="fas fa-camera me-1"></i> Taken Photo
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-passport-btn" data-bs-toggle="tab" data-bs-target="#tab-passport-pane" type="button" role="tab">
+              <i class="fas fa-id-card me-1"></i> Passport
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-nid-btn" data-bs-toggle="tab" data-bs-target="#tab-nid-pane" type="button" role="tab">
+              <i class="fas fa-address-card me-1"></i> NID
+            </button>
+          </li>
+          <% if (currentUserRole === 'laboratorist' || currentUserRole === 'softadmin' || currentUserRole === 'admin') { %>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-ai-btn" data-bs-toggle="tab" data-bs-target="#tab-ai-pane" type="button" role="tab">
+              <i class="fas fa-magic me-1"></i> AI Portrait
+            </button>
+          </li>
+          <% } %>
+        </ul>
+
+        <div class="tab-content p-3" id="reuploadDocsTabContent">
+          <!-- Taken Photo -->
+          <div class="tab-pane fade show active" id="tab-photo-pane" role="tabpanel">
+            <div id="docs-current-photo-wrap" class="d-none mb-3">
+              <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;"><i class="fas fa-image me-1"></i>Current Photo</p>
+              <div class="bg-dark rounded d-flex align-items-center justify-content-center" style="min-height:120px; overflow:hidden;">
+                <img id="docs-current-photo" src="" alt="Current" style="max-width:100%; max-height:160px; object-fit:contain;">
+              </div>
+            </div>
+            <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;"><i class="fas fa-video me-1"></i>Webcam</p>
+            <div class="bg-dark rounded mb-2 d-flex align-items-center justify-content-center position-relative" style="height:200px; overflow:hidden;">
+              <video id="reupload-video" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover;"></video>
+              <div id="reupload-cam-placeholder" class="position-absolute text-center text-muted small" style="pointer-events:none;">
+                <i class="fas fa-video d-block mb-1" style="font-size:1.5rem;"></i>Start camera
+              </div>
+            </div>
+            <div class="d-flex gap-1 mb-3">
+              <button type="button" class="btn btn-outline-primary btn-sm" id="reupload-btn-start"><i class="fas fa-video me-1"></i>Start</button>
+              <button type="button" class="btn btn-primary btn-sm" id="reupload-btn-capture" disabled><i class="fas fa-camera me-1"></i>Capture</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="reupload-btn-stop" disabled><i class="fas fa-stop me-1"></i>Stop</button>
+            </div>
+            <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;"><i class="fas fa-cloud-upload-alt me-1"></i>Or Upload File</p>
+            <input type="file" class="form-control form-control-sm mb-3" id="reupload-file-input" accept="image/jpeg,image/jpg,image/png,image/webp">
+            <div id="reupload-preview-wrap" class="d-none mb-2">
+              <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;"><i class="fas fa-image me-1 text-success"></i>New Photo Preview</p>
+              <div class="bg-dark rounded d-flex align-items-center justify-content-center" style="min-height:160px; overflow:hidden;">
+                <img id="reupload-preview-img" src="" alt="Preview" style="max-width:100%; max-height:200px; object-fit:contain;">
+              </div>
+            </div>
+            <div id="reupload-status" class="small mb-2"></div>
+            <button type="button" class="btn btn-success btn-sm" id="reupload-btn-save" disabled>
+              <i class="fas fa-check me-1"></i> Save Photo
+            </button>
+          </div>
+
+          <!-- Passport -->
+          <div class="tab-pane fade" id="tab-passport-pane" role="tabpanel">
+            <div id="docs-current-passport-wrap" class="d-none mb-3">
+              <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;"><i class="fas fa-image me-1"></i>Current Passport</p>
+              <div class="bg-dark rounded d-flex align-items-center justify-content-center" style="min-height:120px; overflow:hidden;">
+                <img id="docs-current-passport" src="" alt="Current passport" style="max-width:100%; max-height:160px; object-fit:contain;">
+              </div>
+              <div id="docs-current-passport-pdf" class="d-none alert alert-secondary py-2 px-3 mt-2 mb-0 small">
+                <i class="fas fa-file-pdf me-1 text-danger"></i> PDF on file — use download button in the list to view
+              </div>
+            </div>
+            <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;"><i class="fas fa-cloud-upload-alt me-1"></i>Select Passport File</p>
+            <p class="small text-muted mb-2">PNG, JPEG, WebP or PDF (max 5 MB)</p>
+            <input type="file" class="form-control form-control-sm mb-3" id="reupload-passport-file-input" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf">
+            <div id="reupload-passport-preview-wrap" class="d-none mb-2">
+              <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;"><i class="fas fa-image me-1 text-success"></i>Preview</p>
+              <div class="bg-dark rounded d-flex align-items-center justify-content-center" style="min-height:160px; overflow:hidden;">
+                <img id="reupload-passport-preview-img" src="" alt="Preview" style="max-width:100%; max-height:200px; object-fit:contain;">
+              </div>
+            </div>
+            <div id="reupload-passport-pdf-indicator" class="d-none alert alert-info py-2 px-3 mb-2">
+              <i class="fas fa-file-pdf me-1 text-danger"></i> PDF selected — <span id="reupload-passport-pdf-name"></span>
+            </div>
+            <div id="reupload-passport-status" class="small mb-2"></div>
+            <button type="button" class="btn btn-warning btn-sm" id="reupload-passport-btn-save" disabled>
+              <i class="fas fa-check me-1"></i> Save Passport
+            </button>
+          </div>
+
+          <!-- NID -->
+          <div class="tab-pane fade" id="tab-nid-pane" role="tabpanel">
+            <div id="docs-current-nid-wrap" class="d-none mb-3">
+              <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;"><i class="fas fa-image me-1"></i>Current NID</p>
+              <div class="bg-dark rounded d-flex align-items-center justify-content-center" style="min-height:120px; overflow:hidden;">
+                <img id="docs-current-nid" src="" alt="Current NID" style="max-width:100%; max-height:160px; object-fit:contain;">
+              </div>
+              <div id="docs-current-nid-pdf" class="d-none alert alert-secondary py-2 px-3 mt-2 mb-0 small">
+                <i class="fas fa-file-pdf me-1 text-danger"></i> PDF on file — use download button in the list to view
+              </div>
+            </div>
+            <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;"><i class="fas fa-cloud-upload-alt me-1"></i>Select NID File</p>
+            <p class="small text-muted mb-2">PNG, JPEG, WebP or PDF (max 5 MB) — optional</p>
+            <input type="file" class="form-control form-control-sm mb-3" id="reupload-nid-file-input" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf">
+            <div id="reupload-nid-preview-wrap" class="d-none mb-2">
+              <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;"><i class="fas fa-image me-1 text-success"></i>Preview</p>
+              <div class="bg-dark rounded d-flex align-items-center justify-content-center" style="min-height:160px; overflow:hidden;">
+                <img id="reupload-nid-preview-img" src="" alt="Preview" style="max-width:100%; max-height:200px; object-fit:contain;">
+              </div>
+            </div>
+            <div id="reupload-nid-pdf-indicator" class="d-none alert alert-info py-2 px-3 mb-2">
+              <i class="fas fa-file-pdf me-1 text-danger"></i> PDF selected — <span id="reupload-nid-pdf-name"></span>
+            </div>
+            <div id="reupload-nid-status" class="small mb-2"></div>
+            <button type="button" class="btn btn-info btn-sm" id="reupload-nid-btn-save" disabled>
+              <i class="fas fa-check me-1"></i> Save NID
+            </button>
+          </div>
+
+          <% if (currentUserRole === 'laboratorist' || currentUserRole === 'softadmin' || currentUserRole === 'admin') { %>
+          <!-- AI Portrait -->
+          <div class="tab-pane fade" id="tab-ai-pane" role="tabpanel">
+            <div id="docs-ai-no-photo" class="alert alert-warning py-2 px-3 small mb-3 d-none">
+              <i class="fas fa-exclamation-triangle me-1"></i> No taken photo yet. Upload one in the <strong>Taken Photo</strong> tab first.
+            </div>
+            <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;">
+              <i class="fas fa-camera me-1"></i>Source Taken Photo
+            </p>
+            <div class="bg-dark rounded d-flex align-items-center justify-content-center mb-3" style="min-height:180px; overflow:hidden;">
+              <img id="docs-ai-source-img" src="" alt="Taken photo" style="max-width:100%; max-height:220px; object-fit:contain;">
+            </div>
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <button type="button" class="btn btn-success btn-sm px-3" id="btn-docs-generate-ai" disabled>
+                <i class="fas fa-magic me-1"></i> Proceed to AI
+              </button>
+              <span id="docs-ai-generate-status" class="small"></span>
+            </div>
+            <div id="docs-ai-placeholder" class="text-muted small text-center py-2 border rounded bg-light">
+              <i class="fas fa-magic me-1 opacity-50"></i> AI portrait will appear here after generation
+            </div>
+            <div id="docs-ai-result-wrap" class="d-none">
+              <p class="small fw-semibold text-muted text-uppercase mb-1" style="letter-spacing:.04em;">
+                <i class="fas fa-magic me-1 text-success"></i>AI Portrait
+                <span id="docs-ai-success-badge" class="badge bg-success ms-1 d-none">Saved</span>
+              </p>
+              <div class="bg-dark rounded d-flex align-items-center justify-content-center" style="min-height:180px; overflow:hidden;">
+                <img id="docs-ai-img" src="" alt="AI Portrait" style="max-width:100%; max-height:220px; object-fit:contain;">
+              </div>
+            </div>
+          </div>
+          <% } %>
+        </div>
+      </div>
+      <div class="modal-footer py-2 d-flex justify-content-between align-items-center">
+        <button type="button" class="btn btn-outline-dark btn-sm" id="btn-docs-download-all" disabled title="Download taken photo, passport, NID, AI portrait (PNG &amp; JPG), and medical report PDF">
+          <i class="fas fa-download me-1"></i> Download All Documents
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
   const selectAll = document.getElementById('select-all-invoices');
   const downloadBtn = document.getElementById('btn-download-selected');
+  const generateAiBtn = document.getElementById('btn-generate-ai-selected');
+  const assignSelectedBtn = document.getElementById('btn-assign-selected');
   const summaryEl = document.getElementById('selection-summary');
   const table = document.getElementById('invoice-list-table');
+  const aiBulkStatusAlert = document.getElementById('ai-bulk-status-alert');
+  const aiBulkStatusText = document.getElementById('ai-bulk-status-text');
+  const aiBulkStatusDismiss = document.getElementById('ai-bulk-status-dismiss');
+  var aiBulkPollTimer = null;
+  var AI_BULK_STORAGE_KEY = 'fm_ai_bulk_batch_id';
 
   function getRowCheckboxes() {
     return table ? Array.from(table.querySelectorAll('.bill-select')) : [];
   }
 
+  function getSelectedCheckboxes() {
+    return getRowCheckboxes().filter(function (cb) { return cb.checked; });
+  }
+
   function getSelectedIds() {
-    return getRowCheckboxes()
-      .filter(function (cb) { return cb.checked; })
-      .map(function (cb) { return cb.value; });
+    return getSelectedCheckboxes().map(function (cb) { return cb.value; });
+  }
+
+  function showAiBulkStatus(message, alertType) {
+    if (!aiBulkStatusAlert || !aiBulkStatusText) return;
+    aiBulkStatusAlert.className = 'alert py-2 px-3 mb-0 border-0 rounded-0 alert-' + (alertType || 'info');
+    aiBulkStatusText.textContent = message;
+    aiBulkStatusAlert.classList.remove('d-none');
+  }
+
+  function hideAiBulkStatus() {
+    if (aiBulkStatusAlert) aiBulkStatusAlert.classList.add('d-none');
+    if (aiBulkPollTimer) {
+      clearInterval(aiBulkPollTimer);
+      aiBulkPollTimer = null;
+    }
+    try { sessionStorage.removeItem(AI_BULK_STORAGE_KEY); } catch (e) {}
+  }
+
+  function formatAiBulkProgress(data) {
+    return 'AI portraits: ' + data.completed + ' done, ' + data.processing + ' running, ' +
+      data.pending + ' waiting, ' + data.failed + ' failed, ' + data.skipped + ' skipped (' + data.total + ' total).';
+  }
+
+  function pollAiBulkStatus(batchId) {
+    if (!batchId) return;
+    fetch('/billing/invoices/generate-ai-bulk/' + encodeURIComponent(batchId))
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (result) {
+        if (!result.ok || !result.data.success) {
+          hideAiBulkStatus();
+          return;
+        }
+
+        var data = result.data;
+        if (data.done) {
+          var alertType = data.failed > 0 ? 'warning' : 'success';
+          showAiBulkStatus(formatAiBulkProgress(data) + ' Background processing finished.', alertType);
+          if (aiBulkPollTimer) {
+            clearInterval(aiBulkPollTimer);
+            aiBulkPollTimer = null;
+          }
+          try { sessionStorage.removeItem(AI_BULK_STORAGE_KEY); } catch (e) {}
+          return;
+        }
+
+        showAiBulkStatus(formatAiBulkProgress(data) + ' You can close this page — processing continues on the server.');
+      })
+      .catch(function () {});
+  }
+
+  function startAiBulkPolling(batchId) {
+    try { sessionStorage.setItem(AI_BULK_STORAGE_KEY, batchId); } catch (e) {}
+    pollAiBulkStatus(batchId);
+    if (aiBulkPollTimer) clearInterval(aiBulkPollTimer);
+    aiBulkPollTimer = setInterval(function () {
+      pollAiBulkStatus(batchId);
+    }, 5000);
   }
 
   function updateSelectionUi() {
@@ -226,6 +549,12 @@ function formatListDate(d) {
     }
     if (downloadBtn) {
       downloadBtn.disabled = selected.length === 0;
+    }
+    if (generateAiBtn) {
+      generateAiBtn.disabled = selected.length === 0;
+    }
+    if (assignSelectedBtn) {
+      assignSelectedBtn.disabled = selected.length === 0;
     }
     if (selectAll) {
       selectAll.indeterminate = selected.length > 0 && selected.length < total;
@@ -256,18 +585,6 @@ function formatListDate(d) {
       const selectedBoxes = getRowCheckboxes().filter(function (cb) { return cb.checked; });
       if (!selectedBoxes.length) {
         alert('Select at least one invoice.');
-        return;
-      }
-
-      const incomplete = selectedBoxes.filter(function (cb) {
-        return cb.dataset.hasPhotos !== '1';
-      });
-      if (incomplete.length) {
-        const details = incomplete.map(function (cb) {
-          const missing = cb.dataset.missingPhotos || 'required photos';
-          return 'Invoice ' + cb.dataset.billNumber + ': missing ' + missing;
-        }).join('\n');
-        alert('Each selected invoice needs a taken photo, AI profile photo, and passport picture.\n\n' + details);
         return;
       }
 
@@ -310,8 +627,674 @@ function formatListDate(d) {
     });
   }
 
+  if (generateAiBtn) {
+    generateAiBtn.addEventListener('click', function () {
+      var selectedBoxes = getSelectedCheckboxes();
+      if (!selectedBoxes.length) {
+        alert('Select at least one invoice.');
+        return;
+      }
+
+      var withoutPhoto = selectedBoxes.filter(function (cb) { return !cb.dataset.takenPhoto; });
+      var withAi = selectedBoxes.filter(function (cb) { return cb.dataset.hasAi === '1'; });
+      var ids = selectedBoxes.map(function (cb) { return cb.value; });
+      var confirmMsg = 'Start AI portrait generation for ' + ids.length + ' selected invoice(s) in the background?';
+      if (withAi.length) {
+        confirmMsg += '\n\n' + withAi.length + ' already have an AI portrait and will be skipped.';
+      }
+      if (withoutPhoto.length) {
+        confirmMsg += '\n\n' + withoutPhoto.length + ' selected invoice(s) have no taken photo and will be skipped.';
+      }
+      confirmMsg += '\n\nYou can close the browser — processing will continue on the server.';
+      if (!confirm(confirmMsg)) return;
+
+      generateAiBtn.disabled = true;
+      var originalHtml = generateAiBtn.innerHTML;
+      generateAiBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Starting...';
+
+      fetch('/billing/invoices/generate-ai-bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ids })
+      })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.message || 'Failed to start AI generation');
+        showAiBulkStatus(result.data.message, result.data.queued > 0 ? 'info' : 'warning');
+        if (result.data.batchId && (result.data.queued > 0 || result.data.skipped > 0)) {
+          startAiBulkPolling(result.data.batchId);
+        }
+      })
+      .catch(function (err) {
+        alert(err.message || 'Could not start AI portrait generation');
+      })
+      .finally(function () {
+        generateAiBtn.innerHTML = originalHtml;
+        updateSelectionUi();
+      });
+    });
+  }
+
+  if (aiBulkStatusDismiss) {
+    aiBulkStatusDismiss.addEventListener('click', hideAiBulkStatus);
+  }
+
+  try {
+    var savedBatchId = sessionStorage.getItem(AI_BULK_STORAGE_KEY);
+    if (savedBatchId) {
+      startAiBulkPolling(savedBatchId);
+    }
+  } catch (e) {}
+
   updateSelectionUi();
+
+  // Re-upload Documents modal (Photo, Passport, NID)
+  (function () {
+    var docsModal = document.getElementById('reuploadDocsModal');
+    if (!docsModal) return;
+
+    var docsModalInstance = null;
+    function getDocsModal() {
+      if (!docsModalInstance) docsModalInstance = new bootstrap.Modal(docsModal);
+      return docsModalInstance;
+    }
+
+    var activeBillId = null;
+    var activeBtn = null;
+    var canvas = document.createElement('canvas');
+    var stream = null;
+
+    // Photo tab
+    var video = document.getElementById('reupload-video');
+    var placeholder = document.getElementById('reupload-cam-placeholder');
+    var btnStart = document.getElementById('reupload-btn-start');
+    var btnCapture = document.getElementById('reupload-btn-capture');
+    var btnStop = document.getElementById('reupload-btn-stop');
+    var photoFileInput = document.getElementById('reupload-file-input');
+    var photoPreviewWrap = document.getElementById('reupload-preview-wrap');
+    var photoPreviewImg = document.getElementById('reupload-preview-img');
+    var photoStatusEl = document.getElementById('reupload-status');
+    var btnSavePhoto = document.getElementById('reupload-btn-save');
+    var currentPhotoWrap = document.getElementById('docs-current-photo-wrap');
+    var currentPhotoImg = document.getElementById('docs-current-photo');
+    var pendingPhotoBlob = null;
+
+    // Passport tab
+    var passportFileInput = document.getElementById('reupload-passport-file-input');
+    var passportPreviewWrap = document.getElementById('reupload-passport-preview-wrap');
+    var passportPreviewImg = document.getElementById('reupload-passport-preview-img');
+    var passportPdfIndicator = document.getElementById('reupload-passport-pdf-indicator');
+    var passportPdfName = document.getElementById('reupload-passport-pdf-name');
+    var passportStatusEl = document.getElementById('reupload-passport-status');
+    var btnSavePassport = document.getElementById('reupload-passport-btn-save');
+    var currentPassportWrap = document.getElementById('docs-current-passport-wrap');
+    var currentPassportImg = document.getElementById('docs-current-passport');
+    var currentPassportPdf = document.getElementById('docs-current-passport-pdf');
+    var pendingPassportFile = null;
+
+    // NID tab
+    var nidFileInput = document.getElementById('reupload-nid-file-input');
+    var nidPreviewWrap = document.getElementById('reupload-nid-preview-wrap');
+    var nidPreviewImg = document.getElementById('reupload-nid-preview-img');
+    var nidPdfIndicator = document.getElementById('reupload-nid-pdf-indicator');
+    var nidPdfName = document.getElementById('reupload-nid-pdf-name');
+    var nidStatusEl = document.getElementById('reupload-nid-status');
+    var btnSaveNid = document.getElementById('reupload-nid-btn-save');
+    var currentNidWrap = document.getElementById('docs-current-nid-wrap');
+    var currentNidImg = document.getElementById('docs-current-nid');
+    var currentNidPdf = document.getElementById('docs-current-nid-pdf');
+    var pendingNidFile = null;
+
+    // AI tab (optional — laboratorist / admin only)
+    var aiNoPhotoEl = document.getElementById('docs-ai-no-photo');
+    var aiSourceImg = document.getElementById('docs-ai-source-img');
+    var btnGenerateAi = document.getElementById('btn-docs-generate-ai');
+    var aiGenerateStatus = document.getElementById('docs-ai-generate-status');
+    var aiPlaceholder = document.getElementById('docs-ai-placeholder');
+    var aiResultWrap = document.getElementById('docs-ai-result-wrap');
+    var aiImg = document.getElementById('docs-ai-img');
+    var aiSuccessBadge = document.getElementById('docs-ai-success-badge');
+    var hasAiTab = !!btnGenerateAi;
+    var btnDownloadAll = document.getElementById('btn-docs-download-all');
+
+    function hasAnyDocImages(dataset) {
+      if (!dataset) return false;
+      return !!(
+        dataset.takenPhoto ||
+        dataset.passportPhoto ||
+        dataset.nidPhoto ||
+        dataset.hasReport === '1' ||
+        (dataset.patientPhoto && dataset.patientPhoto !== dataset.takenPhoto)
+      );
+    }
+
+    function updateDownloadButton() {
+      if (!btnDownloadAll) return;
+      btnDownloadAll.disabled = !activeBillId || !hasAnyDocImages(activeBtn ? activeBtn.dataset : null);
+    }
+
+    function revokeBlobUrl(imgEl) {
+      if (imgEl && imgEl.src && imgEl.src.startsWith('blob:')) URL.revokeObjectURL(imgEl.src);
+    }
+
+    function isPdfPath(path) {
+      return /\.pdf$/i.test(path || '');
+    }
+
+    function showCurrentDoc(wrapEl, imgEl, pdfEl, path) {
+      if (!path) {
+        wrapEl.classList.add('d-none');
+        imgEl.src = '';
+        if (pdfEl) pdfEl.classList.add('d-none');
+        return;
+      }
+      wrapEl.classList.remove('d-none');
+      if (isPdfPath(path)) {
+        imgEl.style.display = 'none';
+        imgEl.src = '';
+        if (pdfEl) pdfEl.classList.remove('d-none');
+      } else {
+        if (pdfEl) pdfEl.classList.add('d-none');
+        imgEl.style.display = 'block';
+        imgEl.src = path + '?t=' + Date.now();
+      }
+    }
+
+    function stopCam() {
+      if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+      if (video) video.srcObject = null;
+      if (placeholder) placeholder.style.display = '';
+      if (btnCapture) btnCapture.disabled = true;
+      if (btnStop) btnStop.disabled = true;
+      if (btnStart) btnStart.disabled = false;
+    }
+
+    function resetPhotoTab() {
+      stopCam();
+      pendingPhotoBlob = null;
+      if (photoPreviewWrap) photoPreviewWrap.classList.add('d-none');
+      revokeBlobUrl(photoPreviewImg);
+      if (photoPreviewImg) photoPreviewImg.src = '';
+      if (photoFileInput) photoFileInput.value = '';
+      if (btnSavePhoto) btnSavePhoto.disabled = true;
+      if (photoStatusEl) { photoStatusEl.textContent = ''; photoStatusEl.className = 'small mb-2'; }
+    }
+
+    function resetPassportTab() {
+      pendingPassportFile = null;
+      revokeBlobUrl(passportPreviewImg);
+      if (passportPreviewImg) passportPreviewImg.src = '';
+      if (passportPreviewWrap) passportPreviewWrap.classList.add('d-none');
+      if (passportPdfIndicator) passportPdfIndicator.classList.add('d-none');
+      if (passportFileInput) passportFileInput.value = '';
+      if (btnSavePassport) btnSavePassport.disabled = true;
+      if (passportStatusEl) { passportStatusEl.textContent = ''; passportStatusEl.className = 'small mb-2'; }
+    }
+
+    function resetNidTab() {
+      pendingNidFile = null;
+      revokeBlobUrl(nidPreviewImg);
+      if (nidPreviewImg) nidPreviewImg.src = '';
+      if (nidPreviewWrap) nidPreviewWrap.classList.add('d-none');
+      if (nidPdfIndicator) nidPdfIndicator.classList.add('d-none');
+      if (nidFileInput) nidFileInput.value = '';
+      if (btnSaveNid) btnSaveNid.disabled = true;
+      if (nidStatusEl) { nidStatusEl.textContent = ''; nidStatusEl.className = 'small mb-2'; }
+    }
+
+    function resetAiTab() {
+      if (!hasAiTab) return;
+      if (aiGenerateStatus) { aiGenerateStatus.textContent = ''; aiGenerateStatus.className = 'small'; }
+      if (aiSourceImg) aiSourceImg.src = '';
+      if (btnGenerateAi) btnGenerateAi.disabled = true;
+      if (aiNoPhotoEl) aiNoPhotoEl.classList.add('d-none');
+      if (aiImg) aiImg.src = '';
+      if (aiResultWrap) aiResultWrap.classList.add('d-none');
+      if (aiPlaceholder) aiPlaceholder.classList.remove('d-none');
+      if (aiSuccessBadge) aiSuccessBadge.classList.add('d-none');
+    }
+
+    function setupAiTab(takenPhoto, patientPhoto) {
+      if (!hasAiTab) return;
+      if (aiGenerateStatus) { aiGenerateStatus.textContent = ''; aiGenerateStatus.className = 'small'; }
+
+      if (!takenPhoto) {
+        if (aiNoPhotoEl) aiNoPhotoEl.classList.remove('d-none');
+        if (aiSourceImg) aiSourceImg.src = '';
+        if (btnGenerateAi) btnGenerateAi.disabled = true;
+        if (aiImg) aiImg.src = '';
+        if (aiResultWrap) aiResultWrap.classList.add('d-none');
+        if (aiPlaceholder) aiPlaceholder.classList.remove('d-none');
+        if (aiSuccessBadge) aiSuccessBadge.classList.add('d-none');
+        return;
+      }
+
+      if (aiNoPhotoEl) aiNoPhotoEl.classList.add('d-none');
+      if (aiSourceImg) aiSourceImg.src = takenPhoto + '?t=' + Date.now();
+      if (btnGenerateAi) {
+        btnGenerateAi.disabled = false;
+        btnGenerateAi.title = '';
+      }
+
+      if (patientPhoto) {
+        if (aiImg) aiImg.src = patientPhoto + '?t=' + Date.now();
+        if (aiResultWrap) aiResultWrap.classList.remove('d-none');
+        if (aiPlaceholder) aiPlaceholder.classList.add('d-none');
+        if (aiSuccessBadge) aiSuccessBadge.classList.remove('d-none');
+      } else {
+        if (aiImg) aiImg.src = '';
+        if (aiResultWrap) aiResultWrap.classList.add('d-none');
+        if (aiPlaceholder) aiPlaceholder.classList.remove('d-none');
+        if (aiSuccessBadge) aiSuccessBadge.classList.add('d-none');
+      }
+    }
+
+    function resetAllTabs() {
+      resetPhotoTab();
+      resetPassportTab();
+      resetNidTab();
+      resetAiTab();
+      var firstTab = document.getElementById('tab-photo-btn');
+      if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
+    }
+
+    function validateImageFile(file) {
+      if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
+        alert('Please select a JPEG, PNG, or WebP image.');
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image must be 5 MB or smaller.');
+        return false;
+      }
+      return true;
+    }
+
+    function validateDocFile(file) {
+      var isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+      if (isPdf) {
+        if (file.size > 5 * 1024 * 1024) {
+          alert('PDF must be 5 MB or smaller.');
+          return false;
+        }
+        return true;
+      }
+      return validateImageFile(file);
+    }
+
+    function showPhotoPreview(blob) {
+      revokeBlobUrl(photoPreviewImg);
+      pendingPhotoBlob = blob;
+      photoPreviewImg.src = URL.createObjectURL(blob);
+      photoPreviewWrap.classList.remove('d-none');
+      btnSavePhoto.disabled = false;
+    }
+
+    function showDocPreview(file, previewWrap, previewImg, pdfIndicator, pdfNameEl, onReady) {
+      revokeBlobUrl(previewImg);
+      var isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+      onReady(file);
+      if (isPdf) {
+        previewWrap.classList.add('d-none');
+        pdfNameEl.textContent = file.name;
+        pdfIndicator.classList.remove('d-none');
+      } else {
+        pdfIndicator.classList.add('d-none');
+        previewImg.src = URL.createObjectURL(file);
+        previewWrap.classList.remove('d-none');
+      }
+    }
+
+    if (btnStart) btnStart.addEventListener('click', function () {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      .then(function (s) {
+        stream = s;
+        video.srcObject = s;
+        placeholder.style.display = 'none';
+        btnCapture.disabled = false;
+        btnStop.disabled = false;
+        btnStart.disabled = true;
+      })
+      .catch(function () { alert('Could not access webcam. Please allow camera permission.'); });
+    });
+
+    if (btnStop) btnStop.addEventListener('click', stopCam);
+
+    if (btnCapture) btnCapture.addEventListener('click', function () {
+      if (!stream) return;
+      var w = video.videoWidth, h = video.videoHeight;
+      if (!w || !h) { alert('Camera not ready yet.'); return; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+      canvas.toBlob(function (blob) {
+        if (blob) showPhotoPreview(new File([blob], 'webcam-retake.png', { type: 'image/png' }));
+      }, 'image/png');
+    });
+
+    if (photoFileInput) photoFileInput.addEventListener('change', function () {
+      var file = photoFileInput.files[0];
+      if (!file) return;
+      if (!validateImageFile(file)) { photoFileInput.value = ''; return; }
+      showPhotoPreview(file);
+    });
+
+    if (passportFileInput) passportFileInput.addEventListener('change', function () {
+      var file = passportFileInput.files[0];
+      if (!file) return;
+      if (!validateDocFile(file)) { passportFileInput.value = ''; return; }
+      showDocPreview(file, passportPreviewWrap, passportPreviewImg, passportPdfIndicator, passportPdfName, function (f) {
+        pendingPassportFile = f;
+        btnSavePassport.disabled = false;
+      });
+    });
+
+    if (nidFileInput) nidFileInput.addEventListener('change', function () {
+      var file = nidFileInput.files[0];
+      if (!file) return;
+      if (!validateDocFile(file)) { nidFileInput.value = ''; return; }
+      showDocPreview(file, nidPreviewWrap, nidPreviewImg, nidPdfIndicator, nidPdfName, function (f) {
+        pendingNidFile = f;
+        btnSaveNid.disabled = false;
+      });
+    });
+
+    if (btnSavePhoto) btnSavePhoto.addEventListener('click', function () {
+      if (!pendingPhotoBlob || !activeBillId) return;
+      var formData = new FormData();
+      formData.append('takenPhoto', pendingPhotoBlob, pendingPhotoBlob.name || 'retake.png');
+      btnSavePhoto.disabled = true;
+      var orig = btnSavePhoto.innerHTML;
+      btnSavePhoto.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+      photoStatusEl.textContent = ''; photoStatusEl.className = 'small mb-2';
+
+      fetch('/billing/invoices/' + activeBillId + '/reupload-taken', { method: 'POST', body: formData })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.d.message || 'Upload failed');
+        photoStatusEl.textContent = 'Photo updated successfully!';
+        photoStatusEl.className = 'small mb-2 text-success fw-semibold';
+        if (result.d.takenPhoto) {
+          showCurrentDoc(currentPhotoWrap, currentPhotoImg, null, result.d.takenPhoto);
+          if (activeBtn) {
+            var oldTaken = activeBtn.dataset.takenPhoto || '';
+            activeBtn.dataset.takenPhoto = result.d.takenPhoto;
+            if (!activeBtn.dataset.patientPhoto || activeBtn.dataset.patientPhoto === oldTaken) {
+              activeBtn.dataset.patientPhoto = result.d.takenPhoto;
+            }
+            setupAiTab(result.d.takenPhoto, activeBtn.dataset.patientPhoto);
+          } else {
+            setupAiTab(result.d.takenPhoto, '');
+          }
+        }
+        resetPhotoTab();
+        btnSavePhoto.innerHTML = orig;
+        updateDownloadButton();
+      })
+      .catch(function (err) {
+        photoStatusEl.textContent = err.message || 'Error saving photo';
+        photoStatusEl.className = 'small mb-2 text-danger';
+        btnSavePhoto.disabled = false;
+        btnSavePhoto.innerHTML = orig;
+      });
+    });
+
+    if (btnSavePassport) btnSavePassport.addEventListener('click', function () {
+      if (!pendingPassportFile || !activeBillId) return;
+      var formData = new FormData();
+      formData.append('passportPhoto', pendingPassportFile, pendingPassportFile.name);
+      btnSavePassport.disabled = true;
+      var orig = btnSavePassport.innerHTML;
+      btnSavePassport.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+      passportStatusEl.textContent = ''; passportStatusEl.className = 'small mb-2';
+
+      fetch('/billing/invoices/' + activeBillId + '/reupload-passport', { method: 'POST', body: formData })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.d.message || 'Upload failed');
+        passportStatusEl.textContent = 'Passport updated successfully!';
+        passportStatusEl.className = 'small mb-2 text-success fw-semibold';
+        if (result.d.passportPhoto) {
+          showCurrentDoc(currentPassportWrap, currentPassportImg, currentPassportPdf, result.d.passportPhoto);
+          if (activeBtn) activeBtn.dataset.passportPhoto = result.d.passportPhoto;
+        }
+        resetPassportTab();
+        btnSavePassport.innerHTML = orig;
+        setTimeout(function () { window.location.reload(); }, 800);
+      })
+      .catch(function (err) {
+        passportStatusEl.textContent = err.message || 'Error saving passport';
+        passportStatusEl.className = 'small mb-2 text-danger';
+        btnSavePassport.disabled = false;
+        btnSavePassport.innerHTML = orig;
+      });
+    });
+
+    if (btnSaveNid) btnSaveNid.addEventListener('click', function () {
+      if (!pendingNidFile || !activeBillId) return;
+      var formData = new FormData();
+      formData.append('nidPhoto', pendingNidFile, pendingNidFile.name);
+      btnSaveNid.disabled = true;
+      var orig = btnSaveNid.innerHTML;
+      btnSaveNid.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+      nidStatusEl.textContent = ''; nidStatusEl.className = 'small mb-2';
+
+      fetch('/billing/invoices/' + activeBillId + '/reupload-nid', { method: 'POST', body: formData })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.d.message || 'Upload failed');
+        nidStatusEl.textContent = 'NID picture updated successfully!';
+        nidStatusEl.className = 'small mb-2 text-success fw-semibold';
+        if (result.d.nidPhoto) {
+          showCurrentDoc(currentNidWrap, currentNidImg, currentNidPdf, result.d.nidPhoto);
+          if (activeBtn) activeBtn.dataset.nidPhoto = result.d.nidPhoto;
+        }
+        resetNidTab();
+        btnSaveNid.innerHTML = orig;
+        setTimeout(function () { window.location.reload(); }, 800);
+      })
+      .catch(function (err) {
+        nidStatusEl.textContent = err.message || 'Error saving NID picture';
+        nidStatusEl.className = 'small mb-2 text-danger';
+        btnSaveNid.disabled = false;
+        btnSaveNid.innerHTML = orig;
+      });
+    });
+
+    if (btnGenerateAi) btnGenerateAi.addEventListener('click', function () {
+      if (!activeBillId) return;
+      btnGenerateAi.disabled = true;
+      var orig = btnGenerateAi.innerHTML;
+      btnGenerateAi.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Generating...';
+      if (aiGenerateStatus) { aiGenerateStatus.textContent = ''; aiGenerateStatus.className = 'small'; }
+
+      fetch('/billing/invoices/' + activeBillId + '/generate-ai', { method: 'POST' })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.d.message || 'Generation failed');
+        if (aiGenerateStatus) {
+          aiGenerateStatus.textContent = 'AI portrait generated and saved!';
+          aiGenerateStatus.className = 'small text-success fw-semibold';
+        }
+        if (result.d.imageUrl) {
+          if (aiImg) aiImg.src = result.d.imageUrl + '?t=' + Date.now();
+          if (aiResultWrap) aiResultWrap.classList.remove('d-none');
+          if (aiPlaceholder) aiPlaceholder.classList.add('d-none');
+          if (aiSuccessBadge) aiSuccessBadge.classList.remove('d-none');
+          if (activeBtn) activeBtn.dataset.patientPhoto = result.d.imageUrl;
+          updateDownloadButton();
+        }
+      })
+      .catch(function (err) {
+        if (aiGenerateStatus) {
+          aiGenerateStatus.textContent = err.message || 'Failed to generate AI portrait';
+          aiGenerateStatus.className = 'small text-danger';
+        }
+      })
+      .finally(function () {
+        btnGenerateAi.disabled = false;
+        btnGenerateAi.innerHTML = orig;
+      });
+    });
+
+    if (btnDownloadAll) btnDownloadAll.addEventListener('click', function () {
+      if (!activeBillId || btnDownloadAll.disabled) return;
+      window.location.href = '/billing/invoices/' + activeBillId + '/download-images';
+    });
+
+    docsModal.addEventListener('hidden.bs.modal', function () { resetAllTabs(); });
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.btn-reupload-docs');
+      if (!btn) return;
+
+      activeBillId = btn.dataset.billId;
+      activeBtn = btn;
+      var label = btn.dataset.patientName || ('Bill #' + btn.dataset.billNumber);
+      document.getElementById('reuploadDocsModalLabel').textContent = 'Patient Documents — ' + label;
+
+      resetAllTabs();
+      showCurrentDoc(currentPhotoWrap, currentPhotoImg, null, btn.dataset.takenPhoto || '');
+      showCurrentDoc(currentPassportWrap, currentPassportImg, currentPassportPdf, btn.dataset.passportPhoto || '');
+      showCurrentDoc(currentNidWrap, currentNidImg, currentNidPdf, btn.dataset.nidPhoto || '');
+      setupAiTab(btn.dataset.takenPhoto || '', btn.dataset.patientPhoto || '');
+      updateDownloadButton();
+
+      getDocsModal().show();
+    });
+  })();
+
+  // Assign Lab modal
+  (function () {
+    var assignModal = document.getElementById('assignLabModal');
+    if (!assignModal) return;
+
+    var assignModalInstance = null;
+    var activeBillIds = [];
+    var activeRowBtn = null;
+
+    function getAssignModal() {
+      if (!assignModalInstance) assignModalInstance = new bootstrap.Modal(assignModal);
+      return assignModalInstance;
+    }
+
+    function updateAssignBadge(billId, labId, labName) {
+      var badge = document.getElementById('assign-badge-' + billId);
+      if (!badge) return;
+      if (labName) {
+        badge.outerHTML = '<span class="badge bg-primary" id="assign-badge-' + billId + '"><i class="fas fa-flask me-1"></i>' + labName + '</span>';
+      } else {
+        badge.outerHTML = '<span class="text-muted small" id="assign-badge-' + billId + '">—</span>';
+      }
+      var rowBtn = document.querySelector('.btn-assign-lab[data-bill-id="' + billId + '"]');
+      if (rowBtn) {
+        rowBtn.dataset.currentLabId = labId || '';
+        rowBtn.dataset.currentLabName = labName || '';
+      }
+    }
+
+    function openAssignModal(ids, options) {
+      options = options || {};
+      activeBillIds = ids.map(String);
+      activeRowBtn = options.rowBtn || null;
+
+      var infoLabel = document.getElementById('assign-bill-info-label');
+      var infoEl = document.getElementById('assign-bill-info');
+      var selectEl = document.getElementById('assign-lab-select');
+      var statusEl = document.getElementById('assign-lab-status');
+
+      if (infoLabel) {
+        infoLabel.textContent = activeBillIds.length > 1 ? 'Invoices' : 'Invoice';
+      }
+      if (infoEl) {
+        if (activeBillIds.length > 1) {
+          infoEl.textContent = activeBillIds.length + ' invoice(s) selected';
+        } else if (options.billNumber) {
+          infoEl.innerHTML = options.billNumber
+            + (options.passport ? ' &bull; Passport: <strong>' + options.passport + '</strong>' : '')
+            + (options.patientName ? ' &bull; ' + options.patientName : '');
+        } else {
+          infoEl.textContent = 'Invoice #' + activeBillIds[0];
+        }
+      }
+      if (statusEl) { statusEl.textContent = ''; statusEl.className = 'small mb-2'; }
+      if (selectEl) selectEl.value = options.currentLabId || 'none';
+
+      getAssignModal().show();
+    }
+
+    var confirmBtn = document.getElementById('btn-confirm-assign');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', function () {
+        if (!activeBillIds.length) return;
+        var selectEl = document.getElementById('assign-lab-select');
+        var statusEl = document.getElementById('assign-lab-status');
+        var labUserId = selectEl ? selectEl.value : 'none';
+
+        confirmBtn.disabled = true;
+        var orig = confirmBtn.innerHTML;
+        confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>';
+
+        fetch('/billing/invoices/assign-lab', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: activeBillIds, labUserId: labUserId })
+        })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (result) {
+          if (!result.ok) throw new Error(result.d.message || 'Failed to assign');
+
+          activeBillIds.forEach(function (billId) {
+            updateAssignBadge(billId, result.d.assignedLabId, result.d.assignedLabName);
+          });
+
+          if (statusEl) {
+            statusEl.textContent = result.d.message;
+            statusEl.className = 'small mb-2 text-success fw-semibold';
+          }
+          setTimeout(function () { getAssignModal().hide(); }, 900);
+        })
+        .catch(function (err) {
+          if (statusEl) {
+            statusEl.textContent = err.message || 'Error assigning';
+            statusEl.className = 'small mb-2 text-danger';
+          }
+        })
+        .finally(function () {
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = orig;
+        });
+      });
+    }
+
+    if (assignSelectedBtn) {
+      assignSelectedBtn.addEventListener('click', function () {
+        var ids = getSelectedIds();
+        if (!ids.length) {
+          alert('Select at least one invoice.');
+          return;
+        }
+        openAssignModal(ids, {});
+      });
+    }
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.btn-assign-lab');
+      if (!btn) return;
+
+      openAssignModal([btn.dataset.billId], {
+        rowBtn: btn,
+        billNumber: btn.dataset.billNumber,
+        passport: btn.dataset.passport,
+        patientName: btn.dataset.patientName,
+        currentLabId: btn.dataset.currentLabId
+      });
+    });
+  })();
+
 })();
 </script>
 
 <%- include('partials/footer') %>
+

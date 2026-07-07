@@ -82,28 +82,12 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <div class="d-flex align-items-center mb-2">
-                            <label class="form-label required-label mb-0">Date of Birth (*)</label>
-                            <div class="form-check form-check-inline" style="margin-left: 10px;">
-                                <input class="form-check-input" type="radio" name="dobType" id="dobTypeAge" value="age" checked>
-                                <label class="form-check-label" for="dobTypeAge">Age</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="dobType" id="dobTypeDate" value="date">
-                                <label class="form-check-label" for="dobTypeDate">Date</label>
-                            </div>
-                        </div>
-                        <div class="position-relative">
-                            <div id="dobAgeInput">
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="dob-years" placeholder="Years" min="0" required>
-                                    <input type="number" class="form-control" id="dob-months" placeholder="Months" min="0" max="12" required>
-                                    <input type="number" class="form-control" id="dob-days" placeholder="Days" min="0" max="31" required>
-                                </div>
-                            </div>
-                            <div id="dobDateInput" style="display: none; position: absolute; top: 0; left: 0; width: 100%;">
-                                <input type="date" class="form-control" id="dob-date" name="dateOfBirth">
-                            </div>
+                        <label class="form-label required-label" for="dob-date">Date of Birth (*)</label>
+                        <div class="input-group" id="dob-date-wrap">
+                            <input type="text" class="form-control" id="dob-date" placeholder="dd/mm/yyyy" required autocomplete="bday" data-input>
+                            <button type="button" class="btn btn-outline-secondary" data-toggle aria-label="Open calendar">
+                                <i class="fas fa-calendar-alt"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -640,6 +624,9 @@
 
 <%- include('partials/footer') %>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <style>
     /* Priority and Payment Method Dropdown Styles */
     .priority-dropdown .select2-results__option,
@@ -691,6 +678,16 @@
 
 <script>
     $(document).ready(function() {
+        const dobPicker = flatpickr('#dob-date-wrap', {
+            wrap: true,
+            dateFormat: 'd/m/Y',
+            allowInput: true,
+            maxDate: 'today',
+            onChange: function() {
+                $('#dob-date').trigger('change');
+            }
+        });
+
         // Initialize Select2 for all dropdowns
         $('#patient-select').select2({
             theme: 'bootstrap-5',
@@ -1477,28 +1474,17 @@
             $('#commission-amount').val(commissionAmount.toFixed(2));
         }
 
-        // Calculate date of birth from age
-        function calculateDOB() {
-            const years = parseInt($('#dob-years').val()) || 0;
-            const months = parseInt($('#dob-months').val()) || 0;
-            const days = parseInt($('#dob-days').val()) || 0;
-
-            if (years > 0 || months > 0 || days > 0) {
-                const today = new Date();
-                const dob = new Date(today);
-                
-                dob.setFullYear(today.getFullYear() - years);
-                dob.setMonth(today.getMonth() - months);
-                dob.setDate(today.getDate() - days);
-                
-                $('#dob-date').val(dob.toISOString().split('T')[0]);
-            }
+        function parseDdMmYyyy(str) {
+            const m = String(str || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (!m) return null;
+            const day = parseInt(m[1], 10);
+            const month = parseInt(m[2], 10);
+            const year = parseInt(m[3], 10);
+            if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > new Date().getFullYear()) return null;
+            const d = new Date(year, month - 1, day);
+            if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
+            return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         }
-
-        // Handle age inputs
-        $('#dob-years, #dob-months, #dob-days').on('input', function() {
-            calculateDOB();
-        });
 
         // Automatically save patient data when form fields change
         $('#patient-form input, #patient-form select, #patient-form textarea').on('change', function() {
@@ -1531,25 +1517,9 @@
                 }
             }
             
-            // Handle date of birth based on type
-            if ($('input[name="dobType"]:checked').val() === 'age') {
-                const years = parseInt($('#dob-years').val()) || 0;
-                const months = parseInt($('#dob-months').val()) || 0;
-                const days = parseInt($('#dob-days').val()) || 0;
-                
-                if (years === 0 && months === 0 && days === 0) {
-                    return; // Don't save if age is not set
-                }
-                
-                const today = new Date();
-                const dob = new Date(today);
-                
-                dob.setFullYear(today.getFullYear() - years);
-                dob.setMonth(today.getMonth() - months);
-                dob.setDate(today.getDate() - days);
-                
-                data.dateOfBirth = dob.toISOString().split('T')[0];
-            }
+            const dobIso = parseDdMmYyyy($('#dob-date').val());
+            if (!dobIso) return;
+            data.dateOfBirth = dobIso;
             
             // Create a new patient - no updating functionality
             $.ajax({
@@ -1567,7 +1537,7 @@
                     
                     // Clear the form for next entry
                     $('#patient-form')[0].reset();
-                    $('#dobTypeAge').prop('checked', true).trigger('change');
+                    dobPicker.clear();
                 },
                 error: function(error) {
                     console.error('Error adding patient:', error);
@@ -1580,9 +1550,7 @@
         $('#clear-patient-form').on('click', function() {
             // Clear the form
             $('#patient-form')[0].reset();
-            
-            // Reset DOB type to age
-            $('#dobTypeAge').prop('checked', true).trigger('change');
+            dobPicker.clear();
             
             // Set gender to Male
             $('#patient-gender').val('male');
@@ -1593,21 +1561,6 @@
             
             // Clear patient ID in billing form
             $('#billing-patient-id').val('');
-        });
-        
-        // Handle DOB type toggle (re-add this function that was removed)
-        $('input[name="dobType"]').on('change', function() {
-            if ($(this).val() === 'date') {
-                $('#dobDateInput').show();
-                $('#dobAgeInput').hide();
-                $('#dob-date').prop('required', true);
-                $('#dob-years, #dob-months, #dob-days').prop('required', false);
-            } else {
-                $('#dobDateInput').hide();
-                $('#dobAgeInput').show();
-                $('#dob-date').prop('required', false);
-                $('#dob-years, #dob-months, #dob-days').prop('required', true);
-            }
         });
 
         // Submit doctor form

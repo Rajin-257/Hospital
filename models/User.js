@@ -32,6 +32,14 @@ const User = sequelize.define('User', {
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  hospitalBg: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  aiPrompt: {
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 }, {
   hooks: {
