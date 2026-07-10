@@ -827,6 +827,9 @@
         <a href="/billing/medical-report/<%= billing.id %>" class="btn btn-outline-primary me-2">
             <i class="fas fa-file-medical me-1"></i> Medical Report
         </a>
+        <a href="/billing/medical-report/<%= billing.id %>/print/blank" target="_blank" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-print me-1"></i> Print Blank Report
+        </a>
         <button class="btn btn-outline-secondary me-2" onclick="window.print()">
             <i class="fas fa-print me-1"></i> Print (Office + Patient Copy)
         </button>
@@ -864,6 +867,17 @@ function formatDob(dateOfBirth) {
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
+function calcAge(dateOfBirth) {
+    if (!dateOfBirth) return null;
+    const birth = new Date(dateOfBirth);
+    if (isNaN(birth.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+}
+
 // Function to format amounts - removes decimal for print, keeps for screen
 function formatAmount(amount) {
     // When printing, show without decimal places
@@ -883,6 +897,7 @@ function formatAmount(amount) {
 <%- include('partials/billing_receipt_body', {
   copyLabel: copyLabel,
   formatDob: formatDob,
+  calcAge: calcAge,
   formatDate: formatDate,
   formatAmount: formatAmount,
   items: items,

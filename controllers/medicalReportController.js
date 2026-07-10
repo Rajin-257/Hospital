@@ -80,6 +80,76 @@ function resolveHeightWeight(patient, savedHeight, savedWeight) {
   return { height, weight };
 }
 
+function getBlankReportData(patient) {
+  const height = extractMeasurement(patient?.height) || '';
+  const weight = extractMeasurement(patient?.weight) || '';
+
+  return {
+    reportDate: todayDateStr(),
+    issueDate: todayDateStr(),
+    height,
+    weight,
+    status: '',
+    comment: '',
+    showSign: false,
+    examination: {
+      eye_right: '',
+      eye_left: '',
+      ear_right: '',
+      ear_left: '',
+      heart: '',
+      bp: '',
+      pulse: '',
+      lungs: '',
+      rr_min: '',
+      gastrointestinal_abdomen: '',
+      hernia: '',
+      varicoseveins: '',
+      deformities: '',
+      skin: '',
+      cns: '',
+      extremities: '',
+      psychiatry: '',
+      operation_history: '',
+      venereal_diseases: '',
+      marital_status: '',
+      profession: ''
+    },
+    xray: {
+      xray: '',
+      ecg: ''
+    },
+    laboratory: {
+      sugar: '',
+      albumin: '',
+      bilharziasis: '',
+      pregnancy: '',
+      urine_other: '',
+      helminthes: '',
+      giardia: '',
+      stool_bilharziasis: '',
+      culture: '',
+      malaria: '',
+      microfilaria: '',
+      blood_group: '',
+      haemoglobin: '',
+      esr: '',
+      rbs: '',
+      creatinine: '',
+      tbil: '',
+      sgtp: '',
+      sgot: '',
+      alp: '',
+      urea: '',
+      hivi_hivii: '',
+      hbag: '',
+      anti_hcv: '',
+      tpha: '',
+      vdrl: ''
+    }
+  };
+}
+
 function getDefaultReportData(patient) {
   const { height, weight } = resolveHeightWeight(patient);
 
@@ -424,6 +494,44 @@ exports.saveMedicalReport = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to save medical report' });
+  }
+};
+
+exports.renderMedicalReportBlankPrint = async (req, res) => {
+  try {
+    const billing = await Billing.findOne({
+      where: {
+        id: req.params.id,
+        ...buildBillingAccessWhere(req)
+      },
+      include: [{ model: Patient }]
+    });
+
+    if (!billing) {
+      return res.status(404).render('error', {
+        title: 'Error',
+        message: 'Invoice not found'
+      });
+    }
+
+    const reportData = getBlankReportData(billing.Patient);
+
+    res.render('billing_medical_report_print', {
+      title: 'Blank Medical Report',
+      billing,
+      report: null,
+      reportData,
+      xrayImageUrl: null,
+      fingerprintUrl: null,
+      blankPrint: true,
+      bloodBiochemistryTests: BLOOD_BIOCHEMISTRY_TESTS
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).render('error', {
+      title: 'Error',
+      message: 'Failed to load blank medical report'
+    });
   }
 };
 

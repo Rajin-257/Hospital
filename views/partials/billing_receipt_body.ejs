@@ -28,7 +28,7 @@
                 <div class="info-label">Patient Info</div>
                 <div class="info-value">Name: <%= billing.Patient.name %></div>
                 <div class="info-value">Patient ID: <%= billing.Patient.patientId %></div>
-                <div class="info-value">Date of Birth: <%= formatDob(billing.Patient.dateOfBirth) %></div>
+                <div class="info-value">Date of Birth: <%= formatDob(billing.Patient.dateOfBirth) %><% const patientAge = typeof calcAge === 'function' ? calcAge(billing.Patient.dateOfBirth) : null; %><% if (patientAge != null) { %> &nbsp; Age: <%= patientAge %><% } %></div>
                 <div class="info-value">Gender: <%= billing.Patient.gender %></div>
                 <div class="info-value">Mobile: <%= billing.Patient.phone %></div>
             </td>

@@ -80,9 +80,14 @@
 <div class="container-fluid py-4 medical-result-form">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0"><i class="fas fa-file-medical me-2"></i>Insert Medical Report</h4>
-    <a href="/billing/receipt/<%= billing.id %>" class="btn btn-outline-secondary btn-sm">
-      <i class="fas fa-arrow-left me-1"></i> Back to Invoice
-    </a>
+    <div class="d-flex gap-2">
+      <a href="/billing/medical-report/<%= billing.id %>/print/blank" target="_blank" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-print me-1"></i> Print Blank
+      </a>
+      <a href="/billing/receipt/<%= billing.id %>" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Back to Invoice
+      </a>
+    </div>
   </div>
 
   <form id="frmMedicalResult" action="/billing/medical-report/<%= billing.id %>" method="POST" enctype="multipart/form-data">
@@ -438,6 +443,9 @@
 
         <div class="col-md-12">
           <div class="form-group text-center">
+            <a href="/billing/medical-report/<%= billing.id %>/print/blank" target="_blank" class="btn btn-outline-secondary me-2" style="margin-top: 25px;">
+              <i class="fas fa-print me-1"></i> Print Blank
+            </a>
             <% if (report) { %>
             <a href="/billing/medical-report/<%= billing.id %>/print" class="btn btn-outline-primary me-2" style="margin-top: 25px;">
               <i class="fas fa-print me-1"></i> View Report

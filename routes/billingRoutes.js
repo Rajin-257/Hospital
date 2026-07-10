@@ -115,6 +115,7 @@ router.get('/receipt/:id', checkFeatureAccess('Billing Management'), billingCont
 // Medical report per invoice
 router.get('/medical-report/:id', checkFeatureAccess('Billing Management'), medicalReportController.renderMedicalReportForm);
 router.post('/medical-report/:id', checkFeatureAccess('Billing Management'), uploadMedicalReportXray.single('xray_image'), medicalReportController.saveMedicalReport);
+router.get('/medical-report/:id/print/blank', checkFeatureAccess('Billing Management'), medicalReportController.renderMedicalReportBlankPrint);
 router.get('/medical-report/:id/print', checkFeatureAccess('Billing Management'), medicalReportController.renderMedicalReportPrint);
 
 // Get billings by patient

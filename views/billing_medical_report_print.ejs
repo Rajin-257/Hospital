@@ -111,6 +111,94 @@
     padding: 2px 6px;
   }
 
+  .report-header-blank {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #000;
+    min-height: 155px;
+  }
+
+  .header-blank-body {
+    flex: 1;
+    display: flex;
+    min-width: 0;
+    border-right: 1px solid #000;
+  }
+
+  .header-blank-patient {
+    flex: 1;
+    padding: 6px 10px;
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+    border-right: 1px solid #000;
+  }
+
+  .header-blank-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    justify-content: center;
+  }
+
+  .header-blank-field {
+    font-size: 14px;
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .header-blank-room {
+    width: 220px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .header-blank-room-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    height: 100%;
+  }
+
+  .header-blank-room-table td {
+    border: 1px solid #000;
+    padding: 3px 6px;
+    font-size: 12px;
+    line-height: 1.2;
+    vertical-align: middle;
+  }
+
+  .header-blank-room-table .room-title-row td {
+    background: #e9ecef;
+    text-align: center;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 4px 6px;
+  }
+
+  .header-blank-room-table .room-label-cell {
+    width: 62%;
+  }
+
+  .header-blank-room-table .room-blank-cell {
+    width: 38%;
+    min-height: 18px;
+  }
+
+  .header-blank-photo {
+    width: 145px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+  }
+
   .patient-photo-img {
     width: 130px;
     height: 155px;
@@ -230,6 +318,37 @@
 
   .report-column-extra {
     margin-top: 8px;
+  }
+
+  .role-sign-table {
+    margin-top: 8px;
+  }
+
+  .role-sign-table .group-row td {
+    text-align: center;
+    vertical-align: middle;
+    height: auto;
+    padding: 3px 8px;
+  }
+
+  .role-sign-table td {
+    text-align: center;
+    padding: 8px 6px 4px;
+    vertical-align: bottom;
+    height: 52px;
+  }
+
+  .role-sign-line {
+    border-top: 1px solid #000;
+    width: 85%;
+    margin: 0 auto 4px;
+    min-height: 28px;
+  }
+
+  .role-sign-label {
+    font-size: 12px;
+    line-height: 1.2;
+    font-weight: 600;
   }
 
   .report-disclaimer-block {
@@ -359,6 +478,24 @@
       width: 145px !important;
     }
 
+    .header-blank-field {
+      font-size: 13px !important;
+    }
+
+    .header-blank-room {
+      width: 200px !important;
+    }
+
+    .header-blank-room-table td {
+      font-size: 10px !important;
+      padding: 2px 4px !important;
+    }
+
+    .header-blank-room-table .room-title-row td {
+      font-size: 11px !important;
+      padding: 3px 4px !important;
+    }
+
     .report-table th,
     .report-table td {
       font-size: 13px !important;
@@ -398,6 +535,24 @@
 
     .sign-line {
       font-size: 14px !important;
+    }
+
+    .role-sign-table .group-row td {
+      padding: 3px 7px !important;
+      height: auto !important;
+    }
+
+    .role-sign-table td {
+      padding: 6px 4px 3px !important;
+      height: 46px !important;
+    }
+
+    .role-sign-line {
+      min-height: 22px !important;
+    }
+
+    .role-sign-label {
+      font-size: 10px !important;
     }
 
     .report-disclaimer-block {
@@ -487,9 +642,15 @@
     <i class="fas fa-print me-1"></i>
     For correct layout, choose <strong>A4 (210 × 297 mm)</strong> paper in the print dialog.
   </div>
+  <% if (locals.blankPrint) { %>
+  <div class="alert alert-info py-2 px-3 mb-2 small">
+    <i class="fas fa-file me-1"></i>
+    Blank template — patient details are shown; examination and lab results are left empty.
+  </div>
+  <% } %>
   <div class="d-flex justify-content-end gap-2 mt-2">
     <button class="btn btn-outline-secondary" onclick="window.print()">
-      <i class="fas fa-print me-1"></i> Print Report
+      <i class="fas fa-print me-1"></i> <%= locals.blankPrint ? 'Print Blank' : 'Print Report' %>
     </button>
     <a href="/billing/medical-report/<%= billing.id %>" class="btn btn-primary">
       <i class="fas fa-edit me-1"></i> Edit Report
@@ -508,11 +669,24 @@ function fmtDate(d) {
   if (isNaN(dt.getTime())) return d;
   return dt.toLocaleDateString('en-GB');
 }
-function val(v) { return (v !== undefined && v !== null && v !== '') ? v : '—'; }
+function calcAge(dob) {
+  if (!dob) return null;
+  const birth = new Date(dob);
+  if (isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+const emptyMark = locals.blankPrint ? '_________' : '—';
+function val(v) { return (v !== undefined && v !== null && v !== '') ? v : emptyMark; }
+function elisaVal(v) { return (v !== undefined && v !== null && v !== '') ? v : 'Positive/Negative'; }
 const ex = reportData.examination;
 const xr = reportData.xray;
 const lab = reportData.laboratory;
 const patient = billing.Patient;
+const patientAge = patient && patient.dateOfBirth ? calcAge(patient.dateOfBirth) : null;
 const isFemalePatient = patient && String(patient.gender || '').toLowerCase() === 'female';
 %>
 
@@ -528,11 +702,64 @@ const isFemalePatient = patient && String(patient.gender || '').toLowerCase() ==
   </div>
   <% } %>
 
+  <% if (locals.blankPrint) { %>
+  <div class="report-header-blank">
+    <div class="header-blank-body">
+      <div class="header-blank-patient">
+        <div class="header-blank-col">
+          <p class="header-blank-field"><strong>Patient Name:</strong> <%= patient ? patient.name : emptyMark %></p>
+          <p class="header-blank-field"><strong>Gender:</strong> <%= patient && patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : emptyMark %></p>
+          <p class="header-blank-field"><strong>Passport No:</strong> <%= patient && patient.nidPassportNo ? patient.nidPassportNo : emptyMark %></p>
+          <p class="header-blank-field"><strong>Report Date:</strong> <%= fmtDate(reportData.reportDate) %></p>
+          <p class="header-blank-field"><strong>Invoice No:</strong> <%= billing.billNumber || billing.id %><% if (patient && patient.patientId) { %> [<%= patient.patientId %>]<% } %></p>
+        </div>
+        <div class="header-blank-col">
+          <p class="header-blank-field"><strong>Date Of Birth:</strong> <%= patient && patient.dateOfBirth ? fmtDate(patient.dateOfBirth) : emptyMark %> &nbsp; <strong>Age:</strong> <%= patientAge != null ? patientAge : emptyMark %></p>
+          <p class="header-blank-field"><strong>Marital Status:</strong> <%= val(ex.marital_status) %> &nbsp; <strong>Profession:</strong> <%= val(ex.profession) %></p>
+          <p class="header-blank-field"><strong>Height:</strong> <%= val(reportData.height) %> CM &nbsp; <strong>Weight:</strong> <%= val(reportData.weight) %> KG</p>
+          <p class="header-blank-field"><strong>Status:</strong> <%= val(reportData.status) %></p>
+          <p class="header-blank-field"><strong>Comment:</strong> <%= val(reportData.comment) %></p>
+        </div>
+      </div>
+      <div class="header-blank-room">
+        <table class="header-blank-room-table">
+          <tr class="room-title-row">
+            <td colspan="2"><b>Room Allocation</b></td>
+          </tr>
+          <tr>
+            <td class="room-label-cell">Sample Collection (101)</td>
+            <td class="room-blank-cell"></td>
+          </tr>
+          <tr>
+            <td class="room-label-cell">Physcial (103)</td>
+            <td class="room-blank-cell"></td>
+          </tr>
+          <tr>
+            <td class="room-label-cell">Radiologis (104)</td>
+            <td class="room-blank-cell"></td>
+          </tr>
+          <% if (isFemalePatient) { %>
+          <tr>
+            <td class="room-label-cell">Urine (101)</td>
+            <td class="room-blank-cell"></td>
+          </tr>
+          <% } %>
+        </table>
+      </div>
+    </div>
+    <div class="header-blank-photo">
+      <% const profileImgSrc = locals.bundleProfileSrc || billing.patientPhoto; %>
+      <% if (profileImgSrc) { %>
+      <img src="<%= profileImgSrc %>" alt="" class="patient-photo-img">
+      <% } %>
+    </div>
+  </div>
+  <% } else { %>
   <table class="report-meta-table">
     <tr>
       <td class="meta-text-left">
-        <p class="meta-line"><strong>Patient Name:</strong> <%= patient ? patient.name : '—' %></p>
-        <p class="meta-line"><strong>Passport No:</strong> <%= patient && patient.nidPassportNo ? patient.nidPassportNo : '—' %></p>
+        <p class="meta-line"><strong>Patient Name:</strong> <%= patient ? patient.name : emptyMark %></p>
+        <p class="meta-line"><strong>Passport No:</strong> <%= patient && patient.nidPassportNo ? patient.nidPassportNo : emptyMark %></p>
         <p class="meta-line"><strong>Marital Status:</strong> <%= val(ex.marital_status) %> &nbsp; <strong>Profession:</strong> <%= val(ex.profession) %></p>
         <p class="meta-line"><strong>Report Date:</strong> <%= fmtDate(reportData.reportDate) %></p>
         <p class="meta-line"><strong>Issue Date:</strong> <%= fmtDate(reportData.issueDate) %></p>
@@ -543,9 +770,9 @@ const isFemalePatient = patient && String(patient.gender || '').toLowerCase() ==
       </td>
       <td class="meta-text-right">
         <p class="meta-line"><strong>Height:</strong> <%= val(reportData.height) %> CM &nbsp; <strong>Weight:</strong> <%= val(reportData.weight) %> KG</p>
-        <p class="meta-line"><strong>Status:</strong> <%= reportData.status %></p>
+        <p class="meta-line"><strong>Status:</strong> <%= val(reportData.status) %></p>
         <% if (patient) { %>
-        <p class="meta-line"><strong>Gender:</strong> <%= patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : '—' %> &nbsp; <strong>Mobile:</strong> <%= val(patient.phone) %></p>
+        <p class="meta-line"><strong>Gender:</strong> <%= patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : emptyMark %> &nbsp; <strong>Mobile:</strong> <%= val(patient.phone) %></p>
         <% } %>
         <p class="meta-line"><strong>Comment:</strong> <%= val(reportData.comment) %></p>
       </td>
@@ -557,6 +784,7 @@ const isFemalePatient = patient && String(patient.gender || '').toLowerCase() ==
       </td>
     </tr>
   </table>
+  <% } %>
 
   <div class="report-columns">
     <div>
@@ -599,16 +827,47 @@ const isFemalePatient = patient && String(patient.gender || '').toLowerCase() ==
         <tr><td>ECG</td><td><%= val(xr.ecg) %></td></tr>
         <tr>
           <td>X-Ray Image</td>
-          <td><img src="<%= xrayImageUrl %>" alt="X-Ray" class="xray-img"></td>
+          <td>
+            <% if (locals.blankPrint) { %>
+            <%= val(null) %>
+            <% } else { %>
+            <img src="<%= xrayImageUrl %>" alt="X-Ray" class="xray-img">
+            <% } %>
+          </td>
+        </tr>
+      </table>
+
+      <table class="report-table role-sign-table report-table-2col">
+        <colgroup>
+          <col class="col-name">
+          <col class="col-value">
+        </colgroup>
+        <tr class="group-row"><td colspan="2"><b>Signature</b></td></tr>
+        <tr>
+          <td style="padding-top: 40px;">
+            <hr style="margin: 0; opacity: 2;">
+            <div class="role-sign-label">Pathologist</div>
+          </td>
+          <td style="padding-top: 40px;">
+            <hr style="margin: 0; opacity: 2;">
+            <div class="role-sign-label">Lab Technologist</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top: 40px;">
+            <hr style="margin: 0; opacity: 2;">
+            <div class="role-sign-label">Radiologist</div>
+          </td>
+          <td style="padding-top: 40px;">
+            <hr style="margin: 0; opacity: 2;">
+            <div class="role-sign-label">X-Ray Technologist</div>
+          </td>
         </tr>
       </table>
 
       <div class="report-column-extra">
-        <div class="report-disclaimer-block">
-          বিদ্যুৎ গোলযোগের কারণে রিপোর্ট ডেলিভারীতে বিলম্ব হতে পারে।
-          এর জন্য কর্তৃপক্ষ দায়ী নয়।
-        </div>
 
+        <% if (!locals.blankPrint) { %>
         <table class="room-allocation-table report-table-2col">
           <colgroup>
             <col class="col-name">
@@ -636,6 +895,7 @@ const isFemalePatient = patient && String(patient.gender || '').toLowerCase() ==
           </tr>
           <% } %>
         </table>
+        <% } %>
       </div>
     </div>
 
@@ -689,11 +949,11 @@ const isFemalePatient = patient && String(patient.gender || '').toLowerCase() ==
           </td>
         </tr>
         <tr class="group-row"><td colspan="2">Blood-ELISA &amp; Serology</td></tr>
-        <tr><td>HIV I &amp; HIV II</td><td><%= val(lab.hivi_hivii) %></td></tr>
-        <tr><td>HBsAg</td><td><%= val(lab.hbag) %></td></tr>
-        <tr><td>Anti HCV</td><td><%= val(lab.anti_hcv) %></td></tr>
-        <tr><td>TPHA (If VDRL Positive)</td><td><%= val(lab.tpha) %></td></tr>
-        <tr><td>VDRL</td><td><%= val(lab.vdrl) %></td></tr>
+        <tr><td>HIV I &amp; HIV II</td><td><%= elisaVal(lab.hivi_hivii) %></td></tr>
+        <tr><td>HBsAg</td><td><%= elisaVal(lab.hbag) %></td></tr>
+        <tr><td>Anti HCV</td><td><%= elisaVal(lab.anti_hcv) %></td></tr>
+        <tr><td>TPHA (If VDRL Positive)</td><td><%= elisaVal(lab.tpha) %></td></tr>
+        <tr><td>VDRL</td><td><%= elisaVal(lab.vdrl) %></td></tr>
       </table>
     </div>
   </div>
